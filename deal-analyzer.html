@@ -814,10 +814,30 @@
       <div class="field">
         <label>Financing Type</label>
         <div class="toggle-group">
-          <button class="active" onclick="setFinancing('cash')">Cash / Conventional</button>
+          <button class="active" onclick="setFinancing('conventional')">Conventional</button>
           <button onclick="setFinancing('hard')">Hard Money / Private</button>
         </div>
       </div>
+
+      <!-- Conventional fields -->
+      <div class="conv-fields" id="convFields" style="margin-top:14px; display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+        <div class="field">
+          <label>Loan Amount</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="convLoanAmount" value="140000" oninput="calculate()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Interest Rate (%)</label>
+          <div class="input-wrap pct">
+            <input type="number" id="convRate" value="7" step="0.125" oninput="calculate()">
+            <span class="suffix">%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hard Money fields -->
       <div class="hard-money-fields" id="hardMoneyFields">
         <div class="field">
           <label>Loan Amount</label>
@@ -957,6 +977,10 @@
         <span class="cr-label">Title + Survey + Warranty</span>
         <span class="cr-value" id="b-closing">$0</span>
       </div>
+      <div class="cost-row" id="b-conv-row" style="display:none">
+        <span class="cr-label">Conventional Interest</span>
+        <span class="cr-value" id="b-conv">$0</span>
+      </div>
       <div class="cost-row" id="b-hm-row" style="display:none">
         <span class="cr-label">Hard Money Costs</span>
         <span class="cr-value" id="b-hm">$0</span>
@@ -1093,10 +1117,12 @@
     setField('loanAmount', i.loanAmount);
     setField('points', i.points);
     setField('rate', i.rate);
+    setField('convLoanAmount', i.convLoanAmount || 0);
+    setField('convRate', i.convRate || 7);
     setField('loanOrigination', i.loanOrigination || 0);
     setField('loanAppraisal', i.loanAppraisal || 0);
     setField('loanTitle', i.loanTitle || 0);
-    setFinancing(i.financingType || 'cash');
+    setFinancing(i.financingType || 'conventional');
     calculate();
     renderSidebar();
     showToast('Loaded: ' + deal.name);
@@ -1117,14 +1143,16 @@
     activeDealKey = null;
     ['arv','purchase','repair','holdInterest','holdTaxes','holdInsurance',
      'holdUtilities','holdMonths','commSeller','commBuyer','title','survey',
-     'warranty','desiredProfit','loanAmount','points','rate'].forEach(id => {
+     'warranty','desiredProfit','loanAmount','points','rate',
+     'convLoanAmount','convRate','loanOrigination','loanAppraisal','loanTitle'].forEach(id => {
       const defaults = {arv:250000,purchase:130000,repair:40000,holdInterest:800,
         holdTaxes:300,holdInsurance:200,holdUtilities:200,holdMonths:4,
         commSeller:3,commBuyer:3,title:1500,survey:500,warranty:600,
-        desiredProfit:30000,loanAmount:140000,points:2,rate:12};
+        desiredProfit:30000,loanAmount:140000,points:2,rate:12,
+        convLoanAmount:140000,convRate:7,loanOrigination:0,loanAppraisal:0,loanTitle:0};
       setField(id, defaults[id] ?? 0);
     });
-    setFinancing('cash');
+    setFinancing('conventional');
     calculate();
     renderSidebar();
     showToast('New deal — enter your numbers');
@@ -1149,6 +1177,7 @@
       commBuyer: val('commBuyer'), title: val('title'), survey: val('survey'),
       warranty: val('warranty'), desiredProfit: val('desiredProfit'),
       loanAmount: val('loanAmount'), points: val('points'), rate: val('rate'),
+      convLoanAmount: val('convLoanAmount'), convRate: val('convRate'),
       loanOrigination: val('loanOrigination'), loanAppraisal: val('loanAppraisal'),
       loanTitle: val('loanTitle'),
       financingType
@@ -1161,12 +1190,14 @@
     const holdMonths = val('holdMonths');
     const commissions = (arv * (val('commSeller') + val('commBuyer'))) / 100;
     const closingOther = val('title') + val('survey') + val('warranty');
-    let hmCost = 0;
+    let hmCost = 0, convInterest = 0;
     if (financingType === 'hard') {
       hmCost = (val('loanAmount') * val('points') / 100) + (val('loanAmount') * val('rate') / 100 * holdMonths / 12);
+    } else if (financingType === 'conventional') {
+      convInterest = val('convLoanAmount') * (val('convRate') / 100) * (holdMonths / 12);
     }
     const loanClosing = val('loanOrigination') + val('loanAppraisal') + val('loanTitle');
-    const totalCosts = purchase + repair + (holdMonthly * holdMonths) + commissions + closingOther + hmCost + loanClosing;
+    const totalCosts = purchase + repair + (holdMonthly * holdMonths) + commissions + closingOther + hmCost + convInterest + loanClosing;
     return { profit: arv - totalCosts, totalCosts };
   }
 
@@ -1174,10 +1205,11 @@
   function setFinancing(type) {
     financingType = type;
     const btns = document.querySelectorAll('.toggle-group button');
-    btns[0].classList.toggle('active', type === 'cash');
+    btns[0].classList.toggle('active', type === 'conventional');
     btns[1].classList.toggle('active', type === 'hard');
-    const hm = document.getElementById('hardMoneyFields');
-    hm.classList.toggle('visible', type === 'hard');
+    document.getElementById('convFields').style.display = type === 'conventional' ? 'grid' : 'none';
+    document.getElementById('hardMoneyFields').classList.toggle('visible', type === 'hard');
+    document.getElementById('b-conv-row').style.display = type === 'conventional' ? 'flex' : 'none';
     document.getElementById('b-hm-row').style.display = type === 'hard' ? 'flex' : 'none';
     calculate();
   }
@@ -1209,26 +1241,33 @@
     const closingOther = title + survey + warranty;
 
     let hmCost = 0;
+    let convInterest = 0;
     if (financingType === 'hard') {
       const loan = val('loanAmount');
       const points = val('points');
       const rate = val('rate');
       hmCost = (loan * points / 100) + (loan * (rate / 100) * (holdMonths / 12));
+    } else if (financingType === 'conventional') {
+      const loan = val('convLoanAmount');
+      const rate = val('convRate');
+      convInterest = loan * (rate / 100) * (holdMonths / 12);
     }
 
     const loanClosing = val('loanOrigination') + val('loanAppraisal') + val('loanTitle');
     document.getElementById('loanClosingDisplay').textContent = fmt(loanClosing);
 
-    const totalCosts = purchase + repair + holding + commissions + closingOther + hmCost + loanClosing;
+    const totalCosts = purchase + repair + holding + commissions + closingOther + hmCost + convInterest + loanClosing;
     const profit = arv - totalCosts;
     const roi = totalCosts > 0 ? (profit / totalCosts) * 100 : 0;
 
     let cashInvested = totalCosts;
     if (financingType === 'hard') {
       cashInvested = totalCosts - val('loanAmount') + hmCost;
+    } else if (financingType === 'conventional') {
+      cashInvested = totalCosts - val('convLoanAmount') + convInterest;
     }
     const coc = cashInvested > 0 ? (profit / cashInvested) * 100 : 0;
-    const maxOffer = arv - repair - holding - commissions - closingOther - hmCost - loanClosing - desiredProfit;
+    const maxOffer = arv - repair - holding - commissions - closingOther - hmCost - convInterest - loanClosing - desiredProfit;
 
     document.getElementById('profitDisplay').textContent = fmt(profit);
     document.getElementById('roiDisplay').textContent = 'ROI: ' + fmtPct(roi);
@@ -1245,6 +1284,7 @@
     document.getElementById('b-h-utilities').textContent = fmt(holdUtilities * holdMonths);
     document.getElementById('b-comm').textContent = fmt(commissions);
     document.getElementById('b-closing').textContent = fmt(closingOther);
+    document.getElementById('b-conv').textContent = fmt(convInterest);
     document.getElementById('b-hm').textContent = fmt(hmCost);
     document.getElementById('b-loan-closing').textContent = fmt(loanClosing);
     document.getElementById('b-total').textContent = fmt(totalCosts);
