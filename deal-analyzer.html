@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fix & Flip Deal Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #151918;
+    --surface2: #1c2220;
+    --border: #2a3330;
+    --accent: #c8f564;
+    --accent2: #4dffa0;
+    --danger: #ff5c5c;
+    --warn: #ffb347;
+    --text: #e8ede8;
+    --muted: #6b7d74;
+    --label: #9ab09e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0;
+  }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+  }
+
+  .header-left { display: flex; align-items: baseline; gap: 16px; }
+
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 3px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  header span {
+    color: var(--muted);
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  .btn {
+    padding: 9px 18px;
+    border-radius: 6px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.18s;
+    display: flex; align-items: center; gap: 7px;
+  }
+
+  .btn-save {
+    background: var(--accent);
+    color: #0d0f0e;
+  }
+  .btn-save:hover { background: #d8ff7a; }
+
+  .btn-pdf {
+    background: transparent;
+    color: var(--label);
+    border: 1px solid var(--border);
+  }
+  .btn-pdf:hover { border-color: var(--label); color: var(--text); }
+
+  .btn-new {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .btn-new:hover { border-color: var(--muted); color: var(--text); }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 220px 1fr 380px;
+    gap: 0;
+    min-height: calc(100vh - 69px);
+  }
+
+  /* Saved deals sidebar */
+  .deals-sidebar {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    overflow-y: auto;
+    padding: 20px 0;
+  }
+
+  .sidebar-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 0.85rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    padding: 0 16px 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
+
+  .deal-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    position: relative;
+  }
+
+  .deal-item:hover { background: var(--surface2); }
+  .deal-item.active { border-left-color: var(--accent); background: rgba(200,245,100,0.05); }
+
+  .deal-item-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 3px;
+  }
+
+  .deal-item-meta {
+    font-size: 0.7rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .deal-item-profit {
+    font-size: 0.72rem;
+    font-family: 'DM Mono', monospace;
+    margin-top: 2px;
+  }
+
+  .deal-item-profit.pos { color: var(--accent2); }
+  .deal-item-profit.neg { color: var(--danger); }
+  .deal-item-profit.warn { color: var(--warn); }
+
+  .deal-delete {
+    position: absolute;
+    right: 10px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.85rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+    padding: 4px;
+  }
+
+  .deal-item:hover .deal-delete { opacity: 1; }
+  .deal-delete:hover { color: var(--danger) !important; }
+
+  .no-deals {
+    padding: 20px 16px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* Save modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    width: 360px;
+    animation: fadeUp 0.2s ease;
+  }
+
+  .modal h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+
+  .modal input[type="text"] {
+    width: 100%;
+    margin-bottom: 16px;
+  }
+
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+  .btn-confirm {
+    background: var(--accent);
+    color: #0d0f0e;
+    padding: 9px 20px;
+    border-radius: 6px;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  .btn-cancel {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 9px 20px;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    z-index: 3000;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Print styles for PDF */
+  @media print {
+    body::before { display: none; }
+    .deals-sidebar, header .header-actions, .btn, .desired-profit-row { display: none !important; }
+    .layout { grid-template-columns: 1fr 380px; }
+    .inputs-panel, .results-panel { height: auto; position: static; overflow: visible; }
+    header { padding: 16px 24px; }
+    .modal-overlay, .toast { display: none !important; }
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+
+  .inputs-panel {
+    padding: 36px 40px;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    height: calc(100vh - 69px);
+  }
+
+  .results-panel {
+    padding: 36px 32px;
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 69px);
+    overflow-y: auto;
+    background: var(--surface);
+  }
+
+  .section {
+    margin-bottom: 36px;
+    animation: fadeUp 0.4s ease both;
+  }
+
+  .section:nth-child(1) { animation-delay: 0.05s; }
+  .section:nth-child(2) { animation-delay: 0.1s; }
+  .section:nth-child(3) { animation-delay: 0.15s; }
+  .section:nth-child(4) { animation-delay: 0.2s; }
+  .section:nth-child(5) { animation-delay: 0.25s; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: inline-block;
+  }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .field-grid.single { grid-template-columns: 1fr; }
+  .field-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  label {
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--label);
+    font-weight: 500;
+  }
+
+  .input-wrap {
+    position: relative;
+  }
+
+  .input-wrap .prefix,
+  .input-wrap .suffix {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    pointer-events: none;
+  }
+
+  .input-wrap .prefix { left: 12px; }
+  .input-wrap .suffix { right: 12px; }
+
+  input[type="number"], input[type="text"], select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 11px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    border-radius: 6px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    -moz-appearance: textfield;
+  }
+
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+  input:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(200,245,100,0.08);
+  }
+
+  .input-wrap.dollar input { padding-left: 28px; }
+  .input-wrap.pct input { padding-right: 28px; }
+
+  select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7d74' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 36px;
+  }
+
+  /* Financing toggle */
+  .toggle-group {
+    display: flex;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .toggle-group button {
+    flex: 1;
+    padding: 10px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+  }
+
+  .toggle-group button.active {
+    background: var(--accent);
+    color: #0d0f0e;
+    font-weight: 600;
+  }
+
+  .hard-money-fields {
+    display: none;
+    margin-top: 14px;
+  }
+
+  .hard-money-fields.visible { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  /* Results panel */
+  .results-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .hero-metric {
+    background: linear-gradient(135deg, rgba(200,245,100,0.08), rgba(77,255,160,0.04));
+    border: 1px solid rgba(200,245,100,0.25);
+    border-radius: 10px;
+    padding: 24px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+
+  .hero-metric .label {
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .hero-metric .value {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 3rem;
+    letter-spacing: 2px;
+    line-height: 1;
+    color: var(--accent);
+  }
+
+  .hero-metric .sub {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .metric-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    transition: border-color 0.2s;
+  }
+
+  .metric-card:hover { border-color: var(--muted); }
+
+  .metric-card .m-label {
+    font-size: 0.65rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .metric-card .m-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.15rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .metric-card.positive .m-value { color: var(--accent2); }
+  .metric-card.negative .m-value { color: var(--danger); }
+  .metric-card.warn .m-value { color: var(--warn); }
+
+  .cost-breakdown {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 16px;
+  }
+
+  .cost-breakdown-title {
+    padding: 12px 16px;
+    font-size: 0.68rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--label);
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .cost-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 16px;
+    border-bottom: 1px solid rgba(42,51,48,0.5);
+    font-size: 0.82rem;
+  }
+
+  .cost-row:last-child { border-bottom: none; }
+  .cost-row .cr-label { color: var(--label); }
+  .cost-row .cr-value { font-family: 'DM Mono', monospace; color: var(--text); }
+
+  .cost-row.total {
+    background: rgba(200,245,100,0.04);
+    border-top: 1px solid var(--border);
+  }
+  .cost-row.total .cr-label { color: var(--text); font-weight: 600; }
+  .cost-row.total .cr-value { color: var(--accent); font-weight: 600; }
+
+  /* Verdict bar */
+  .verdict {
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-size: 0.82rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .verdict.good { background: rgba(77,255,160,0.08); border: 1px solid rgba(77,255,160,0.25); color: var(--accent2); }
+  .verdict.ok { background: rgba(255,179,71,0.08); border: 1px solid rgba(255,179,71,0.25); color: var(--warn); }
+  .verdict.bad { background: rgba(255,92,92,0.08); border: 1px solid rgba(255,92,92,0.25); color: var(--danger); }
+
+  .verdict-icon { font-size: 1.1rem; }
+
+  /* Desired profit input */
+  .desired-profit-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+
+  .desired-profit-row label {
+    font-size: 0.68rem;
+    letter-spacing: 1.5px;
+    white-space: nowrap;
+    color: var(--label);
+    text-transform: uppercase;
+  }
+
+  .desired-profit-row .input-wrap {
+    flex: 1;
+  }
+
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    .results-panel { position: static; height: auto; }
+    .inputs-panel { border-right: none; border-bottom: 1px solid var(--border); }
+    header { padding: 18px 20px; }
+    .inputs-panel, .results-panel { padding: 24px 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Deal Analyzer</h1>
+    <span>Fix &amp; Flip</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-new" onclick="newDeal()">＋ New Deal</button>
+    <button class="btn btn-pdf" onclick="exportPDF()">⬇ Export PDF</button>
+    <button class="btn btn-save" onclick="openSaveModal()">Save Deal</button>
+  </div>
+</header>
+
+<div class="layout">
+  <!-- SAVED DEALS SIDEBAR -->
+  <div class="deals-sidebar">
+    <div class="sidebar-title">Saved Deals</div>
+    <div id="dealsList"><div class="no-deals">No saved deals yet.<br>Run an analysis and hit <strong>Save Deal</strong>.</div></div>
+  </div>
+
+  <!-- INPUTS -->
+  <div class="inputs-panel">
+
+    <!-- Property -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Property</div>
+      <div class="field-grid">
+        <div class="field">
+          <label>After Repair Value</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="arv" value="250000" oninput="calculate()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Purchase Price</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="purchase" value="130000" oninput="calculate()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rehab -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Repair Costs</div>
+      <div class="field-grid single">
+        <div class="field">
+          <label>Estimated Repair Costs</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="repair" value="40000" oninput="calculate()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Holding -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Holding Costs</div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Interest Payments</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="holdInterest" value="800" oninput="calculate()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Taxes</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="holdTaxes" value="300" oninput="calculate()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Insurance</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="holdInsurance" value="200" oninput="calculate()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Utilities</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="holdUtilities" value="200" oninput="calculate()">
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:14px;">
+        <div class="field">
+          <label>Estimated Months</label>
+          <div class="input-wrap">
+            <input type="number" id="holdMonths" value="4" oninput="calculate()">
+          </div>
+        </div>
+      </div>
+      <div style="margin-top:12px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:0.7rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--label);">Monthly Total</span>
+        <span style="font-family:'DM Mono',monospace; font-size:0.95rem; color:var(--accent);" id="holdMonthlyDisplay">$0/mo</span>
+      </div>
+    </div>
+
+    <!-- Selling Costs -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Selling Costs</div>
+      <div class="field-grid">
+        <div class="field">
+          <label>Seller Agent Commission %</label>
+          <div class="input-wrap pct">
+            <input type="number" id="commSeller" value="3" step="0.1" oninput="calculate()">
+            <span class="suffix">%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Buyer Agent Commission %</label>
+          <div class="input-wrap pct">
+            <input type="number" id="commBuyer" value="3" step="0.1" oninput="calculate()">
+            <span class="suffix">%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Title Fees</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="title" value="1500" oninput="calculate()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Survey Costs</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="survey" value="500" oninput="calculate()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Home Warranty</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="warranty" value="600" oninput="calculate()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Financing -->
+    <div class="section">
+      <div class="section-title"><span class="dot"></span>Financing</div>
+      <div class="field">
+        <label>Financing Type</label>
+        <div class="toggle-group">
+          <button class="active" onclick="setFinancing('cash')">Cash / Conventional</button>
+          <button onclick="setFinancing('hard')">Hard Money / Private</button>
+        </div>
+      </div>
+      <div class="hard-money-fields" id="hardMoneyFields">
+        <div class="field">
+          <label>Loan Amount</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="number" id="loanAmount" value="140000" oninput="calculate()">
+          </div>
+        </div>
+        <div class="field">
+          <label>Points (%)</label>
+          <div class="input-wrap pct">
+            <input type="number" id="points" value="2" step="0.25" oninput="calculate()">
+            <span class="suffix">%</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Interest Rate (%)</label>
+          <div class="input-wrap pct">
+            <input type="number" id="rate" value="12" step="0.25" oninput="calculate()">
+            <span class="suffix">%</span>
+          </div>
+        </div>
+      </div>
+      <!-- Loan & Closing Costs -->
+      <div style="margin-top:20px;">
+        <div style="font-size:0.72rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--label); margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--border);">Loan &amp; Closing Costs</div>
+        <div class="field-grid">
+          <div class="field">
+            <label>Origination Fees</label>
+            <div class="input-wrap dollar">
+              <span class="prefix">$</span>
+              <input type="number" id="loanOrigination" value="0" oninput="calculate()">
+            </div>
+          </div>
+          <div class="field">
+            <label>Appraisal Fee</label>
+            <div class="input-wrap dollar">
+              <span class="prefix">$</span>
+              <input type="number" id="loanAppraisal" value="0" oninput="calculate()">
+            </div>
+          </div>
+          <div class="field">
+            <label>Title / Escrow</label>
+            <div class="input-wrap dollar">
+              <span class="prefix">$</span>
+              <input type="number" id="loanTitle" value="0" oninput="calculate()">
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; padding:10px 14px; display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:0.7rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--label);">Total Loan &amp; Closing</span>
+          <span style="font-family:'DM Mono',monospace; font-size:0.95rem; color:var(--accent);" id="loanClosingDisplay">$0</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RESULTS -->
+  <div class="results-panel">
+    <div class="results-title">Analysis</div>
+
+    <!-- Desired profit -->
+    <div class="desired-profit-row">
+      <label>Desired Min Profit</label>
+      <div class="input-wrap dollar">
+        <span class="prefix">$</span>
+        <input type="number" id="desiredProfit" value="30000" oninput="calculate()">
+      </div>
+    </div>
+
+    <!-- Verdict -->
+    <div class="verdict" id="verdict">
+      <span class="verdict-icon">⚡</span>
+      <span id="verdictText">Enter your numbers</span>
+    </div>
+
+    <!-- Hero: Expected Profit -->
+    <div class="hero-metric">
+      <div class="label">Expected Profit</div>
+      <div class="value" id="profitDisplay">$0</div>
+      <div class="sub" id="roiDisplay">ROI: 0%</div>
+    </div>
+
+    <!-- Key metrics -->
+    <div class="metric-grid">
+      <div class="metric-card" id="card-coc">
+        <div class="m-label">Cash-on-Cash Return</div>
+        <div class="m-value" id="cocDisplay">0%</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-label">Max Offer Price</div>
+        <div class="m-value" id="maxOfferDisplay">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-label">Total Investment</div>
+        <div class="m-value" id="totalInvDisplay">$0</div>
+      </div>
+      <div class="metric-card">
+        <div class="m-label">Total Costs</div>
+        <div class="m-value" id="totalCostDisplay">$0</div>
+      </div>
+    </div>
+
+    <!-- Cost Breakdown -->
+    <div class="cost-breakdown">
+      <div class="cost-breakdown-title">Cost Breakdown</div>
+      <div class="cost-row">
+        <span class="cr-label">Purchase Price</span>
+        <span class="cr-value" id="b-purchase">$0</span>
+      </div>
+      <div class="cost-row">
+        <span class="cr-label">Repair Costs</span>
+        <span class="cr-value" id="b-repair">$0</span>
+      </div>
+      <div class="cost-row">
+        <span class="cr-label">Holding — Interest</span>
+        <span class="cr-value" id="b-h-interest">$0</span>
+      </div>
+      <div class="cost-row">
+        <span class="cr-label">Holding — Taxes</span>
+        <span class="cr-value" id="b-h-taxes">$0</span>
+      </div>
+      <div class="cost-row">
+        <span class="cr-label">Holding — Insurance</span>
+        <span class="cr-value" id="b-h-insurance">$0</span>
+      </div>
+      <div class="cost-row">
+        <span class="cr-label">Holding — Utilities</span>
+        <span class="cr-value" id="b-h-utilities">$0</span>
+      </div>
+      <div class="cost-row">
+        <span class="cr-label">Commissions</span>
+        <span class="cr-value" id="b-comm">$0</span>
+      </div>
+      <div class="cost-row">
+        <span class="cr-label">Title + Survey + Warranty</span>
+        <span class="cr-value" id="b-closing">$0</span>
+      </div>
+      <div class="cost-row" id="b-hm-row" style="display:none">
+        <span class="cr-label">Hard Money Costs</span>
+        <span class="cr-value" id="b-hm">$0</span>
+      </div>
+      <div class="cost-row">
+        <span class="cr-label">Loan &amp; Closing Costs</span>
+        <span class="cr-value" id="b-loan-closing">$0</span>
+      </div>
+      <div class="cost-row total">
+        <span class="cr-label">Total All-In Cost</span>
+        <span class="cr-value" id="b-total">$0</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Save Modal -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <h3>Save Deal</h3>
+    <label style="display:block;margin-bottom:8px;">Deal Name</label>
+    <input type="text" id="dealNameInput" placeholder="e.g. 123 Oak Street" onkeydown="if(event.key==='Enter')confirmSave()">
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSaveModal()">Cancel</button>
+      <button class="btn-confirm" onclick="confirmSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  let financingType = 'cash';
+  let activeDealKey = null;
+  const STORAGE_KEY = 'flipDeals';
+
+  // ── Storage helpers ──────────────────────────────────────────
+  function loadDeals() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch { return {}; }
+  }
+
+  function saveDeals(deals) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(deals));
+  }
+
+  // ── Toast ────────────────────────────────────────────────────
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  // ── Sidebar ──────────────────────────────────────────────────
+  function renderSidebar() {
+    const deals = loadDeals();
+    const keys = Object.keys(deals).sort((a,b) => deals[b].savedAt - deals[a].savedAt);
+    const list = document.getElementById('dealsList');
+
+    if (keys.length === 0) {
+      list.innerHTML = '<div class="no-deals">No saved deals yet.<br>Run an analysis and hit <strong>Save Deal</strong>.</div>';
+      return;
+    }
+
+    list.innerHTML = keys.map(k => {
+      const d = deals[k];
+      const profit = d.results.profit;
+      const profitClass = profit >= d.inputs.desiredProfit ? 'pos' : profit > 0 ? 'warn' : 'neg';
+      const profitFmt = '$' + Math.round(Math.abs(profit)).toLocaleString();
+      const sign = profit < 0 ? '-' : '+';
+      const active = k === activeDealKey ? ' active' : '';
+      return `<div class="deal-item${active}" onclick="loadDeal('${k}')">
+        <div class="deal-item-name">${d.name}</div>
+        <div class="deal-item-meta">ARV ${fmt(d.inputs.arv)}</div>
+        <div class="deal-item-profit ${profitClass}">${sign}${profitFmt} profit</div>
+        <button class="deal-delete" onclick="deleteDeal(event,'${k}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Save flow ────────────────────────────────────────────────
+  function openSaveModal() {
+    const input = document.getElementById('dealNameInput');
+    input.value = activeDealKey ? loadDeals()[activeDealKey]?.name || '' : '';
+    document.getElementById('saveModal').classList.add('open');
+    setTimeout(() => input.focus(), 50);
+  }
+
+  function closeSaveModal() {
+    document.getElementById('saveModal').classList.remove('open');
+  }
+
+  function confirmSave() {
+    const name = document.getElementById('dealNameInput').value.trim();
+    if (!name) { document.getElementById('dealNameInput').focus(); return; }
+    const key = activeDealKey || ('deal_' + Date.now());
+    activeDealKey = key;
+    const deals = loadDeals();
+    deals[key] = {
+      name,
+      savedAt: Date.now(),
+      inputs: getInputs(),
+      results: getResults()
+    };
+    saveDeals(deals);
+    closeSaveModal();
+    renderSidebar();
+    showToast('✓ Deal saved — ' + name);
+  }
+
+  function loadDeal(key) {
+    const deals = loadDeals();
+    const deal = deals[key];
+    if (!deal) return;
+    activeDealKey = key;
+    const i = deal.inputs;
+    setField('arv', i.arv);
+    setField('purchase', i.purchase);
+    setField('repair', i.repair);
+    setField('holdInterest', i.holdInterest);
+    setField('holdTaxes', i.holdTaxes);
+    setField('holdInsurance', i.holdInsurance);
+    setField('holdUtilities', i.holdUtilities);
+    setField('holdMonths', i.holdMonths);
+    setField('commSeller', i.commSeller);
+    setField('commBuyer', i.commBuyer);
+    setField('title', i.title);
+    setField('survey', i.survey);
+    setField('warranty', i.warranty);
+    setField('desiredProfit', i.desiredProfit);
+    setField('loanAmount', i.loanAmount);
+    setField('points', i.points);
+    setField('rate', i.rate);
+    setField('loanOrigination', i.loanOrigination || 0);
+    setField('loanAppraisal', i.loanAppraisal || 0);
+    setField('loanTitle', i.loanTitle || 0);
+    setFinancing(i.financingType || 'cash');
+    calculate();
+    renderSidebar();
+    showToast('Loaded: ' + deal.name);
+  }
+
+  function deleteDeal(e, key) {
+    e.stopPropagation();
+    const deals = loadDeals();
+    const name = deals[key]?.name;
+    delete deals[key];
+    saveDeals(deals);
+    if (activeDealKey === key) activeDealKey = null;
+    renderSidebar();
+    showToast('Deleted: ' + name);
+  }
+
+  function newDeal() {
+    activeDealKey = null;
+    ['arv','purchase','repair','holdInterest','holdTaxes','holdInsurance',
+     'holdUtilities','holdMonths','commSeller','commBuyer','title','survey',
+     'warranty','desiredProfit','loanAmount','points','rate'].forEach(id => {
+      const defaults = {arv:250000,purchase:130000,repair:40000,holdInterest:800,
+        holdTaxes:300,holdInsurance:200,holdUtilities:200,holdMonths:4,
+        commSeller:3,commBuyer:3,title:1500,survey:500,warranty:600,
+        desiredProfit:30000,loanAmount:140000,points:2,rate:12};
+      setField(id, defaults[id] ?? 0);
+    });
+    setFinancing('cash');
+    calculate();
+    renderSidebar();
+    showToast('New deal — enter your numbers');
+  }
+
+  function exportPDF() {
+    window.print();
+  }
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function setField(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val;
+  }
+
+  function getInputs() {
+    return {
+      arv: val('arv'), purchase: val('purchase'), repair: val('repair'),
+      holdInterest: val('holdInterest'), holdTaxes: val('holdTaxes'),
+      holdInsurance: val('holdInsurance'), holdUtilities: val('holdUtilities'),
+      holdMonths: val('holdMonths'), commSeller: val('commSeller'),
+      commBuyer: val('commBuyer'), title: val('title'), survey: val('survey'),
+      warranty: val('warranty'), desiredProfit: val('desiredProfit'),
+      loanAmount: val('loanAmount'), points: val('points'), rate: val('rate'),
+      loanOrigination: val('loanOrigination'), loanAppraisal: val('loanAppraisal'),
+      loanTitle: val('loanTitle'),
+      financingType
+    };
+  }
+
+  function getResults() {
+    const arv = val('arv'), purchase = val('purchase'), repair = val('repair');
+    const holdMonthly = val('holdInterest')+val('holdTaxes')+val('holdInsurance')+val('holdUtilities');
+    const holdMonths = val('holdMonths');
+    const commissions = (arv * (val('commSeller') + val('commBuyer'))) / 100;
+    const closingOther = val('title') + val('survey') + val('warranty');
+    let hmCost = 0;
+    if (financingType === 'hard') {
+      hmCost = (val('loanAmount') * val('points') / 100) + (val('loanAmount') * val('rate') / 100 * holdMonths / 12);
+    }
+    const loanClosing = val('loanOrigination') + val('loanAppraisal') + val('loanTitle');
+    const totalCosts = purchase + repair + (holdMonthly * holdMonths) + commissions + closingOther + hmCost + loanClosing;
+    return { profit: arv - totalCosts, totalCosts };
+  }
+
+  // ── Core ─────────────────────────────────────────────────────
+  function setFinancing(type) {
+    financingType = type;
+    const btns = document.querySelectorAll('.toggle-group button');
+    btns[0].classList.toggle('active', type === 'cash');
+    btns[1].classList.toggle('active', type === 'hard');
+    const hm = document.getElementById('hardMoneyFields');
+    hm.classList.toggle('visible', type === 'hard');
+    document.getElementById('b-hm-row').style.display = type === 'hard' ? 'flex' : 'none';
+    calculate();
+  }
+
+  function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+  function fmtPct(n) { return n.toFixed(1) + '%'; }
+  function val(id) { return parseFloat(document.getElementById(id).value) || 0; }
+
+  function calculate() {
+    const arv = val('arv');
+    const purchase = val('purchase');
+    const repair = val('repair');
+    const holdInterest = val('holdInterest');
+    const holdTaxes = val('holdTaxes');
+    const holdInsurance = val('holdInsurance');
+    const holdUtilities = val('holdUtilities');
+    const holdMonthly = holdInterest + holdTaxes + holdInsurance + holdUtilities;
+    const holdMonths = val('holdMonths');
+    document.getElementById('holdMonthlyDisplay').textContent = fmt(holdMonthly) + '/mo';
+    const commSeller = val('commSeller');
+    const commBuyer = val('commBuyer');
+    const title = val('title');
+    const survey = val('survey');
+    const warranty = val('warranty');
+    const desiredProfit = val('desiredProfit');
+
+    const holding = holdMonthly * holdMonths;
+    const commissions = (arv * (commSeller + commBuyer)) / 100;
+    const closingOther = title + survey + warranty;
+
+    let hmCost = 0;
+    if (financingType === 'hard') {
+      const loan = val('loanAmount');
+      const points = val('points');
+      const rate = val('rate');
+      hmCost = (loan * points / 100) + (loan * (rate / 100) * (holdMonths / 12));
+    }
+
+    const loanClosing = val('loanOrigination') + val('loanAppraisal') + val('loanTitle');
+    document.getElementById('loanClosingDisplay').textContent = fmt(loanClosing);
+
+    const totalCosts = purchase + repair + holding + commissions + closingOther + hmCost + loanClosing;
+    const profit = arv - totalCosts;
+    const roi = totalCosts > 0 ? (profit / totalCosts) * 100 : 0;
+
+    let cashInvested = totalCosts;
+    if (financingType === 'hard') {
+      cashInvested = totalCosts - val('loanAmount') + hmCost;
+    }
+    const coc = cashInvested > 0 ? (profit / cashInvested) * 100 : 0;
+    const maxOffer = arv - repair - holding - commissions - closingOther - hmCost - loanClosing - desiredProfit;
+
+    document.getElementById('profitDisplay').textContent = fmt(profit);
+    document.getElementById('roiDisplay').textContent = 'ROI: ' + fmtPct(roi);
+    document.getElementById('cocDisplay').textContent = fmtPct(coc);
+    document.getElementById('maxOfferDisplay').textContent = fmt(maxOffer);
+    document.getElementById('totalInvDisplay').textContent = fmt(cashInvested);
+    document.getElementById('totalCostDisplay').textContent = fmt(totalCosts);
+
+    document.getElementById('b-purchase').textContent = fmt(purchase);
+    document.getElementById('b-repair').textContent = fmt(repair);
+    document.getElementById('b-h-interest').textContent = fmt(holdInterest * holdMonths);
+    document.getElementById('b-h-taxes').textContent = fmt(holdTaxes * holdMonths);
+    document.getElementById('b-h-insurance').textContent = fmt(holdInsurance * holdMonths);
+    document.getElementById('b-h-utilities').textContent = fmt(holdUtilities * holdMonths);
+    document.getElementById('b-comm').textContent = fmt(commissions);
+    document.getElementById('b-closing').textContent = fmt(closingOther);
+    document.getElementById('b-hm').textContent = fmt(hmCost);
+    document.getElementById('b-loan-closing').textContent = fmt(loanClosing);
+    document.getElementById('b-total').textContent = fmt(totalCosts);
+
+    const profitEl = document.getElementById('profitDisplay');
+    const heroEl = document.querySelector('.hero-metric');
+    const cocCard = document.getElementById('card-coc');
+
+    if (profit >= desiredProfit) {
+      profitEl.style.color = 'var(--accent2)'; heroEl.style.borderColor = 'rgba(77,255,160,0.3)';
+    } else if (profit > 0) {
+      profitEl.style.color = 'var(--warn)'; heroEl.style.borderColor = 'rgba(255,179,71,0.3)';
+    } else {
+      profitEl.style.color = 'var(--danger)'; heroEl.style.borderColor = 'rgba(255,92,92,0.3)';
+    }
+
+    cocCard.className = 'metric-card' + (coc >= 15 ? ' positive' : coc >= 8 ? ' warn' : ' negative');
+
+    const verdict = document.getElementById('verdict');
+    const verdictText = document.getElementById('verdictText');
+    if (profit >= desiredProfit && roi >= 15) {
+      verdict.className = 'verdict good'; verdictText.textContent = '✓ Strong deal — meets your profit target with solid ROI';
+    } else if (profit >= desiredProfit) {
+      verdict.className = 'verdict ok'; verdictText.textContent = '~ Meets profit target but ROI is on the lower side';
+    } else if (profit > 0) {
+      verdict.className = 'verdict ok'; verdictText.textContent = `⚠ Below target — ${fmt(desiredProfit - profit)} short of desired profit`;
+    } else {
+      verdict.className = 'verdict bad'; verdictText.textContent = `✗ Deal loses money at this purchase price`;
+    }
+  }
+
+  // Init
+  calculate();
+  renderSidebar();
+</script>
+</body>
+</html>
