@@ -104,15 +104,65 @@
   .btn-new:hover { border-color: var(--muted); color: var(--text); }
 
   .layout {
-    display: grid;
-    grid-template-columns: 220px 1fr 380px;
-    gap: 0;
+    display: flex;
     min-height: calc(100vh - 69px);
+  }
+
+  /* Resizable sidebar */
+  .deals-sidebar {
+    width: 220px;
+    min-width: 120px;
+    max-width: 420px;
+    flex-shrink: 0;
+  }
+
+  .resizer {
+    width: 6px;
+    background: var(--border);
+    cursor: col-resize;
+    position: relative;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .resizer:hover, .resizer.dragging { background: var(--accent); }
+
+  .resizer::after {
+    content: '';
+    width: 2px;
+    height: 32px;
+    border-radius: 2px;
+    background: currentColor;
+    opacity: 0.4;
+  }
+
+  .inputs-panel {
+    flex: 1;
+    min-width: 0;
+    padding: 36px 40px;
+    border-left: 1px solid var(--border);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    height: calc(100vh - 69px);
+  }
+
+  .results-panel {
+    width: 380px;
+    flex-shrink: 0;
+    padding: 36px 32px;
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 69px);
+    overflow-y: auto;
+    background: var(--surface);
   }
 
   /* Saved deals sidebar */
   .deals-sidebar {
-    border-right: 1px solid var(--border);
+    border-right: none;
     background: var(--surface);
     overflow-y: auto;
     padding: 20px 0;
@@ -623,10 +673,13 @@
 
 <div class="layout">
   <!-- SAVED DEALS SIDEBAR -->
-  <div class="deals-sidebar">
+  <div class="deals-sidebar" id="dealsSidebar">
     <div class="sidebar-title">Saved Deals</div>
     <div id="dealsList"><div class="no-deals">No saved deals yet.<br>Run an analysis and hit <strong>Save Deal</strong>.</div></div>
   </div>
+
+  <!-- RESIZER -->
+  <div class="resizer" id="sidebarResizer"></div>
 
   <!-- INPUTS -->
   <div class="inputs-panel">
@@ -1222,6 +1275,36 @@
       verdict.className = 'verdict bad'; verdictText.textContent = `✗ Deal loses money at this purchase price`;
     }
   }
+
+  // ── Sidebar resizer ──────────────────────────────────────────
+  (function() {
+    const resizer = document.getElementById('sidebarResizer');
+    const sidebar = document.getElementById('dealsSidebar');
+    let dragging = false, startX = 0, startW = 0;
+
+    resizer.addEventListener('mousedown', e => {
+      dragging = true;
+      startX = e.clientX;
+      startW = sidebar.offsetWidth;
+      resizer.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const newW = Math.min(420, Math.max(120, startW + (e.clientX - startX)));
+      sidebar.style.width = newW + 'px';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      resizer.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  })();
 
   // Init
   calculate();
