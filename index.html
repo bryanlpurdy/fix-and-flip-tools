@@ -366,8 +366,8 @@
     color: var(--accent);
     text-transform: uppercase;
     margin-bottom: 16px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    border-bottom: 2px solid rgba(200,245,100,0.35);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -689,17 +689,17 @@
       <div class="section-title"><span class="dot"></span>Property</div>
       <div class="field-grid">
         <div class="field">
-          <label>After Repair Value</label>
-          <div class="input-wrap dollar">
-            <span class="prefix">$</span>
-            <input type="text" id="arv" value="250,000" oninput="formatCurrencyInput(this); calculate()">
-          </div>
-        </div>
-        <div class="field">
           <label>Purchase Price</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
             <input type="text" id="purchase" value="130,000" oninput="formatCurrencyInput(this); calculate()">
+          </div>
+        </div>
+        <div class="field">
+          <label>After Repair Value</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="text" id="arv" value="250,000" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
       </div>
