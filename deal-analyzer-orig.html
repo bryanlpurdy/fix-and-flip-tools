@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Fix & Flip Deal Analyzer</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   :root {
     --bg: #0d0f0e;
@@ -1151,10 +1150,98 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // ── Supabase config — replace with your actual values ────────
+  // ── Supabase config ──────────────────────────────────────────
   const SUPABASE_URL = 'https://qplidmfishaclysckruq.supabase.co';
-  const SUPABASE_KEY = 'sb_publishable_zLz6uHctj52yx2QGHqOXiQ__PjAyBHw';
-  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbGlkbWZpc2hhY2x5c2NrcnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc2ODMsImV4cCI6MjA4OTc2MzY4M30.YEhxwrw-HxofmV4N3KRpbgDcT_a_OyqIkx49Wu7CjR0';
+  let sbAccessToken = null;
+
+  function sbHeaders(extra = {}) {
+    const h = {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${sbAccessToken || SUPABASE_KEY}`,
+      ...extra
+    };
+    return h;
+  }
+
+  async function sbSignUp(email, password) {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({ email, password })
+    });
+    return r.json();
+  }
+
+  async function sbSignIn(email, password) {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: sbHeaders(),
+      body: JSON.stringify({ email, password })
+    });
+    return r.json();
+  }
+
+  async function sbSignOut() {
+    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+      method: 'POST',
+      headers: sbHeaders()
+    });
+    sbAccessToken = null;
+    currentUser = null;
+    localStorage.removeItem('sb_session');
+  }
+
+  async function sbGetDeals() {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/deals?select=*&order=updated_at.desc`, {
+      headers: sbHeaders({ 'Prefer': 'return=representation' })
+    });
+    return r.json();
+  }
+
+  async function sbInsertDeal(userId, name, dealData) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/deals`, {
+      method: 'POST',
+      headers: sbHeaders({ 'Prefer': 'return=representation' }),
+      body: JSON.stringify({ user_id: userId, name, data: dealData })
+    });
+    return r.json();
+  }
+
+  async function sbUpdateDeal(id, name, dealData) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: sbHeaders({ 'Prefer': 'return=representation' }),
+      body: JSON.stringify({ name, data: dealData, updated_at: new Date().toISOString() })
+    });
+    return r.json();
+  }
+
+  async function sbDeleteDeal(id) {
+    await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${id}`, {
+      method: 'DELETE',
+      headers: sbHeaders()
+    });
+  }
+
+  function saveSession(data) {
+    sbAccessToken = data.access_token;
+    currentUser = data.user;
+    localStorage.setItem('sb_session', JSON.stringify({ access_token: data.access_token, user: data.user }));
+  }
+
+  function loadSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sb_session'));
+      if (s?.access_token && s?.user) {
+        sbAccessToken = s.access_token;
+        currentUser = s.user;
+        return true;
+      }
+    } catch(e) {}
+    return false;
+  }
 
   // ── State ────────────────────────────────────────────────────
   let financingType = 'conventional';
@@ -1173,17 +1260,18 @@
     else { renderSidebar(); showGuestBanner(true); }
   }
 
-  sb.auth.onAuthStateChange(async (event, session) => {
-    currentUser = session?.user || null;
+  // ── Auth init ─────────────────────────────────────────────────
+  async function initAuth() {
+    const hasSession = loadSession();
     updateAuthUI();
-    if (currentUser) {
+    if (hasSession) {
       showGuestBanner(false);
       await loadDealsFromSupabase();
     } else {
-      showGuestBanner(true);
       renderSidebar();
+      showGuestBanner(true);
     }
-  });
+  }
 
   function updateAuthUI() {
     const el = document.getElementById('authStatus');
@@ -1235,80 +1323,84 @@
     clearAuthError();
   }
 
-  function clearAuthError() {
-    document.getElementById('authError').textContent = '';
-  }
-
-  function setAuthError(msg) {
-    document.getElementById('authError').textContent = msg;
-  }
+  function clearAuthError() { document.getElementById('authError').textContent = ''; }
+  function setAuthError(msg) { document.getElementById('authError').textContent = msg; }
 
   async function submitAuth() {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
     if (!email || !password) { setAuthError('Please enter your email and password.'); return; }
-
     const btn = document.getElementById('authSubmitBtn');
-    btn.textContent = '...';
-    btn.disabled = true;
+    btn.textContent = '...'; btn.disabled = true;
 
-    let error;
-    if (authMode === 'signup') {
-      ({ error } = await sb.auth.signUp({ email, password }));
-      if (!error) {
-        closeAuthModal();
-        showToast('✓ Account created — check your email to confirm');
+    try {
+      let result;
+      if (authMode === 'signup') {
+        result = await sbSignUp(email, password);
+        if (result.error) { setAuthError(result.error.message || result.msg || JSON.stringify(result)); }
+        else { closeAuthModal(); showToast('✓ Account created — check your email to confirm'); }
+      } else {
+        result = await sbSignIn(email, password);
+        if (result.error || !result.access_token) {
+          setAuthError(result.error_description || result.error || 'Invalid email or password');
+        } else {
+          saveSession(result);
+          updateAuthUI();
+          showGuestBanner(false);
+          closeAuthModal();
+          showToast('✓ Signed in');
+          await loadDealsFromSupabase();
+        }
       }
-    } else {
-      ({ error } = await sb.auth.signInWithPassword({ email, password }));
-      if (!error) {
-        closeAuthModal();
-        showToast('✓ Signed in — your deals are loading');
-      }
+    } catch(e) {
+      setAuthError('Network error: ' + e.message);
     }
 
-    if (error) setAuthError(error.message);
     btn.textContent = authMode === 'signin' ? 'Sign In' : 'Create Account';
     btn.disabled = false;
   }
 
   async function signOut() {
-    await sb.auth.signOut();
-    activeDealId = null;
-    showToast('Signed out — deals saved locally as guest');
+    await sbSignOut();
+    updateAuthUI();
+    showGuestBanner(true);
+    renderSidebar();
+    showToast('Signed out');
   }
 
   // ── Supabase deal operations ─────────────────────────────────
   async function loadDealsFromSupabase() {
-    const { data, error } = await sb
-      .from('deals')
-      .select('*')
-      .order('updated_at', { ascending: false });
-    if (error) { console.error(error); return; }
-    renderSidebar(data);
+    console.log('Loading deals for user:', currentUser?.id);
+    const data = await sbGetDeals();
+    console.log('Loaded:', data);
+    if (data?.message) { console.error('Load error:', data.message); return; }
+    renderSidebar(Array.isArray(data) ? data : []);
   }
 
   async function saveDealToSupabase(name) {
     const dealData = { name, inputs: getInputs(), results: getResults(), savedAt: Date.now() };
-    if (activeDealId) {
-      const { error } = await sb.from('deals').update({
-        name, data: dealData, updated_at: new Date().toISOString()
-      }).eq('id', activeDealId);
-      if (error) { showToast('⚠ Error: ' + error.message); console.error(error); return; }
-    } else {
-      const { data, error } = await sb.from('deals').insert({
-        user_id: currentUser.id, name, data: dealData
-      }).select().single();
-      if (error) { showToast('⚠ Error: ' + error.message); console.error(error); return; }
-      activeDealId = data.id;
+    console.log('Inserting deal:', name, 'user:', currentUser.id);
+    try {
+      let result;
+      if (activeDealId) {
+        result = await sbUpdateDeal(activeDealId, name, dealData);
+      } else {
+        result = await sbInsertDeal(currentUser.id, name, dealData);
+        console.log('Insert result:', JSON.stringify(result));
+        if (Array.isArray(result) && result[0]?.id) activeDealId = result[0].id;
+        else if (result?.id) activeDealId = result.id;
+        else if (result?.message) { showToast('⚠ ' + result.message); return; }
+      }
+      await loadDealsFromSupabase();
+      showToast('✓ Deal saved — ' + name);
+    } catch(e) {
+      console.error('Save exception:', e);
+      showToast('⚠ Error: ' + e.message);
     }
-    await loadDealsFromSupabase();
-    showToast('✓ Deal saved — ' + name);
   }
 
   async function deleteDealFromSupabase(id, name) {
-    const { error } = await sb.from('deals').delete().eq('id', id);
-    if (error) { showToast('Error deleting'); return; }
+    await sbDeleteDeal(id);
     if (activeDealId === id) activeDealId = null;
     await loadDealsFromSupabase();
     showToast('Deleted: ' + name);
