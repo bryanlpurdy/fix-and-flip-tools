@@ -1294,12 +1294,12 @@
       const { error } = await sb.from('deals').update({
         name, data: dealData, updated_at: new Date().toISOString()
       }).eq('id', activeDealId);
-      if (error) { showToast('Error saving deal'); console.error(error); return; }
+      if (error) { showToast('⚠ Error: ' + error.message); console.error(error); return; }
     } else {
       const { data, error } = await sb.from('deals').insert({
         user_id: currentUser.id, name, data: dealData
       }).select().single();
-      if (error) { showToast('Error saving deal'); console.error(error); return; }
+      if (error) { showToast('⚠ Error: ' + error.message); console.error(error); return; }
       activeDealId = data.id;
     }
     await loadDealsFromSupabase();
@@ -1407,6 +1407,7 @@
     closeSaveModal();
 
     if (currentUser) {
+      showToast('Saving...');
       await saveDealToSupabase(name);
     } else {
       // Guest — localStorage
@@ -1416,7 +1417,7 @@
       deals[key] = { name, savedAt: Date.now(), inputs: getInputs(), results: getResults() };
       saveDealsLocal(deals);
       renderSidebar();
-      showToast('✓ Deal saved locally — ' + name);
+      showToast('✓ Saved locally (sign in to sync across devices)');
     }
   }
 
