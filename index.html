@@ -718,14 +718,14 @@
   /* Auth Modal */
   .auth-modal-title {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.4rem;
+    font-size: 1.6rem;
     letter-spacing: 2px;
     color: var(--accent);
     margin-bottom: 6px;
   }
 
   .auth-modal-sub {
-    font-size: 0.8rem;
+    font-size: 0.88rem;
     color: var(--muted);
     margin-bottom: 20px;
     line-height: 1.5;
@@ -739,14 +739,14 @@
   }
 
   .auth-field label {
-    font-size: 0.68rem;
+    font-size: 0.75rem;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--label);
   }
 
   .auth-error {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     color: var(--danger);
     min-height: 20px;
     margin-bottom: 8px;
@@ -755,7 +755,7 @@
   .auth-toggle {
     text-align: center;
     margin-top: 14px;
-    font-size: 0.78rem;
+    font-size: 0.85rem;
     color: var(--muted);
   }
 
@@ -1141,12 +1141,12 @@
     </div>
     <div class="auth-field">
       <label>Password</label>
-      <div style="position:relative;">
+      <div style="position:relative; display:flex; align-items:center;">
         <input type="password" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
           onkeydown="if(event.key==='Enter')submitAuth()"
-          style="width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:11px 44px 11px 14px; font-family:'DM Mono',monospace; font-size:0.9rem; border-radius:6px; outline:none;">
+          style="flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:11px 54px 11px 14px; font-family:'DM Mono',monospace; font-size:0.9rem; border-radius:6px; outline:none;">
         <button onclick="togglePasswordVisibility()" id="togglePwBtn"
-          style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.78rem;font-family:'DM Sans',sans-serif;font-weight:500;padding:4px 6px;letter-spacing:0.5px;"
+          style="position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:var(--muted); font-size:0.78rem; font-family:'DM Sans',sans-serif; font-weight:600; padding:0; line-height:1; letter-spacing:0.5px;"
           type="button">Show</button>
       </div>
     </div>
