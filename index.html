@@ -1280,26 +1280,31 @@
 
   // ── Supabase deal operations ─────────────────────────────────
   async function loadDealsFromSupabase() {
+    console.log('Loading deals, user:', currentUser?.id);
     const { data, error } = await sb
       .from('deals')
       .select('*')
       .order('updated_at', { ascending: false });
-    if (error) { console.error(error); return; }
+    console.log('Load result:', data, error);
+    if (error) { console.error('Load error:', error); return; }
     renderSidebar(data);
   }
 
   async function saveDealToSupabase(name) {
     const dealData = { name, inputs: getInputs(), results: getResults(), savedAt: Date.now() };
+    console.log('Saving deal, user:', currentUser?.id, 'name:', name);
     if (activeDealId) {
       const { error } = await sb.from('deals').update({
         name, data: dealData, updated_at: new Date().toISOString()
       }).eq('id', activeDealId);
-      if (error) { showToast('⚠ Error: ' + error.message); console.error(error); return; }
+      console.log('Update error:', error);
+      if (error) { showToast('⚠ Error: ' + error.message); return; }
     } else {
       const { data, error } = await sb.from('deals').insert({
         user_id: currentUser.id, name, data: dealData
       }).select().single();
-      if (error) { showToast('⚠ Error: ' + error.message); console.error(error); return; }
+      console.log('Insert result:', data, 'error:', error);
+      if (error) { showToast('⚠ Error: ' + error.message); return; }
       activeDealId = data.id;
     }
     await loadDealsFromSupabase();
