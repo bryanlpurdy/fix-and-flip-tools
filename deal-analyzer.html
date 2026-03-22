@@ -228,8 +228,23 @@
     padding: 4px;
   }
 
-  .deal-item:hover .deal-delete { opacity: 1; }
+  .deal-edit {
+    position: absolute;
+    right: 32px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.78rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+    padding: 4px;
+  }
+
+  .deal-item:hover .deal-delete,
+  .deal-item:hover .deal-edit { opacity: 1; }
   .deal-delete:hover { color: var(--danger) !important; }
+  .deal-edit:hover { color: var(--accent) !important; }
 
   .no-deals {
     padding: 20px 16px;
@@ -1126,8 +1141,13 @@
     </div>
     <div class="auth-field">
       <label>Password</label>
-      <input type="text" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
-        onkeydown="if(event.key==='Enter')submitAuth()" style="-webkit-text-security:disc; text-security:disc;">
+      <div style="position:relative;">
+        <input type="password" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
+          onkeydown="if(event.key==='Enter')submitAuth()" style="width:100%;padding-right:44px;">
+        <button onclick="togglePasswordVisibility()" id="togglePwBtn"
+          style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:4px 6px;letter-spacing:0.5px;"
+          type="button">Show</button>
+      </div>
     </div>
     <div class="auth-error" id="authError"></div>
     <div class="modal-actions" style="margin-bottom:0">
@@ -1143,12 +1163,12 @@
 <!-- Save Modal -->
 <div class="modal-overlay" id="saveModal">
   <div class="modal">
-    <h3>Save Deal</h3>
+    <h3 id="saveModalTitle">Save Deal</h3>
     <label style="display:block;margin-bottom:8px;">Deal Name</label>
     <input type="text" id="dealNameInput" placeholder="e.g. 123 Oak Street" onkeydown="if(event.key==='Enter')confirmSave()">
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeSaveModal()">Cancel</button>
-      <button class="btn-confirm" onclick="confirmSave()">Save</button>
+      <button class="btn-confirm" id="saveModalBtn" onclick="confirmSave()">Save</button>
     </div>
   </div>
 </div>
@@ -1324,6 +1344,20 @@
   function clearAuthError() { document.getElementById('authError').textContent = ''; }
   function setAuthError(msg) { document.getElementById('authError').textContent = msg; }
 
+  function togglePasswordVisibility() {
+    const input = document.getElementById('authPassword');
+    const btn = document.getElementById('togglePwBtn');
+    if (input.type === 'password') {
+      input.type = 'text';
+      btn.textContent = 'Hide';
+      btn.style.color = 'var(--accent)';
+    } else {
+      input.type = 'password';
+      btn.textContent = 'Show';
+      btn.style.color = 'var(--muted)';
+    }
+  }
+
   async function submitAuth() {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
@@ -1440,6 +1474,7 @@
           <div class="deal-item-name">${d.name}</div>
           <div class="deal-item-meta">ARV ${fmt(arv)}</div>
           <div class="deal-item-profit ${profitClass}">${sign}${profitFmt} profit</div>
+          <button class="deal-edit" onclick="editDealName(event,'${d.id}','${d.name.replace(/'/g,"\\'")}','cloud')">✎</button>
           <button class="deal-delete" onclick="deleteCloudDeal(event,'${d.id}','${d.name.replace(/'/g,"\\'")}')">✕</button>
         </div>`;
       }).join('');
@@ -1462,6 +1497,7 @@
           <div class="deal-item-name">${d.name}</div>
           <div class="deal-item-meta">ARV ${fmt(d.inputs.arv)}</div>
           <div class="deal-item-profit ${profitClass}">${sign}${profitFmt} profit</div>
+          <button class="deal-edit" onclick="editDealName(event,'${k}','${d.name.replace(/'/g,"\\'")}','local')">✎</button>
           <button class="deal-delete" onclick="deleteLocalDeal(event,'${k}')">✕</button>
         </div>`;
       }).join('');
@@ -1469,22 +1505,36 @@
   }
 
   // ── Save flow ────────────────────────────────────────────────
+  let renameMode = false;
+  let renameId = null;
+  let renameType = null;
+
   function openSaveModal() {
+    renameMode = false; renameId = null; renameType = null;
+    document.getElementById('saveModalTitle').textContent = 'Save Deal';
+    document.getElementById('saveModalBtn').textContent = 'Save';
     const input = document.getElementById('dealNameInput');
-    if (currentUser && activeDealId) {
-      // Try to pre-fill from cloud — just leave blank if not cached
-      input.value = '';
-    } else if (!currentUser && activeDealKey) {
-      input.value = loadDealsLocal()[activeDealKey]?.name || '';
-    } else {
-      input.value = '';
-    }
+    input.value = '';
     document.getElementById('saveModal').classList.add('open');
     setTimeout(() => input.focus(), 50);
   }
 
+  function editDealName(e, id, currentName, type) {
+    e.stopPropagation();
+    renameMode = true;
+    renameId = id;
+    renameType = type;
+    document.getElementById('saveModalTitle').textContent = 'Rename Deal';
+    document.getElementById('saveModalBtn').textContent = 'Rename';
+    const input = document.getElementById('dealNameInput');
+    input.value = currentName;
+    document.getElementById('saveModal').classList.add('open');
+    setTimeout(() => { input.focus(); input.select(); }, 50);
+  }
+
   function closeSaveModal() {
     document.getElementById('saveModal').classList.remove('open');
+    renameMode = false; renameId = null; renameType = null;
   }
 
   async function confirmSave() {
@@ -1492,11 +1542,29 @@
     if (!name) { document.getElementById('dealNameInput').focus(); return; }
     closeSaveModal();
 
+    // Rename mode — just update the name, don't touch deal data
+    if (renameMode) {
+      if (renameType === 'cloud') {
+        await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${renameId}`, {
+          method: 'PATCH',
+          headers: sbHeaders({ 'Prefer': 'return=representation' }),
+          body: JSON.stringify({ name, updated_at: new Date().toISOString() })
+        });
+        await loadDealsFromSupabase();
+        showToast('✓ Renamed to: ' + name);
+      } else {
+        const deals = loadDealsLocal();
+        if (deals[renameId]) { deals[renameId].name = name; saveDealsLocal(deals); }
+        renderSidebar();
+        showToast('✓ Renamed to: ' + name);
+      }
+      return;
+    }
+
     if (currentUser) {
       showToast('Saving...');
       await saveDealToSupabase(name);
     } else {
-      // Guest — localStorage
       const key = activeDealKey || ('deal_' + Date.now());
       activeDealKey = key;
       const deals = loadDealsLocal();

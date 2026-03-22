@@ -98,10 +98,10 @@
 
   .btn-new {
     background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
+    color: #e8ede8;
+    border: 1px solid rgba(232,237,232,0.4);
   }
-  .btn-new:hover { border-color: var(--muted); color: var(--text); }
+  .btn-new:hover { border-color: #e8ede8; color: #ffffff; }
 
   .layout {
     display: flex;
@@ -668,7 +668,7 @@
     color: var(--label);
     font-family: 'DM Mono', monospace;
     font-size: 0.75rem;
-    max-width: 160px;
+    max-width: 240px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -790,9 +790,9 @@
       <span class="guest-badge">Guest</span>
       <button class="btn-auth" onclick="openAuthModal('signin')">Sign In</button>
     </div>
-    <button class="btn btn-new" onclick="newDeal()">＋ New Deal</button>
-    <button class="btn btn-pdf" onclick="exportPDF()">⬇ Export PDF</button>
+    <button class="btn btn-new" onclick="newDeal()">＋ Create Deal</button>
     <button class="btn btn-save" onclick="openSaveModal()">Save Deal</button>
+    <button class="btn btn-pdf" onclick="exportPDF()">⬇ Export PDF</button>
   </div>
 </header>
 
@@ -1260,15 +1260,6 @@
 
   // ── Auth init ─────────────────────────────────────────────────
   async function initAuth() {
-    const { data: { session } } = await sb.auth.getSession();
-    currentUser = session?.user || null;
-    updateAuthUI();
-    if (currentUser) await loadDealsFromSupabase();
-    else { renderSidebar(); showGuestBanner(true); }
-  }
-
-  // ── Auth init ─────────────────────────────────────────────────
-  async function initAuth() {
     const hasSession = loadSession();
     updateAuthUI();
     if (hasSession) {
@@ -1518,12 +1509,20 @@
 
   // ── Load deals ───────────────────────────────────────────────
   async function loadCloudDeal(id) {
-    const { data, error } = await sb.from('deals').select('*').eq('id', id).single();
-    if (error || !data) return;
-    activeDealId = id;
-    populateFields(data.data.inputs);
-    await loadDealsFromSupabase();
-    showToast('Loaded: ' + data.name);
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${id}&select=*`, {
+        headers: sbHeaders()
+      });
+      const data = await r.json();
+      const deal = Array.isArray(data) ? data[0] : data;
+      if (!deal) return;
+      activeDealId = id;
+      populateFields(deal.data.inputs);
+      await loadDealsFromSupabase();
+      showToast('Loaded: ' + deal.name);
+    } catch(e) {
+      showToast('⚠ Error loading deal');
+    }
   }
 
   function loadLocalDeal(key) {
@@ -1582,17 +1581,19 @@
   function newDeal() {
     activeDealId = null;
     activeDealKey = null;
-    ['arv','purchase','repair','holdTaxes','holdInsurance',
-     'holdUtilities','holdMonths','commSeller','commBuyer','title','survey',
-     'warranty','desiredProfit','loanAmount','points','rate',
-     'convLoanAmount','convRate','loanOrigination','loanAppraisal','loanTitle'].forEach(id => {
-      const defaults = {arv:250000,purchase:130000,repair:40000,
-        holdTaxes:300,holdInsurance:200,holdUtilities:200,holdMonths:4,
-        commSeller:3,commBuyer:3,title:1500,survey:500,warranty:600,
-        desiredProfit:30000,loanAmount:140000,points:2,rate:12,
-        convLoanAmount:140000,convRate:7,loanOrigination:0,loanAppraisal:0,loanTitle:0};
-      setField(id, defaults[id] ?? 0);
-    });
+
+    // Zero out deal-specific fields
+    ['arv','purchase','repair','holdTaxes','holdInsurance','holdUtilities',
+     'title','survey','warranty','loanAmount','convLoanAmount',
+     'loanOrigination','loanAppraisal','loanTitle'].forEach(id => setField(id, 0));
+
+    // Reset sensible defaults for non-zero fields
+    setField('holdMonths', 4);
+    setField('desiredProfit', 30000);
+    setField('points', 2);
+
+    // Preserve: convRate, rate, commSeller, commBuyer — leave untouched
+
     setFinancing('conventional');
     calculate();
     if (currentUser) loadDealsFromSupabase();
