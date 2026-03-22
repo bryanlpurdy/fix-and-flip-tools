@@ -1292,23 +1292,28 @@
 
   async function saveDealToSupabase(name) {
     const dealData = { name, inputs: getInputs(), results: getResults(), savedAt: Date.now() };
-    console.log('Saving deal, user:', currentUser?.id, 'name:', name);
-    if (activeDealId) {
-      const { error } = await sb.from('deals').update({
-        name, data: dealData, updated_at: new Date().toISOString()
-      }).eq('id', activeDealId);
-      console.log('Update error:', error);
-      if (error) { showToast('⚠ Error: ' + error.message); return; }
-    } else {
-      const { data, error } = await sb.from('deals').insert({
-        user_id: currentUser.id, name, data: dealData
+    console.log('Step 1 - user id:', currentUser.id);
+    console.log('Step 2 - about to call insert');
+    try {
+      const response = await sb.from('deals').insert({
+        user_id: currentUser.id,
+        name: name,
+        data: dealData
       }).select().single();
-      console.log('Insert result:', data, 'error:', error);
-      if (error) { showToast('⚠ Error: ' + error.message); return; }
-      activeDealId = data.id;
+      console.log('Step 3 - insert returned:', JSON.stringify(response));
+      if (response.error) {
+        showToast('⚠ Error: ' + response.error.message);
+        console.error('Insert error detail:', response.error);
+        return;
+      }
+      activeDealId = response.data.id;
+      console.log('Step 4 - loading deals from supabase');
+      await loadDealsFromSupabase();
+      showToast('✓ Deal saved — ' + name);
+    } catch(e) {
+      console.error('Exception during save:', e);
+      showToast('⚠ Exception: ' + e.message);
     }
-    await loadDealsFromSupabase();
-    showToast('✓ Deal saved — ' + name);
   }
 
   async function deleteDealFromSupabase(id, name) {
