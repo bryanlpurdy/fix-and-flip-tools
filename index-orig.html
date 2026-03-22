@@ -190,7 +190,7 @@
   .deal-item.active { border-left-color: var(--accent); background: rgba(200,245,100,0.05); }
 
   .deal-item-name {
-    font-size: 0.92rem;
+    font-size: 0.98rem;
     font-weight: 500;
     color: var(--text);
     white-space: nowrap;
@@ -200,13 +200,13 @@
   }
 
   .deal-item-meta {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     color: var(--muted);
     font-family: 'DM Mono', monospace;
   }
 
   .deal-item-profit {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-family: 'DM Mono', monospace;
     margin-top: 2px;
   }
@@ -315,15 +315,22 @@
     pointer-events: none;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.danger { border-color: var(--danger); color: var(--danger); }
 
-  /* Print styles for PDF */
+  /* Print styles for PDF — results panel only */
   @media print {
     body::before { display: none; }
-    .deals-sidebar, header .header-actions, .btn, .desired-profit-row { display: none !important; }
-    .layout { grid-template-columns: 1fr 380px; }
-    .inputs-panel, .results-panel { height: auto; position: static; overflow: visible; }
-    header { padding: 16px 24px; }
-    .modal-overlay, .toast { display: none !important; }
+    .deals-sidebar, .resizer, .inputs-panel, header { display: none !important; }
+    .layout { display: block; }
+    .results-panel {
+      width: 100% !important;
+      height: auto !important;
+      position: static !important;
+      overflow: visible !important;
+      padding: 32px !important;
+      background: var(--bg) !important;
+    }
+    .modal-overlay, .toast, .desired-profit-row { display: none !important; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 
@@ -1365,28 +1372,24 @@
     updateAuthUI();
     showGuestBanner(true);
     renderSidebar();
-    showToast('Signed out');
+    showToast('Signed out', 'danger');
   }
 
   // ── Supabase deal operations ─────────────────────────────────
   async function loadDealsFromSupabase() {
-    console.log('Loading deals for user:', currentUser?.id);
     const data = await sbGetDeals();
-    console.log('Loaded:', data);
-    if (data?.message) { console.error('Load error:', data.message); return; }
+    if (data?.message) { return; }
     renderSidebar(Array.isArray(data) ? data : []);
   }
 
   async function saveDealToSupabase(name) {
     const dealData = { name, inputs: getInputs(), results: getResults(), savedAt: Date.now() };
-    console.log('Inserting deal:', name, 'user:', currentUser.id);
     try {
       let result;
       if (activeDealId) {
         result = await sbUpdateDeal(activeDealId, name, dealData);
       } else {
         result = await sbInsertDeal(currentUser.id, name, dealData);
-        console.log('Insert result:', JSON.stringify(result));
         if (Array.isArray(result) && result[0]?.id) activeDealId = result[0].id;
         else if (result?.id) activeDealId = result.id;
         else if (result?.message) { showToast('⚠ ' + result.message); return; }
@@ -1394,7 +1397,6 @@
       await loadDealsFromSupabase();
       showToast('✓ Deal saved — ' + name);
     } catch(e) {
-      console.error('Save exception:', e);
       showToast('⚠ Error: ' + e.message);
     }
   }
@@ -1403,7 +1405,7 @@
     await sbDeleteDeal(id);
     if (activeDealId === id) activeDealId = null;
     await loadDealsFromSupabase();
-    showToast('Deleted: ' + name);
+    showToast('Deleted: ' + name, 'danger');
   }
 
   // ── localStorage helpers (guest mode) ────────────────────────
@@ -1417,9 +1419,10 @@
   }
 
   // ── Toast ────────────────────────────────────────────────────
-  function showToast(msg) {
+  function showToast(msg, type = '') {
     const t = document.getElementById('toast');
     t.textContent = msg;
+    t.className = 'toast' + (type ? ' ' + type : '');
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2200);
   }
@@ -1573,7 +1576,7 @@
     saveDealsLocal(deals);
     if (activeDealKey === key) activeDealKey = null;
     renderSidebar();
-    showToast('Deleted: ' + name);
+    showToast('Deleted: ' + name, 'danger');
   }
 
   function newDeal() {
