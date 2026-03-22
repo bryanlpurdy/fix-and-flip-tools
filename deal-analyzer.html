@@ -1260,15 +1260,6 @@
 
   // ── Auth init ─────────────────────────────────────────────────
   async function initAuth() {
-    const { data: { session } } = await sb.auth.getSession();
-    currentUser = session?.user || null;
-    updateAuthUI();
-    if (currentUser) await loadDealsFromSupabase();
-    else { renderSidebar(); showGuestBanner(true); }
-  }
-
-  // ── Auth init ─────────────────────────────────────────────────
-  async function initAuth() {
     const hasSession = loadSession();
     updateAuthUI();
     if (hasSession) {
@@ -1518,12 +1509,20 @@
 
   // ── Load deals ───────────────────────────────────────────────
   async function loadCloudDeal(id) {
-    const { data, error } = await sb.from('deals').select('*').eq('id', id).single();
-    if (error || !data) return;
-    activeDealId = id;
-    populateFields(data.data.inputs);
-    await loadDealsFromSupabase();
-    showToast('Loaded: ' + data.name);
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${id}&select=*`, {
+        headers: sbHeaders()
+      });
+      const data = await r.json();
+      const deal = Array.isArray(data) ? data[0] : data;
+      if (!deal) return;
+      activeDealId = id;
+      populateFields(deal.data.inputs);
+      await loadDealsFromSupabase();
+      showToast('Loaded: ' + deal.name);
+    } catch(e) {
+      showToast('⚠ Error loading deal');
+    }
   }
 
   function loadLocalDeal(key) {
