@@ -1143,9 +1143,10 @@
       <label>Password</label>
       <div style="position:relative;">
         <input type="password" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
-          onkeydown="if(event.key==='Enter')submitAuth()" style="width:100%;padding-right:44px;">
+          onkeydown="if(event.key==='Enter')submitAuth()"
+          style="width:100%; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:11px 44px 11px 14px; font-family:'DM Mono',monospace; font-size:0.9rem; border-radius:6px; outline:none;">
         <button onclick="togglePasswordVisibility()" id="togglePwBtn"
-          style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.8rem;padding:4px 6px;letter-spacing:0.5px;"
+          style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--muted);font-size:0.78rem;font-family:'DM Sans',sans-serif;font-weight:500;padding:4px 6px;letter-spacing:0.5px;"
           type="button">Show</button>
       </div>
     </div>
