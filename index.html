@@ -748,8 +748,6 @@
   .auth-error {
     font-size: 0.88rem;
     color: var(--danger);
-    min-height: 20px;
-    margin-bottom: 8px;
   }
 
   .auth-toggle {
@@ -1141,25 +1139,17 @@
     </div>
     <div class="auth-field">
       <label>Password</label>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <input type="password" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
-          onkeydown="if(event.key==='Enter')submitAuth()"
-          style="flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:11px 14px; font-family:'DM Mono',monospace; font-size:0.9rem; border-radius:6px; outline:none;">
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
+          onkeydown="if(event.key==='Enter')submitAuth()" autocomplete="current-password"
+          style="flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:11px 14px; font-family:'DM Mono',monospace; font-size:0.9rem; border-radius:6px; outline:none; height:44px; box-sizing:border-box; -webkit-text-security:disc; text-security:disc;">
         <button onclick="togglePasswordVisibility()" id="togglePwBtn" type="button"
-          style="flex-shrink:0; width:42px; height:42px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; cursor:pointer; color:var(--muted); display:flex; align-items:center; justify-content:center;">
-          <svg id="eyeShow" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-            <circle cx="12" cy="12" r="3"/>
-          </svg>
-          <svg id="eyeHide" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-            <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-            <line x1="1" y1="1" x2="23" y2="23"/>
-          </svg>
-        </button>
+          style="width:44px; height:44px; min-width:44px; min-height:44px; max-width:44px; max-height:44px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.7rem; font-weight:600; letter-spacing:0.5px; color:var(--muted); box-sizing:border-box; overflow:hidden; padding:0;">SHOW</button>
       </div>
     </div>
-    <div class="auth-error" id="authError"></div>
+    <div style="height:20px; margin-bottom:8px;">
+      <div class="auth-error" id="authError"></div>
+    </div>
     <div class="modal-actions" style="margin-bottom:0">
       <button class="btn-cancel" onclick="closeAuthModal()">Cancel</button>
       <button class="btn-confirm" id="authSubmitBtn" onclick="submitAuth()">Sign In</button>
@@ -1357,11 +1347,11 @@
   function togglePasswordVisibility() {
     const input = document.getElementById('authPassword');
     const btn = document.getElementById('togglePwBtn');
-    const isHidden = input.type === 'password';
-    input.type = isHidden ? 'text' : 'password';
+    const isHidden = input.style.webkitTextSecurity !== 'none';
+    input.style.webkitTextSecurity = isHidden ? 'none' : 'disc';
+    input.style.textSecurity = isHidden ? 'none' : 'disc';
+    btn.textContent = isHidden ? 'HIDE' : 'SHOW';
     btn.style.color = isHidden ? 'var(--accent)' : 'var(--muted)';
-    document.getElementById('eyeShow').style.display = isHidden ? 'none' : 'block';
-    document.getElementById('eyeHide').style.display = isHidden ? 'block' : 'none';
   }
 
   async function submitAuth() {
