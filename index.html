@@ -631,8 +631,8 @@
   /* Desired profit input */
   .desired-profit-row {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 8px;
     background: rgba(200,245,100,0.05);
     border: 1px solid rgba(200,245,100,0.35);
     border-left: 3px solid var(--accent);
@@ -644,14 +644,13 @@
   .desired-profit-row label {
     font-size: 0.9rem;
     letter-spacing: 1.5px;
-    white-space: nowrap;
     color: var(--accent);
     text-transform: uppercase;
     font-weight: 600;
   }
 
   .desired-profit-row .input-wrap {
-    flex: 1;
+    width: 100%;
   }
 
   /* Auth */
