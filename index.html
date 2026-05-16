@@ -1056,13 +1056,9 @@
         <div class="m-label">Max Offer Price</div>
         <div class="m-value" id="maxOfferDisplay">$0</div>
       </div>
-      <div class="metric-card">
+      <div class="metric-card" style="grid-column: 1 / -1">
         <div class="m-label">Total Investment</div>
         <div class="m-value" id="totalInvDisplay">$0</div>
-      </div>
-      <div class="metric-card">
-        <div class="m-label">Total Costs</div>
-        <div class="m-value" id="totalCostDisplay">$0</div>
       </div>
     </div>
 
@@ -1748,7 +1744,6 @@
     document.getElementById('aroiDisplay').textContent = fmtPct(annualizedROI);
     document.getElementById('maxOfferDisplay').textContent = fmt(maxOffer);
     document.getElementById('totalInvDisplay').textContent = fmt(totalCosts);
-    document.getElementById('totalCostDisplay').textContent = fmt(totalCosts);
     document.getElementById('b-purchase').textContent = fmt(purchase);
     document.getElementById('b-repair').textContent = fmt(repair);
     document.getElementById('b-holding').textContent = fmt(holding);
