@@ -1255,6 +1255,7 @@
   // ── State ────────────────────────────────────────────────────
   let financingType = 'conventional';
   let activeDealId = null;
+  let activeDealName = null;
   let currentUser = null;
   let authMode = 'signin'; // or 'signup'
 
@@ -1431,7 +1432,7 @@
 
   async function deleteDealFromSupabase(id, name) {
     await sbDeleteDeal(id);
-    if (activeDealId === id) activeDealId = null;
+    if (activeDealId === id) { activeDealId = null; activeDealName = null; }
     await loadDealsFromSupabase();
     showToast('Deleted: ' + name, 'danger');
   }
@@ -1486,6 +1487,7 @@
 
   function openSaveModal() {
     if (!currentUser) { openAuthModal(); return; }
+    if (activeDealId) { saveDealToSupabase(activeDealName); return; }
     renameMode = false; renameId = null;
     document.getElementById('saveModalTitle').textContent = 'Save Deal';
     document.getElementById('saveModalBtn').textContent = 'Save';
@@ -1543,6 +1545,7 @@
       const deal = Array.isArray(data) ? data[0] : data;
       if (!deal) return;
       activeDealId = id;
+      activeDealName = deal.name;
       populateFields(deal.data.inputs);
       await loadDealsFromSupabase();
       showToast('Loaded: ' + deal.name);
@@ -1585,6 +1588,7 @@
 
   function newDeal() {
     activeDealId = null;
+    activeDealName = null;
 
     // Zero out deal-specific fields
     ['arv','purchase','repair','holdTaxes','holdInsurance','holdUtilities',
