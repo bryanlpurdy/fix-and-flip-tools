@@ -364,7 +364,7 @@
 
   .section-title {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.25rem;
+    font-size: 1.4rem;
     letter-spacing: 3px;
     color: var(--accent);
     text-transform: uppercase;
@@ -399,7 +399,7 @@
   }
 
   label {
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--label);
@@ -431,7 +431,7 @@
     color: var(--text);
     padding: 11px 14px;
     font-family: 'DM Mono', monospace;
-    font-size: 1rem;
+    font-size: 1.05rem;
     border-radius: 6px;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -673,18 +673,18 @@
 
   .btn-auth {
     background: transparent;
-    color: var(--label);
-    border: 1px solid var(--border);
-    padding: 7px 14px;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 7px 16px;
     border-radius: 6px;
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.78rem;
-    font-weight: 500;
+    font-size: 0.85rem;
+    font-weight: 600;
     cursor: pointer;
     transition: all 0.18s;
     white-space: nowrap;
   }
-  .btn-auth:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-auth:hover { background: var(--accent); color: #0d0f0e; }
   .btn-auth.sign-out:hover { border-color: var(--danger); color: var(--danger); }
 
   .guest-badge {
@@ -1770,7 +1770,9 @@
 
     const verdict = document.getElementById('verdict');
     const verdictText = document.getElementById('verdictText');
-    if (profit >= desiredProfit && roi >= 15) {
+    if (arv === 0 && purchase === 0) {
+      verdict.className = 'verdict'; verdictText.textContent = '⚡ Enter your numbers to see the verdict';
+    } else if (profit >= desiredProfit && roi >= 15) {
       verdict.className = 'verdict good'; verdictText.textContent = '✓ Strong deal — meets your profit target with solid ROI';
     } else if (profit >= desiredProfit) {
       verdict.className = 'verdict ok'; verdictText.textContent = '~ Meets profit target but ROI is on the lower side';
