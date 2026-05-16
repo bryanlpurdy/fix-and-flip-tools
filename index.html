@@ -399,7 +399,7 @@
   }
 
   label {
-    font-size: 0.72rem;
+    font-size: 0.82rem;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--label);
@@ -431,7 +431,7 @@
     color: var(--text);
     padding: 11px 14px;
     font-family: 'DM Mono', monospace;
-    font-size: 0.9rem;
+    font-size: 1rem;
     border-radius: 6px;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -475,7 +475,7 @@
     border: none;
     color: var(--muted);
     font-family: 'DM Sans', sans-serif;
-    font-size: 0.82rem;
+    font-size: 0.9rem;
     font-weight: 500;
     cursor: pointer;
     letter-spacing: 0.5px;
@@ -815,14 +815,14 @@
           <label>Purchase Price</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="purchase" value="130,000" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="purchase" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
         <div class="field">
           <label>After Repair Value</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="arv" value="250,000" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="arv" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
       </div>
@@ -836,7 +836,7 @@
           <label>Estimated Repair Costs</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="repair" value="40,000" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="repair" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
       </div>
@@ -859,7 +859,7 @@
           <label>Loan Amount</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="convLoanAmount" value="140,000" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="convLoanAmount" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
         <div class="field">
@@ -877,13 +877,13 @@
           <label>Loan Amount</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="loanAmount" value="140,000" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="loanAmount" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
         <div class="field">
           <label>Points (%)</label>
           <div class="input-wrap pct">
-            <input type="number" id="points" value="2" step="0.25" oninput="calculate()">
+            <input type="number" id="points" value="0" step="0.25" oninput="calculate()">
             <span class="suffix">%</span>
           </div>
         </div>
@@ -944,21 +944,21 @@
           <label>Taxes</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="holdTaxes" value="300" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="holdTaxes" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
         <div class="field">
           <label>Insurance</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="holdInsurance" value="200" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="holdInsurance" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
         <div class="field">
           <label>Utilities</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="holdUtilities" value="200" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="holdUtilities" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
       </div>
@@ -966,7 +966,7 @@
         <div class="field">
           <label>Estimated Months</label>
           <div class="input-wrap">
-            <input type="number" id="holdMonths" value="4" oninput="calculate()">
+            <input type="number" id="holdMonths" value="0" oninput="calculate()">
           </div>
         </div>
       </div>
@@ -998,21 +998,21 @@
           <label>Title Fees</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="title" value="1,500" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="title" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
         <div class="field">
           <label>Survey Costs</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="survey" value="500" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="survey" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
         <div class="field">
           <label>Home Warranty</label>
           <div class="input-wrap dollar">
             <span class="prefix">$</span>
-            <input type="text" id="warranty" value="600" oninput="formatCurrencyInput(this); calculate()">
+            <input type="text" id="warranty" value="0" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
       </div>
@@ -1029,7 +1029,7 @@
       <label>Desired Min Profit</label>
       <div class="input-wrap dollar">
         <span class="prefix">$</span>
-        <input type="text" id="desiredProfit" value="30,000" oninput="formatCurrencyInput(this); calculate()">
+        <input type="text" id="desiredProfit" value="0" oninput="formatCurrencyInput(this); calculate()">
       </div>
     </div>
 
@@ -1591,10 +1591,9 @@
      'title','survey','warranty','loanAmount','convLoanAmount',
      'loanOrigination','loanAppraisal','loanTitle'].forEach(id => setField(id, 0));
 
-    // Reset sensible defaults for non-zero fields
-    setField('holdMonths', 4);
-    setField('desiredProfit', 30000);
-    setField('points', 2);
+    setField('holdMonths', 0);
+    setField('desiredProfit', 0);
+    setField('points', 0);
 
     // Preserve: convRate, rate, commSeller, commBuyer — leave untouched
 
