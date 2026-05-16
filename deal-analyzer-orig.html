@@ -98,10 +98,10 @@
 
   .btn-new {
     background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
+    color: #e8ede8;
+    border: 1px solid rgba(232,237,232,0.4);
   }
-  .btn-new:hover { border-color: var(--muted); color: var(--text); }
+  .btn-new:hover { border-color: #e8ede8; color: #ffffff; }
 
   .layout {
     display: flex;
@@ -190,7 +190,7 @@
   .deal-item.active { border-left-color: var(--accent); background: rgba(200,245,100,0.05); }
 
   .deal-item-name {
-    font-size: 0.92rem;
+    font-size: 0.98rem;
     font-weight: 500;
     color: var(--text);
     white-space: nowrap;
@@ -200,13 +200,13 @@
   }
 
   .deal-item-meta {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     color: var(--muted);
     font-family: 'DM Mono', monospace;
   }
 
   .deal-item-profit {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
     font-family: 'DM Mono', monospace;
     margin-top: 2px;
   }
@@ -222,14 +222,29 @@
     background: none; border: none;
     color: var(--muted);
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 1.1rem;
     opacity: 0;
     transition: opacity 0.15s;
-    padding: 4px;
+    padding: 4px 6px;
   }
 
-  .deal-item:hover .deal-delete { opacity: 1; }
+  .deal-edit {
+    position: absolute;
+    right: 36px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 1.1rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+    padding: 4px 6px;
+  }
+
+  .deal-item:hover .deal-delete,
+  .deal-item:hover .deal-edit { opacity: 1; }
   .deal-delete:hover { color: var(--danger) !important; }
+  .deal-edit:hover { color: var(--accent) !important; }
 
   .no-deals {
     padding: 20px 16px;
@@ -315,15 +330,22 @@
     pointer-events: none;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.danger { border-color: var(--danger); color: var(--danger); }
 
-  /* Print styles for PDF */
+  /* Print styles for PDF — results panel only */
   @media print {
     body::before { display: none; }
-    .deals-sidebar, header .header-actions, .btn, .desired-profit-row { display: none !important; }
-    .layout { grid-template-columns: 1fr 380px; }
-    .inputs-panel, .results-panel { height: auto; position: static; overflow: visible; }
-    header { padding: 16px 24px; }
-    .modal-overlay, .toast { display: none !important; }
+    .deals-sidebar, .resizer, .inputs-panel, header { display: none !important; }
+    .layout { display: block; }
+    .results-panel {
+      width: 100% !important;
+      height: auto !important;
+      position: static !important;
+      overflow: visible !important;
+      padding: 32px !important;
+      background: var(--bg) !important;
+    }
+    .modal-overlay, .toast, .desired-profit-row { display: none !important; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 
@@ -661,7 +683,7 @@
     color: var(--label);
     font-family: 'DM Mono', monospace;
     font-size: 0.75rem;
-    max-width: 160px;
+    max-width: 240px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -696,14 +718,14 @@
   /* Auth Modal */
   .auth-modal-title {
     font-family: 'Bebas Neue', sans-serif;
-    font-size: 1.4rem;
+    font-size: 1.9rem;
     letter-spacing: 2px;
     color: var(--accent);
     margin-bottom: 6px;
   }
 
   .auth-modal-sub {
-    font-size: 0.8rem;
+    font-size: 0.95rem;
     color: var(--muted);
     margin-bottom: 20px;
     line-height: 1.5;
@@ -717,23 +739,21 @@
   }
 
   .auth-field label {
-    font-size: 0.68rem;
+    font-size: 0.82rem;
     letter-spacing: 1.5px;
     text-transform: uppercase;
     color: var(--label);
   }
 
   .auth-error {
-    font-size: 0.78rem;
+    font-size: 0.88rem;
     color: var(--danger);
-    min-height: 20px;
-    margin-bottom: 8px;
   }
 
   .auth-toggle {
     text-align: center;
     margin-top: 14px;
-    font-size: 0.78rem;
+    font-size: 0.92rem;
     color: var(--muted);
   }
 
@@ -783,9 +803,9 @@
       <span class="guest-badge">Guest</span>
       <button class="btn-auth" onclick="openAuthModal('signin')">Sign In</button>
     </div>
-    <button class="btn btn-new" onclick="newDeal()">＋ New Deal</button>
-    <button class="btn btn-pdf" onclick="exportPDF()">⬇ Export PDF</button>
+    <button class="btn btn-new" onclick="newDeal()">＋ Create Deal</button>
     <button class="btn btn-save" onclick="openSaveModal()">Save Deal</button>
+    <button class="btn btn-pdf" onclick="exportPDF()">⬇ Export PDF</button>
   </div>
 </header>
 
@@ -1119,10 +1139,17 @@
     </div>
     <div class="auth-field">
       <label>Password</label>
-      <input type="text" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
-        onkeydown="if(event.key==='Enter')submitAuth()" style="-webkit-text-security:disc; text-security:disc;">
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
+          onkeydown="if(event.key==='Enter')submitAuth()" autocomplete="current-password"
+          style="flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:11px 14px; font-family:'DM Mono',monospace; font-size:0.9rem; border-radius:6px; outline:none; height:44px; box-sizing:border-box; -webkit-text-security:disc; text-security:disc;">
+        <button onclick="togglePasswordVisibility()" id="togglePwBtn" type="button"
+          style="width:44px; height:44px; min-width:44px; min-height:44px; max-width:44px; max-height:44px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.7rem; font-weight:600; letter-spacing:0.5px; color:var(--muted); box-sizing:border-box; overflow:hidden; padding:0;">SHOW</button>
+      </div>
     </div>
-    <div class="auth-error" id="authError"></div>
+    <div style="height:20px; margin-bottom:8px;">
+      <div class="auth-error" id="authError"></div>
+    </div>
     <div class="modal-actions" style="margin-bottom:0">
       <button class="btn-cancel" onclick="closeAuthModal()">Cancel</button>
       <button class="btn-confirm" id="authSubmitBtn" onclick="submitAuth()">Sign In</button>
@@ -1136,12 +1163,12 @@
 <!-- Save Modal -->
 <div class="modal-overlay" id="saveModal">
   <div class="modal">
-    <h3>Save Deal</h3>
+    <h3 id="saveModalTitle">Save Deal</h3>
     <label style="display:block;margin-bottom:8px;">Deal Name</label>
     <input type="text" id="dealNameInput" placeholder="e.g. 123 Oak Street" onkeydown="if(event.key==='Enter')confirmSave()">
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeSaveModal()">Cancel</button>
-      <button class="btn-confirm" onclick="confirmSave()">Save</button>
+      <button class="btn-cancel" onclick="closeSaveModal(); renameMode=false; renameId=null; renameType=null;">Cancel</button>
+      <button class="btn-confirm" id="saveModalBtn" onclick="confirmSave()">Save</button>
     </div>
   </div>
 </div>
@@ -1253,15 +1280,6 @@
 
   // ── Auth init ─────────────────────────────────────────────────
   async function initAuth() {
-    const { data: { session } } = await sb.auth.getSession();
-    currentUser = session?.user || null;
-    updateAuthUI();
-    if (currentUser) await loadDealsFromSupabase();
-    else { renderSidebar(); showGuestBanner(true); }
-  }
-
-  // ── Auth init ─────────────────────────────────────────────────
-  async function initAuth() {
     const hasSession = loadSession();
     updateAuthUI();
     if (hasSession) {
@@ -1326,6 +1344,16 @@
   function clearAuthError() { document.getElementById('authError').textContent = ''; }
   function setAuthError(msg) { document.getElementById('authError').textContent = msg; }
 
+  function togglePasswordVisibility() {
+    const input = document.getElementById('authPassword');
+    const btn = document.getElementById('togglePwBtn');
+    const isHidden = input.style.webkitTextSecurity !== 'none';
+    input.style.webkitTextSecurity = isHidden ? 'none' : 'disc';
+    input.style.textSecurity = isHidden ? 'none' : 'disc';
+    btn.textContent = isHidden ? 'HIDE' : 'SHOW';
+    btn.style.color = isHidden ? 'var(--accent)' : 'var(--muted)';
+  }
+
   async function submitAuth() {
     const email = document.getElementById('authEmail').value.trim();
     const password = document.getElementById('authPassword').value;
@@ -1365,28 +1393,24 @@
     updateAuthUI();
     showGuestBanner(true);
     renderSidebar();
-    showToast('Signed out');
+    showToast('Signed out', 'danger');
   }
 
   // ── Supabase deal operations ─────────────────────────────────
   async function loadDealsFromSupabase() {
-    console.log('Loading deals for user:', currentUser?.id);
     const data = await sbGetDeals();
-    console.log('Loaded:', data);
-    if (data?.message) { console.error('Load error:', data.message); return; }
+    if (data?.message) { return; }
     renderSidebar(Array.isArray(data) ? data : []);
   }
 
   async function saveDealToSupabase(name) {
     const dealData = { name, inputs: getInputs(), results: getResults(), savedAt: Date.now() };
-    console.log('Inserting deal:', name, 'user:', currentUser.id);
     try {
       let result;
       if (activeDealId) {
         result = await sbUpdateDeal(activeDealId, name, dealData);
       } else {
         result = await sbInsertDeal(currentUser.id, name, dealData);
-        console.log('Insert result:', JSON.stringify(result));
         if (Array.isArray(result) && result[0]?.id) activeDealId = result[0].id;
         else if (result?.id) activeDealId = result.id;
         else if (result?.message) { showToast('⚠ ' + result.message); return; }
@@ -1394,7 +1418,6 @@
       await loadDealsFromSupabase();
       showToast('✓ Deal saved — ' + name);
     } catch(e) {
-      console.error('Save exception:', e);
       showToast('⚠ Error: ' + e.message);
     }
   }
@@ -1403,7 +1426,7 @@
     await sbDeleteDeal(id);
     if (activeDealId === id) activeDealId = null;
     await loadDealsFromSupabase();
-    showToast('Deleted: ' + name);
+    showToast('Deleted: ' + name, 'danger');
   }
 
   // ── localStorage helpers (guest mode) ────────────────────────
@@ -1417,9 +1440,10 @@
   }
 
   // ── Toast ────────────────────────────────────────────────────
-  function showToast(msg) {
+  function showToast(msg, type = '') {
     const t = document.getElementById('toast');
     t.textContent = msg;
+    t.className = 'toast' + (type ? ' ' + type : '');
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2200);
   }
@@ -1446,6 +1470,7 @@
           <div class="deal-item-name">${d.name}</div>
           <div class="deal-item-meta">ARV ${fmt(arv)}</div>
           <div class="deal-item-profit ${profitClass}">${sign}${profitFmt} profit</div>
+          <button class="deal-edit" onclick="editDealName(event,'${d.id}','${d.name.replace(/'/g,"\\'")}','cloud')">✎</button>
           <button class="deal-delete" onclick="deleteCloudDeal(event,'${d.id}','${d.name.replace(/'/g,"\\'")}')">✕</button>
         </div>`;
       }).join('');
@@ -1468,6 +1493,7 @@
           <div class="deal-item-name">${d.name}</div>
           <div class="deal-item-meta">ARV ${fmt(d.inputs.arv)}</div>
           <div class="deal-item-profit ${profitClass}">${sign}${profitFmt} profit</div>
+          <button class="deal-edit" onclick="editDealName(event,'${k}','${d.name.replace(/'/g,"\\'")}','local')">✎</button>
           <button class="deal-delete" onclick="deleteLocalDeal(event,'${k}')">✕</button>
         </div>`;
       }).join('');
@@ -1475,18 +1501,31 @@
   }
 
   // ── Save flow ────────────────────────────────────────────────
+  let renameMode = false;
+  let renameId = null;
+  let renameType = null;
+
   function openSaveModal() {
+    renameMode = false; renameId = null; renameType = null;
+    document.getElementById('saveModalTitle').textContent = 'Save Deal';
+    document.getElementById('saveModalBtn').textContent = 'Save';
     const input = document.getElementById('dealNameInput');
-    if (currentUser && activeDealId) {
-      // Try to pre-fill from cloud — just leave blank if not cached
-      input.value = '';
-    } else if (!currentUser && activeDealKey) {
-      input.value = loadDealsLocal()[activeDealKey]?.name || '';
-    } else {
-      input.value = '';
-    }
+    input.value = '';
     document.getElementById('saveModal').classList.add('open');
     setTimeout(() => input.focus(), 50);
+  }
+
+  function editDealName(e, id, currentName, type) {
+    e.stopPropagation();
+    renameMode = true;
+    renameId = id;
+    renameType = type;
+    document.getElementById('saveModalTitle').textContent = 'Rename Deal';
+    document.getElementById('saveModalBtn').textContent = 'Rename';
+    const input = document.getElementById('dealNameInput');
+    input.value = currentName;
+    document.getElementById('saveModal').classList.add('open');
+    setTimeout(() => { input.focus(); input.select(); }, 50);
   }
 
   function closeSaveModal() {
@@ -1498,11 +1537,33 @@
     if (!name) { document.getElementById('dealNameInput').focus(); return; }
     closeSaveModal();
 
+    // Rename mode — just update the name, don't touch deal data
+    if (renameMode) {
+      if (renameType === 'cloud') {
+        await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${renameId}`, {
+          method: 'PATCH',
+          headers: sbHeaders({ 'Prefer': 'return=representation' }),
+          body: JSON.stringify({ name, updated_at: new Date().toISOString() })
+        });
+        await loadDealsFromSupabase();
+        showToast('✓ Renamed to: ' + name);
+      } else {
+        const deals = loadDealsLocal();
+        if (deals[renameId]) {
+          deals[renameId].name = name;
+          saveDealsLocal(deals);
+        }
+        renderSidebar();
+        showToast('✓ Renamed to: ' + name);
+      }
+      renameMode = false; renameId = null; renameType = null;
+      return;
+    }
+
     if (currentUser) {
       showToast('Saving...');
       await saveDealToSupabase(name);
     } else {
-      // Guest — localStorage
       const key = activeDealKey || ('deal_' + Date.now());
       activeDealKey = key;
       const deals = loadDealsLocal();
@@ -1515,12 +1576,20 @@
 
   // ── Load deals ───────────────────────────────────────────────
   async function loadCloudDeal(id) {
-    const { data, error } = await sb.from('deals').select('*').eq('id', id).single();
-    if (error || !data) return;
-    activeDealId = id;
-    populateFields(data.data.inputs);
-    await loadDealsFromSupabase();
-    showToast('Loaded: ' + data.name);
+    try {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${id}&select=*`, {
+        headers: sbHeaders()
+      });
+      const data = await r.json();
+      const deal = Array.isArray(data) ? data[0] : data;
+      if (!deal) return;
+      activeDealId = id;
+      populateFields(deal.data.inputs);
+      await loadDealsFromSupabase();
+      showToast('Loaded: ' + deal.name);
+    } catch(e) {
+      showToast('⚠ Error loading deal');
+    }
   }
 
   function loadLocalDeal(key) {
@@ -1573,23 +1642,25 @@
     saveDealsLocal(deals);
     if (activeDealKey === key) activeDealKey = null;
     renderSidebar();
-    showToast('Deleted: ' + name);
+    showToast('Deleted: ' + name, 'danger');
   }
 
   function newDeal() {
     activeDealId = null;
     activeDealKey = null;
-    ['arv','purchase','repair','holdTaxes','holdInsurance',
-     'holdUtilities','holdMonths','commSeller','commBuyer','title','survey',
-     'warranty','desiredProfit','loanAmount','points','rate',
-     'convLoanAmount','convRate','loanOrigination','loanAppraisal','loanTitle'].forEach(id => {
-      const defaults = {arv:250000,purchase:130000,repair:40000,
-        holdTaxes:300,holdInsurance:200,holdUtilities:200,holdMonths:4,
-        commSeller:3,commBuyer:3,title:1500,survey:500,warranty:600,
-        desiredProfit:30000,loanAmount:140000,points:2,rate:12,
-        convLoanAmount:140000,convRate:7,loanOrigination:0,loanAppraisal:0,loanTitle:0};
-      setField(id, defaults[id] ?? 0);
-    });
+
+    // Zero out deal-specific fields
+    ['arv','purchase','repair','holdTaxes','holdInsurance','holdUtilities',
+     'title','survey','warranty','loanAmount','convLoanAmount',
+     'loanOrigination','loanAppraisal','loanTitle'].forEach(id => setField(id, 0));
+
+    // Reset sensible defaults for non-zero fields
+    setField('holdMonths', 4);
+    setField('desiredProfit', 30000);
+    setField('points', 2);
+
+    // Preserve: convRate, rate, commSeller, commBuyer — leave untouched
+
     setFinancing('conventional');
     calculate();
     if (currentUser) loadDealsFromSupabase();

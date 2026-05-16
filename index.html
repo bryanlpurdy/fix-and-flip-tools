@@ -108,12 +108,15 @@
     min-height: calc(100vh - 69px);
   }
 
-  /* Resizable sidebar */
   .deals-sidebar {
     width: 220px;
     min-width: 120px;
     max-width: 420px;
     flex-shrink: 0;
+    border-right: none;
+    background: var(--surface);
+    overflow-y: auto;
+    padding: 20px 0;
   }
 
   .resizer {
@@ -160,13 +163,7 @@
     background: var(--surface);
   }
 
-  /* Saved deals sidebar */
-  .deals-sidebar {
-    border-right: none;
-    background: var(--surface);
-    overflow-y: auto;
-    padding: 20px 0;
-  }
+
 
   .sidebar-title {
     font-family: 'Bebas Neue', sans-serif;
@@ -349,22 +346,6 @@
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 
-  .inputs-panel {
-    padding: 36px 40px;
-    border-right: 1px solid var(--border);
-    overflow-y: auto;
-    height: calc(100vh - 69px);
-  }
-
-  .results-panel {
-    padding: 36px 32px;
-    position: sticky;
-    top: 0;
-    height: calc(100vh - 69px);
-    overflow-y: auto;
-    background: var(--surface);
-  }
-
   .section {
     margin-bottom: 36px;
     animation: fadeUp 0.4s ease both;
@@ -455,6 +436,7 @@
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
     -moz-appearance: textfield;
+    appearance: textfield;
   }
 
   input[type="number"]::-webkit-outer-spin-button,
@@ -1140,9 +1122,9 @@
     <div class="auth-field">
       <label>Password</label>
       <div style="display:flex; gap:8px;">
-        <input type="text" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
+        <input type="password" id="authPassword" placeholder="••••••••" oninput="clearAuthError()"
           onkeydown="if(event.key==='Enter')submitAuth()" autocomplete="current-password"
-          style="flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:11px 14px; font-family:'DM Mono',monospace; font-size:0.9rem; border-radius:6px; outline:none; height:44px; box-sizing:border-box; -webkit-text-security:disc; text-security:disc;">
+          style="flex:1; background:var(--surface2); border:1px solid var(--border); color:var(--text); padding:11px 14px; font-family:'DM Mono',monospace; font-size:0.9rem; border-radius:6px; outline:none; height:44px; box-sizing:border-box;">
         <button onclick="togglePasswordVisibility()" id="togglePwBtn" type="button"
           style="width:44px; height:44px; min-width:44px; min-height:44px; max-width:44px; max-height:44px; background:var(--surface2); border:1px solid var(--border); border-radius:6px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.7rem; font-weight:600; letter-spacing:0.5px; color:var(--muted); box-sizing:border-box; overflow:hidden; padding:0;">SHOW</button>
       </div>
@@ -1167,7 +1149,7 @@
     <label style="display:block;margin-bottom:8px;">Deal Name</label>
     <input type="text" id="dealNameInput" placeholder="e.g. 123 Oak Street" onkeydown="if(event.key==='Enter')confirmSave()">
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeSaveModal(); renameMode=false; renameId=null; renameType=null;">Cancel</button>
+      <button class="btn-cancel" onclick="closeSaveModal(); renameMode=false; renameId=null;">Cancel</button>
       <button class="btn-confirm" id="saveModalBtn" onclick="confirmSave()">Save</button>
     </div>
   </div>
@@ -1272,22 +1254,48 @@
 
   // ── State ────────────────────────────────────────────────────
   let financingType = 'conventional';
-  let activeDealId = null;   // Supabase UUID when logged in
-  let activeDealKey = null;  // localStorage key when guest
+  let activeDealId = null;
   let currentUser = null;
-  const STORAGE_KEY = 'flipDeals';
   let authMode = 'signin'; // or 'signup'
 
   // ── Auth init ─────────────────────────────────────────────────
   async function initAuth() {
+    // Don't render sidebar until we know auth state
+    document.getElementById('dealsList').innerHTML = '';
     const hasSession = loadSession();
-    updateAuthUI();
     if (hasSession) {
-      showGuestBanner(false);
-      await loadDealsFromSupabase();
+      // Verify token is still valid with Supabase before trusting it
+      try {
+        const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          headers: sbHeaders()
+        });
+        if (r.ok) {
+          const user = await r.json();
+          currentUser = user;
+          updateAuthUI();
+          showGuestBanner(false);
+          await loadDealsFromSupabase();
+        } else {
+          // Token expired — clear and show guest state
+          localStorage.removeItem('sb_session');
+          sbAccessToken = null;
+          currentUser = null;
+          updateAuthUI();
+          showGuestBanner(true);
+          renderSidebar();
+        }
+      } catch(e) {
+        localStorage.removeItem('sb_session');
+        sbAccessToken = null;
+        currentUser = null;
+        updateAuthUI();
+        showGuestBanner(true);
+        renderSidebar();
+      }
     } else {
-      renderSidebar();
+      updateAuthUI();
       showGuestBanner(true);
+      renderSidebar();
     }
   }
 
@@ -1347,9 +1355,8 @@
   function togglePasswordVisibility() {
     const input = document.getElementById('authPassword');
     const btn = document.getElementById('togglePwBtn');
-    const isHidden = input.style.webkitTextSecurity !== 'none';
-    input.style.webkitTextSecurity = isHidden ? 'none' : 'disc';
-    input.style.textSecurity = isHidden ? 'none' : 'disc';
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
     btn.textContent = isHidden ? 'HIDE' : 'SHOW';
     btn.style.color = isHidden ? 'var(--accent)' : 'var(--muted)';
   }
@@ -1429,16 +1436,6 @@
     showToast('Deleted: ' + name, 'danger');
   }
 
-  // ── localStorage helpers (guest mode) ────────────────────────
-  function loadDealsLocal() {
-    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
-    catch { return {}; }
-  }
-
-  function saveDealsLocal(deals) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(deals));
-  }
-
   // ── Toast ────────────────────────────────────────────────────
   function showToast(msg, type = '') {
     const t = document.getElementById('toast');
@@ -1453,7 +1450,7 @@
     const list = document.getElementById('dealsList');
 
     if (currentUser && cloudDeals) {
-      // Cloud deals
+      // Cloud deals for signed in users
       if (!cloudDeals.length) {
         list.innerHTML = '<div class="no-deals">No saved deals yet.<br>Run an analysis and hit <strong>Save Deal</strong>.</div>';
         return;
@@ -1470,43 +1467,26 @@
           <div class="deal-item-name">${d.name}</div>
           <div class="deal-item-meta">ARV ${fmt(arv)}</div>
           <div class="deal-item-profit ${profitClass}">${sign}${profitFmt} profit</div>
-          <button class="deal-edit" onclick="editDealName(event,'${d.id}','${d.name.replace(/'/g,"\\'")}','cloud')">✎</button>
+          <button class="deal-edit" onclick="editDealName(event,'${d.id}','${d.name.replace(/'/g,"\\'")}')">✎</button>
           <button class="deal-delete" onclick="deleteCloudDeal(event,'${d.id}','${d.name.replace(/'/g,"\\'")}')">✕</button>
         </div>`;
       }).join('');
+    } else if (currentUser) {
+      // Signed in but no cloudDeals passed yet
+      list.innerHTML = '<div class="no-deals">No saved deals yet.<br>Run an analysis and hit <strong>Save Deal</strong>.</div>';
     } else {
-      // Local guest deals
-      const deals = loadDealsLocal();
-      const keys = Object.keys(deals).sort((a,b) => deals[b].savedAt - deals[a].savedAt);
-      if (!keys.length) {
-        list.innerHTML = '<div class="no-deals">No saved deals yet.<br>Run an analysis and hit <strong>Save Deal</strong>.</div>';
-        return;
-      }
-      list.innerHTML = keys.map(k => {
-        const d = deals[k];
-        const profit = d.results.profit;
-        const profitClass = profit >= d.inputs.desiredProfit ? 'pos' : profit > 0 ? 'warn' : 'neg';
-        const profitFmt = '$' + Math.round(Math.abs(profit)).toLocaleString();
-        const sign = profit < 0 ? '-' : '+';
-        const active = k === activeDealKey ? ' active' : '';
-        return `<div class="deal-item${active}" onclick="loadLocalDeal('${k}')">
-          <div class="deal-item-name">${d.name}</div>
-          <div class="deal-item-meta">ARV ${fmt(d.inputs.arv)}</div>
-          <div class="deal-item-profit ${profitClass}">${sign}${profitFmt} profit</div>
-          <button class="deal-edit" onclick="editDealName(event,'${k}','${d.name.replace(/'/g,"\\'")}','local')">✎</button>
-          <button class="deal-delete" onclick="deleteLocalDeal(event,'${k}')">✕</button>
-        </div>`;
-      }).join('');
+      // Guest — show empty state, no localStorage deals shown on load
+      list.innerHTML = '<div class="no-deals">Sign in to save and sync your deals across devices.</div>';
     }
   }
 
   // ── Save flow ────────────────────────────────────────────────
   let renameMode = false;
   let renameId = null;
-  let renameType = null;
 
   function openSaveModal() {
-    renameMode = false; renameId = null; renameType = null;
+    if (!currentUser) { openAuthModal(); return; }
+    renameMode = false; renameId = null;
     document.getElementById('saveModalTitle').textContent = 'Save Deal';
     document.getElementById('saveModalBtn').textContent = 'Save';
     const input = document.getElementById('dealNameInput');
@@ -1515,11 +1495,10 @@
     setTimeout(() => input.focus(), 50);
   }
 
-  function editDealName(e, id, currentName, type) {
+  function editDealName(e, id, currentName) {
     e.stopPropagation();
     renameMode = true;
     renameId = id;
-    renameType = type;
     document.getElementById('saveModalTitle').textContent = 'Rename Deal';
     document.getElementById('saveModalBtn').textContent = 'Rename';
     const input = document.getElementById('dealNameInput');
@@ -1539,39 +1518,19 @@
 
     // Rename mode — just update the name, don't touch deal data
     if (renameMode) {
-      if (renameType === 'cloud') {
-        await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${renameId}`, {
-          method: 'PATCH',
-          headers: sbHeaders({ 'Prefer': 'return=representation' }),
-          body: JSON.stringify({ name, updated_at: new Date().toISOString() })
-        });
-        await loadDealsFromSupabase();
-        showToast('✓ Renamed to: ' + name);
-      } else {
-        const deals = loadDealsLocal();
-        if (deals[renameId]) {
-          deals[renameId].name = name;
-          saveDealsLocal(deals);
-        }
-        renderSidebar();
-        showToast('✓ Renamed to: ' + name);
-      }
-      renameMode = false; renameId = null; renameType = null;
+      await fetch(`${SUPABASE_URL}/rest/v1/deals?id=eq.${renameId}`, {
+        method: 'PATCH',
+        headers: sbHeaders({ 'Prefer': 'return=representation' }),
+        body: JSON.stringify({ name, updated_at: new Date().toISOString() })
+      });
+      await loadDealsFromSupabase();
+      showToast('✓ Renamed to: ' + name);
+      renameMode = false; renameId = null;
       return;
     }
 
-    if (currentUser) {
-      showToast('Saving...');
-      await saveDealToSupabase(name);
-    } else {
-      const key = activeDealKey || ('deal_' + Date.now());
-      activeDealKey = key;
-      const deals = loadDealsLocal();
-      deals[key] = { name, savedAt: Date.now(), inputs: getInputs(), results: getResults() };
-      saveDealsLocal(deals);
-      renderSidebar();
-      showToast('✓ Saved locally (sign in to sync across devices)');
-    }
+    showToast('Saving...');
+    await saveDealToSupabase(name);
   }
 
   // ── Load deals ───────────────────────────────────────────────
@@ -1590,16 +1549,6 @@
     } catch(e) {
       showToast('⚠ Error loading deal');
     }
-  }
-
-  function loadLocalDeal(key) {
-    const deals = loadDealsLocal();
-    const deal = deals[key];
-    if (!deal) return;
-    activeDealKey = key;
-    populateFields(deal.inputs);
-    renderSidebar();
-    showToast('Loaded: ' + deal.name);
   }
 
   function populateFields(i) {
@@ -1634,20 +1583,8 @@
     await deleteDealFromSupabase(id, name);
   }
 
-  function deleteLocalDeal(e, key) {
-    e.stopPropagation();
-    const deals = loadDealsLocal();
-    const name = deals[key]?.name;
-    delete deals[key];
-    saveDealsLocal(deals);
-    if (activeDealKey === key) activeDealKey = null;
-    renderSidebar();
-    showToast('Deleted: ' + name, 'danger');
-  }
-
   function newDeal() {
     activeDealId = null;
-    activeDealKey = null;
 
     // Zero out deal-specific fields
     ['arv','purchase','repair','holdTaxes','holdInsurance','holdUtilities',

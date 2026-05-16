@@ -1280,14 +1280,42 @@
 
   // ── Auth init ─────────────────────────────────────────────────
   async function initAuth() {
+    // Don't render sidebar until we know auth state
+    document.getElementById('dealsList').innerHTML = '';
     const hasSession = loadSession();
-    updateAuthUI();
     if (hasSession) {
-      showGuestBanner(false);
-      await loadDealsFromSupabase();
+      // Verify token is still valid with Supabase before trusting it
+      try {
+        const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+          headers: sbHeaders()
+        });
+        if (r.ok) {
+          const user = await r.json();
+          currentUser = user;
+          updateAuthUI();
+          showGuestBanner(false);
+          await loadDealsFromSupabase();
+        } else {
+          // Token expired — clear and show guest state
+          localStorage.removeItem('sb_session');
+          sbAccessToken = null;
+          currentUser = null;
+          updateAuthUI();
+          showGuestBanner(true);
+          renderSidebar();
+        }
+      } catch(e) {
+        localStorage.removeItem('sb_session');
+        sbAccessToken = null;
+        currentUser = null;
+        updateAuthUI();
+        showGuestBanner(true);
+        renderSidebar();
+      }
     } else {
-      renderSidebar();
+      updateAuthUI();
       showGuestBanner(true);
+      renderSidebar();
     }
   }
 
@@ -1453,7 +1481,7 @@
     const list = document.getElementById('dealsList');
 
     if (currentUser && cloudDeals) {
-      // Cloud deals
+      // Cloud deals for signed in users
       if (!cloudDeals.length) {
         list.innerHTML = '<div class="no-deals">No saved deals yet.<br>Run an analysis and hit <strong>Save Deal</strong>.</div>';
         return;
@@ -1474,29 +1502,12 @@
           <button class="deal-delete" onclick="deleteCloudDeal(event,'${d.id}','${d.name.replace(/'/g,"\\'")}')">✕</button>
         </div>`;
       }).join('');
+    } else if (currentUser) {
+      // Signed in but no cloudDeals passed yet
+      list.innerHTML = '<div class="no-deals">No saved deals yet.<br>Run an analysis and hit <strong>Save Deal</strong>.</div>';
     } else {
-      // Local guest deals
-      const deals = loadDealsLocal();
-      const keys = Object.keys(deals).sort((a,b) => deals[b].savedAt - deals[a].savedAt);
-      if (!keys.length) {
-        list.innerHTML = '<div class="no-deals">No saved deals yet.<br>Run an analysis and hit <strong>Save Deal</strong>.</div>';
-        return;
-      }
-      list.innerHTML = keys.map(k => {
-        const d = deals[k];
-        const profit = d.results.profit;
-        const profitClass = profit >= d.inputs.desiredProfit ? 'pos' : profit > 0 ? 'warn' : 'neg';
-        const profitFmt = '$' + Math.round(Math.abs(profit)).toLocaleString();
-        const sign = profit < 0 ? '-' : '+';
-        const active = k === activeDealKey ? ' active' : '';
-        return `<div class="deal-item${active}" onclick="loadLocalDeal('${k}')">
-          <div class="deal-item-name">${d.name}</div>
-          <div class="deal-item-meta">ARV ${fmt(d.inputs.arv)}</div>
-          <div class="deal-item-profit ${profitClass}">${sign}${profitFmt} profit</div>
-          <button class="deal-edit" onclick="editDealName(event,'${k}','${d.name.replace(/'/g,"\\'")}','local')">✎</button>
-          <button class="deal-delete" onclick="deleteLocalDeal(event,'${k}')">✕</button>
-        </div>`;
-      }).join('');
+      // Guest — show empty state, no localStorage deals shown on load
+      list.innerHTML = '<div class="no-deals">Sign in to save and sync your deals across devices.</div>';
     }
   }
 
