@@ -816,9 +816,10 @@
       if (def.type === 'toggle') {
         const hasStep = def.step != null;
         detail = `<div class="item-detail">
-          ${hasStep ? `<button class="adj-btn" onclick="adjCost('${def.id}',-${def.step})">−</button>` : '<span class="detail-label">Cost $</span>'}
-          <input class="cost-edit" type="number" inputmode="numeric" value="${s.cost}"
-            onchange="setCost('${def.id}',this.value)">
+          ${hasStep ? `<button class="adj-btn" onclick="adjCost('${def.id}',-${def.step})">−</button>` : '<span class="detail-label">Cost</span>'}
+          <input class="cost-edit" type="text" inputmode="numeric" value="${fmt(s.cost)}"
+            onfocus="this.value='${Math.round(s.cost)}';this.select()"
+            onblur="setCost('${def.id}',this.value)">
           ${hasStep ? `<button class="adj-btn" onclick="adjCost('${def.id}',${def.step})">+</button>` : ''}
         </div>`;
       } else if (def.type === 'count') {
@@ -834,8 +835,9 @@
         if (def.step != null) {
           detail += `<div class="item-detail">
             <button class="adj-btn" onclick="adjCost('${def.id}',-${def.step})">−</button>
-            <input class="cost-edit" type="number" inputmode="numeric" value="${s.cost}"
-              onchange="setCost('${def.id}',this.value)">
+            <input class="cost-edit" type="text" inputmode="numeric" value="${fmt(s.cost)}"
+              onfocus="this.value='${Math.round(s.cost)}';this.select()"
+              onblur="setCost('${def.id}',this.value)">
             <button class="adj-btn" onclick="adjCost('${def.id}',${def.step})">+</button>
             <span class="detail-label">per ${def.unit || 'unit'}</span>
           </div>`;
@@ -911,7 +913,7 @@
   }
 
   function setCost(id, val) {
-    state.items[id].cost = parseFloat(val) || 0;
+    state.items[id].cost = parseFloat(String(val).replace(/[^0-9.]/g, '')) || 0;
     refreshItem(id);
   }
 
