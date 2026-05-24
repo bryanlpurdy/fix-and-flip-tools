@@ -48,7 +48,7 @@
     font-family: 'DM Sans', sans-serif;
     font-size: 1rem;
     min-height: 100vh;
-    padding-bottom: 140px;
+    padding-bottom: calc(190px + env(safe-area-inset-bottom, 0px));
   }
 
   /* ── Header ── */
@@ -350,7 +350,7 @@
     bottom: 0; left: 0; right: 0;
     background: var(--surface);
     border-top: 2px solid var(--border);
-    padding: 12px 16px 16px;
+    padding: 12px 16px calc(16px + env(safe-area-inset-bottom, 0px));
     z-index: 100;
   }
 
@@ -757,7 +757,7 @@
     const count = sec.items.filter(d => state.items[d.id].enabled).length;
     return `
       <div class="section" id="sec-${sec.id}">
-        <div class="section-header open" onclick="toggleSec('${sec.id}')">
+        <div class="section-header closed" onclick="toggleSec('${sec.id}')">
           <div class="section-header-left">
             <span class="section-name">${sec.label}</span>
             <span class="section-badge${count ? ' show' : ''}" id="badge-${sec.id}">${count}</span>
@@ -767,7 +767,7 @@
             <span class="chevron">▼</span>
           </div>
         </div>
-        <div class="section-body" id="body-${sec.id}">
+        <div class="section-body closed" id="body-${sec.id}">
           ${sec.bathSection ? `
             <div class="bath-counter">
               <span class="bath-counter-label">Number of Bathrooms</span>
