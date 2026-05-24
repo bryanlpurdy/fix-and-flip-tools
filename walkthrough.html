@@ -294,6 +294,23 @@
     display: flex; align-items: center; justify-content: center;
   }
   .qty-btn:active { opacity: 0.6; }
+
+  .cost-ctrl { display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
+  .adj-btn {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .adj-btn:active { opacity: 0.6; }
+
   .qty-val {
     font-family: 'DM Mono', monospace;
     font-size: 1rem;
@@ -647,54 +664,54 @@
     {
       id: 'exterior', label: 'Exterior & Systems',
       items: [
-        { id: 'roof_patch',    label: 'Roof — Patch',                type: 'toggle', cost: 1500 },
-        { id: 'roof_replace',  label: 'Roof — Replace',              type: 'toggle', cost: 12000 },
-        { id: 'ext_siding',    label: 'Exterior Siding (repair)',     type: 'toggle', cost: 3000 },
-        { id: 'ext_paint',     label: 'Exterior Paint',               type: 'toggle', cost: 4000 },
-        { id: 'win_glass',     label: 'Windows — Glass only',         type: 'count',  cost: 150,  unit: 'window' },
-        { id: 'win_full',      label: 'Windows — Full replacement',   type: 'count',  cost: 400,  unit: 'window' },
-        { id: 'ac_service',    label: 'AC — Service',                 type: 'toggle', cost: 500 },
-        { id: 'ac_replace',    label: 'AC — Replace',                 type: 'toggle', cost: 6500 },
-        { id: 'water_heater',  label: 'Water Heater — Replace',       type: 'toggle', cost: 1200 },
-        { id: 'elec_service',  label: 'Electric Panel — Service',     type: 'toggle', cost: 500 },
-        { id: 'elec_replace',  label: 'Electric Panel — Replace',     type: 'toggle', cost: 3500 },
-        { id: 'insulation',    label: 'Insulation (attic)',            type: 'toggle', cost: 2000 },
-        { id: 'foundation',    label: 'Foundation (per pier)',         type: 'count',  cost: 350,  unit: 'pier' },
-        { id: 'gutters',       label: 'Gutters — Replace',            type: 'toggle', cost: 1500 },
-        { id: 'fascia',        label: 'Fascia / Soffit repair',        type: 'toggle', cost: 1500 },
-        { id: 'fence',         label: 'Fence — Replace',              type: 'toggle', cost: 3500 },
-        { id: 'tree_work',     label: 'Exterior Tree Work',            type: 'toggle', cost: 1500 },
-        { id: 'landscaping',   label: 'Base Landscaping',             type: 'toggle', cost: 2500 },
-        { id: 'sprinklers',    label: 'Sprinklers — Repair',          type: 'toggle', cost: 800 },
+        { id: 'roof_patch',    label: 'Roof — Patch',                type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'roof_replace',  label: 'Roof — Replace',              type: 'toggle', cost: 12000, step: 250 },
+        { id: 'ext_siding',    label: 'Exterior Siding (repair)',     type: 'toggle', cost: 3000,  step: 250 },
+        { id: 'ext_paint',     label: 'Exterior Paint',               type: 'toggle', cost: 4000,  step: 250 },
+        { id: 'win_glass',     label: 'Windows — Glass only',         type: 'count',  cost: 150,   unit: 'window', step: 50 },
+        { id: 'win_full',      label: 'Windows — Full replacement',   type: 'count',  cost: 400,   unit: 'window', step: 50 },
+        { id: 'ac_service',    label: 'AC — Service',                 type: 'toggle', cost: 500,   step: 250 },
+        { id: 'ac_replace',    label: 'AC — Replace',                 type: 'toggle', cost: 6500,  step: 250 },
+        { id: 'water_heater',  label: 'Water Heater — Replace',       type: 'toggle', cost: 1200,  step: 250 },
+        { id: 'elec_service',  label: 'Electric Panel — Service',     type: 'toggle', cost: 500,   step: 250 },
+        { id: 'elec_replace',  label: 'Electric Panel — Replace',     type: 'toggle', cost: 3500,  step: 250 },
+        { id: 'insulation',    label: 'Insulation (attic)',            type: 'toggle', cost: 2000,  step: 250 },
+        { id: 'foundation',    label: 'Foundation (per pier)',         type: 'count',  cost: 350,   unit: 'pier', step: 50 },
+        { id: 'gutters',       label: 'Gutters — Replace',            type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'fascia',        label: 'Fascia / Soffit repair',        type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'fence',         label: 'Fence — Replace',              type: 'toggle', cost: 3500,  step: 250 },
+        { id: 'tree_work',     label: 'Exterior Tree Work',            type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'landscaping',   label: 'Base Landscaping',             type: 'toggle', cost: 2500,  step: 250 },
+        { id: 'sprinklers',    label: 'Sprinklers — Repair',          type: 'toggle', cost: 800,   step: 50 },
       ]
     },
     {
       id: 'interior', label: 'Interior & Kitchen',
       items: [
-        { id: 'demo',           label: 'Demo',                        type: 'toggle', cost: 3000 },
-        { id: 'texture',        label: 'Texture / Sheetrock',         type: 'toggle', cost: 3000 },
-        { id: 'int_paint',      label: 'Interior Paint',              type: 'toggle', cost: 4000 },
+        { id: 'demo',           label: 'Demo',                        type: 'toggle', cost: 3000,  step: 250 },
+        { id: 'texture',        label: 'Texture / Sheetrock',         type: 'toggle', cost: 3000,  step: 250 },
+        { id: 'int_paint',      label: 'Interior Paint',              type: 'toggle', cost: 4000,  step: 250 },
         { id: 'lvp',            label: 'LVP Flooring',                type: 'sqft',   rate: 4.50 },
         { id: 'carpet',         label: 'Carpet',                      type: 'sqft',   rate: 3.00 },
-        { id: 'subfloor',       label: 'Subfloor repair',             type: 'toggle', cost: 1500 },
-        { id: 'trim',           label: 'Trim — Floor + Door',         type: 'toggle', cost: 2500 },
-        { id: 'doors_int',      label: 'Doors — Interior',            type: 'count',  cost: 250,  unit: 'door' },
-        { id: 'doors_ext',      label: 'Doors — Exterior',            type: 'count',  cost: 500,  unit: 'door' },
-        { id: 'cab_replace',    label: 'Cabinets — Replace',          type: 'toggle', cost: 8000 },
-        { id: 'cab_paint',      label: 'Cabinets — Paint + Hardware', type: 'toggle', cost: 1500 },
-        { id: 'countertops',    label: 'Countertops',                 type: 'toggle', cost: 3500 },
-        { id: 'backsplash',     label: 'Kitchen Backsplash',          type: 'toggle', cost: 800 },
-        { id: 'garage_door',    label: 'Garage Door',                 type: 'toggle', cost: 1200 },
-        { id: 'permit',         label: 'Permit Allowance',            type: 'toggle', cost: 1500 },
+        { id: 'subfloor',       label: 'Subfloor repair',             type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'trim',           label: 'Trim — Floor + Door',         type: 'toggle', cost: 2500,  step: 250 },
+        { id: 'doors_int',      label: 'Doors — Interior',            type: 'count',  cost: 250,   unit: 'door' },
+        { id: 'doors_ext',      label: 'Doors — Exterior',            type: 'count',  cost: 500,   unit: 'door' },
+        { id: 'cab_replace',    label: 'Cabinets — Replace',          type: 'toggle', cost: 8000,  step: 250 },
+        { id: 'cab_paint',      label: 'Cabinets — Paint + Hardware', type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'countertops',    label: 'Countertops',                 type: 'toggle', cost: 3500,  step: 250 },
+        { id: 'backsplash',     label: 'Kitchen Backsplash',          type: 'toggle', cost: 800,   step: 250 },
+        { id: 'garage_door',    label: 'Garage Door',                 type: 'toggle', cost: 1200,  step: 250 },
+        { id: 'permit',         label: 'Permit Allowance',            type: 'toggle', cost: 1500,  step: 250 },
       ]
     },
     {
       id: 'bathroom', label: 'Bathrooms', bathSection: true,
       items: [
-        { id: 'vanity',        label: 'Vanity',                type: 'per_bath', cost: 400 },
+        { id: 'vanity',        label: 'Vanity',                type: 'per_bath', cost: 300 },
         { id: 'shower_basic',  label: 'Shower — Basic rehab',  type: 'per_bath', cost: 1500 },
         { id: 'shower_full',   label: 'Shower — Full replace', type: 'per_bath', cost: 4000 },
-        { id: 'tile_floor',    label: 'Tile Floors',           type: 'per_bath', cost: 800 },
+        { id: 'tile_floor',    label: 'Tile Floors',           type: 'per_bath', cost: 500 },
         { id: 'plumbing_fix',  label: 'Plumbing Fixtures',     type: 'per_bath', cost: 200 },
       ]
     },
@@ -772,9 +789,9 @@
             <div class="bath-counter">
               <span class="bath-counter-label">Number of Bathrooms</span>
               <div class="counter-ctrl">
-                <button class="counter-btn" onclick="adjBath(-1)">−</button>
-                <span class="counter-val" id="bathVal">${state.bathCount}</span>
-                <button class="counter-btn" onclick="adjBath(1)">+</button>
+                <button class="counter-btn" onclick="adjBath(-0.5)">−</button>
+                <span class="counter-val" id="bathVal">${state.bathCount % 1 === 0 ? state.bathCount : state.bathCount.toFixed(1)}</span>
+                <button class="counter-btn" onclick="adjBath(0.5)">+</button>
               </div>
             </div>` : ''}
           ${sec.items.map(d => renderItem(d)).join('')}
@@ -828,12 +845,20 @@
       }
     }
 
+    const badgeEl = def.step != null
+      ? `<div class="cost-ctrl" onclick="event.stopPropagation()">
+           <button class="adj-btn" onclick="adjCost('${def.id}',-${def.step})">−</button>
+           <span class="item-badge">${badge}</span>
+           <button class="adj-btn" onclick="adjCost('${def.id}',${def.step})">+</button>
+         </div>`
+      : `<span class="item-badge">${badge}</span>`;
+
     return `
       <div class="item-row${s.enabled ? ' on' : ''}" id="item-${def.id}">
         <div class="item-main" onclick="toggleItem('${def.id}')">
           <div class="item-check">${s.enabled ? '✓' : ''}</div>
           <span class="item-name">${def.label}</span>
-          <span class="item-badge">${badge}</span>
+          ${badgeEl}
         </div>
         ${detail}
       </div>`;
@@ -889,10 +914,15 @@
     refreshItem(id);
   }
 
+  function adjCost(id, delta) {
+    state.items[id].cost = Math.max(0, (state.items[id].cost || 0) + delta);
+    refreshItem(id);
+  }
+
   function adjBath(delta) {
-    state.bathCount = Math.max(1, state.bathCount + delta);
+    state.bathCount = Math.max(0.5, +(state.bathCount + delta).toFixed(1));
     const el = document.getElementById('bathVal');
-    if (el) el.textContent = state.bathCount;
+    if (el) el.textContent = state.bathCount % 1 === 0 ? state.bathCount : state.bathCount.toFixed(1);
     const bathSec = SECTIONS.find(s => s.bathSection);
     if (bathSec) {
       bathSec.items.forEach(d => {
