@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Property Walkthrough — Fix &amp; Flip</title>
+<!--
+  Supabase migration — run once in the SQL editor:
+
+  create table walkthroughs (
+    id uuid default gen_random_uuid() primary key,
+    user_id uuid references auth.users(id) on delete cascade,
+    name text not null,
+    property_name text default '',
+    bath_count integer not null default 1,
+    items jsonb not null default '{}',
+    subtotal numeric not null default 0,
+    contingency_pct numeric not null default 10,
+    total numeric not null default 0,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+  );
+  alter table walkthroughs enable row level security;
+  create policy "Users manage own walkthroughs" on walkthroughs
+    for all using (auth.uid() = user_id);
+-->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #151918;
+    --surface2: #1c2220;
+    --border: #2a3330;
+    --accent: #c8f564;
+    --accent2: #4dffa0;
+    --danger: #ff5c5c;
+    --warn: #ffb347;
+    --text: #e8ede8;
+    --muted: #6b7d74;
+    --label: #9ab09e;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    min-height: 100vh;
+    padding-bottom: 140px;
+  }
+
+  /* ── Header ── */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 14px; }
+
+  .back-btn {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 0;
+  }
+  .back-btn:hover { color: var(--text); }
+
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .sign-in-btn {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 7px 14px;
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .sign-in-btn:active { background: rgba(200,245,100,0.1); }
+
+  .auth-badge { font-size: 0.75rem; color: var(--muted); }
+
+  /* ── Property bar ── */
+  .property-bar {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 16px;
+  }
+  .property-label {
+    font-size: 0.7rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-bottom: 6px;
+  }
+  .property-input {
+    width: 100%;
+    background: none;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.05rem;
+    font-weight: 500;
+    padding: 5px 0;
+    outline: none;
+  }
+  .property-input::placeholder { color: var(--muted); }
+  .property-input:focus { border-bottom-color: var(--accent); }
+
+  /* ── Section ── */
+  .section { margin-bottom: 6px; }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .section-header-left { display: flex; align-items: center; gap: 10px; }
+
+  .section-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+
+  .section-badge {
+    font-size: 0.72rem;
+    background: rgba(200,245,100,0.15);
+    color: var(--accent);
+    border-radius: 10px;
+    padding: 2px 8px;
+    display: none;
+  }
+  .section-badge.show { display: inline; }
+
+  .section-right { display: flex; align-items: center; gap: 10px; }
+
+  .section-subtotal {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--muted);
+  }
+  .section-subtotal.lit { color: var(--accent); }
+
+  .chevron {
+    color: var(--muted);
+    font-size: 0.75rem;
+    transition: transform 0.2s;
+  }
+  .section-header.open .chevron { transform: rotate(0deg); }
+  .section-header.closed .chevron { transform: rotate(-90deg); }
+
+  .section-body {
+    overflow: hidden;
+    max-height: 4000px;
+    transition: max-height 0.3s ease;
+    background: var(--bg);
+  }
+  .section-body.closed { max-height: 0; }
+
+  /* ── Bath counter ── */
+  .bath-counter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .bath-counter-label { font-size: 0.9rem; color: var(--label); }
+  .counter-ctrl { display: flex; align-items: center; gap: 18px; }
+  .counter-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1.3rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .counter-btn:active { opacity: 0.6; }
+  .counter-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.2rem;
+    color: var(--accent);
+    min-width: 20px;
+    text-align: center;
+  }
+
+  /* ── Item row ── */
+  .item-row {
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .item-row.on { background: rgba(200,245,100,0.03); }
+
+  .item-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    min-height: 56px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .item-check {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--surface2);
+    font-size: 0.8rem;
+    transition: all 0.15s;
+    color: transparent;
+  }
+  .item-row.on .item-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #0d0f0e;
+  }
+
+  .item-name {
+    flex: 1;
+    font-size: 0.95rem;
+    line-height: 1.3;
+    color: var(--muted);
+    transition: color 0.15s;
+  }
+  .item-row.on .item-name { color: var(--text); }
+
+  .item-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--muted);
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .item-row.on .item-badge { color: var(--accent); }
+
+  /* ── Item detail (visible when on) ── */
+  .item-detail {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px 14px 54px;
+    flex-wrap: wrap;
+  }
+  .item-row.on .item-detail { display: flex; }
+
+  .qty-ctrl { display: flex; align-items: center; gap: 10px; }
+  .qty-btn {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .qty-btn:active { opacity: 0.6; }
+  .qty-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    min-width: 28px;
+    text-align: center;
+  }
+
+  .detail-label { font-size: 0.8rem; color: var(--muted); }
+
+  .detail-total {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--accent);
+    flex: 1;
+    text-align: right;
+  }
+
+  .sqft-input {
+    width: 88px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.95rem;
+    padding: 7px 10px;
+    outline: none;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .sqft-input::-webkit-inner-spin-button,
+  .sqft-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+  .sqft-input:focus { border-color: var(--accent); }
+
+  .cost-edit {
+    width: 90px;
+    background: none;
+    border: none;
+    border-bottom: 1px solid rgba(200,245,100,0.35);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    padding: 3px 0;
+    outline: none;
+    text-align: right;
+    -moz-appearance: textfield;
+    appearance: textfield;
+  }
+  .cost-edit:focus { border-bottom-color: var(--accent); }
+
+  /* ── Footer ── */
+  .footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 2px solid var(--border);
+    padding: 12px 16px 16px;
+    z-index: 100;
+  }
+
+  .footer-rows { margin-bottom: 10px; }
+
+  .footer-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+  }
+  .footer-row-label { font-size: 0.78rem; color: var(--muted); }
+  .footer-row-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text);
+  }
+
+  .footer-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0 10px;
+    border-top: 1px solid var(--border);
+    margin-top: 4px;
+  }
+  .footer-total-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.15rem;
+    letter-spacing: 2px;
+  }
+  .footer-total-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.35rem;
+    color: var(--accent);
+  }
+
+  .footer-btns { display: flex; gap: 10px; }
+
+  .btn {
+    flex: 1;
+    padding: 13px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    text-align: center;
+  }
+  .btn-primary { background: var(--accent); color: #0d0f0e; }
+  .btn-primary:active { background: #d8ff7a; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+  .btn-ghost:active { background: var(--surface2); }
+
+  /* ── Modals ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px 16px 0 0;
+    padding: 20px 20px 36px;
+    width: 100%;
+    max-width: 480px;
+    animation: slideUp 0.22s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(60px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+
+  .modal-handle {
+    width: 36px; height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 0 auto 18px;
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+    margin-bottom: 4px;
+  }
+  .modal-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 18px; }
+  .modal-field { margin-bottom: 14px; }
+  .modal-label {
+    display: block;
+    font-size: 0.72rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--label);
+    margin-bottom: 6px;
+  }
+  .modal-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 13px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    border-radius: 8px;
+    outline: none;
+  }
+  .modal-input:focus { border-color: var(--accent); }
+
+  .pw-row { display: flex; gap: 8px; }
+  .pw-row .modal-input { flex: 1; }
+  .toggle-pw {
+    width: 48px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 0.68rem;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .modal-error { color: var(--danger); font-size: 0.82rem; min-height: 20px; margin-bottom: 6px; }
+
+  .modal-btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: 8px;
+    border: none;
+    background: var(--accent);
+    color: #0d0f0e;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .modal-btn:active { background: #d8ff7a; }
+  .modal-cancel {
+    display: block;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 14px;
+    cursor: pointer;
+    padding: 6px;
+  }
+  .modal-toggle {
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 14px;
+  }
+  .modal-toggle a { color: var(--accent); cursor: pointer; }
+
+  /* ── Toast ── */
+  .toast {
+    position: fixed;
+    bottom: 148px;
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 0.88rem;
+    color: var(--text);
+    opacity: 0;
+    transition: all 0.2s;
+    z-index: 300;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .toast.success { border-color: var(--accent2); color: var(--accent2); }
+  .toast.danger  { border-color: var(--danger);  color: var(--danger);  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a href="index.html" class="back-btn">← Analyzer</a>
+    <span class="header-title">Walkthrough</span>
+  </div>
+  <div id="authStatus">
+    <button class="sign-in-btn" onclick="openAuthModal()">Sign In</button>
+  </div>
+</header>
+
+<div class="property-bar">
+  <div class="property-label">Property Address</div>
+  <input type="text" class="property-input" id="propertyName"
+    placeholder="123 Oak Street, Dallas TX"
+    oninput="state.propertyName = this.value">
+</div>
+
+<main id="main"></main>
+
+<div class="footer">
+  <div class="footer-rows">
+    <div class="footer-row">
+      <span class="footer-row-label">Subtotal</span>
+      <span class="footer-row-val" id="subtotalDisplay">$0</span>
+    </div>
+    <div class="footer-row">
+      <span class="footer-row-label">Contingency (10%)</span>
+      <span class="footer-row-val" id="contingencyDisplay">$0</span>
+    </div>
+  </div>
+  <div class="footer-total">
+    <span class="footer-total-label">Total Repair Est.</span>
+    <span class="footer-total-val" id="totalDisplay">$0</span>
+  </div>
+  <div class="footer-btns">
+    <button class="btn btn-ghost" onclick="copyTotal()">Copy Total</button>
+    <button class="btn btn-primary" onclick="openSaveModal()">Save</button>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="authTitle">Sign In</div>
+    <div class="modal-sub">Save walkthroughs to your account.</div>
+    <div class="modal-field">
+      <label class="modal-label">Email</label>
+      <input type="text" class="modal-input" id="authEmail"
+        placeholder="you@example.com" oninput="clearAuthErr()">
+    </div>
+    <div class="modal-field">
+      <label class="modal-label">Password</label>
+      <div class="pw-row">
+        <input type="password" class="modal-input" id="authPassword"
+          placeholder="••••••••" oninput="clearAuthErr()"
+          onkeydown="if(event.key==='Enter')submitAuth()"
+          autocomplete="current-password">
+        <button class="toggle-pw" onclick="togglePw()" id="togglePwBtn" type="button">SHOW</button>
+      </div>
+    </div>
+    <div class="modal-error" id="authError"></div>
+    <button class="modal-btn" id="authSubmitBtn" onclick="submitAuth()">Sign In</button>
+    <div class="modal-toggle" id="authToggle">
+      Don't have an account? <a onclick="toggleAuthMode()">Create one</a>
+    </div>
+    <span class="modal-cancel" onclick="closeAuthModal()">Cancel</span>
+  </div>
+</div>
+
+<!-- Save Modal -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Save Walkthrough</div>
+    <div class="modal-sub">Give this walkthrough a name.</div>
+    <div class="modal-field">
+      <label class="modal-label">Name</label>
+      <input type="text" class="modal-input" id="wtNameInput"
+        placeholder="123 Oak St — Initial Walk"
+        onkeydown="if(event.key==='Enter')confirmSave()">
+    </div>
+    <button class="modal-btn" onclick="confirmSave()">Save</button>
+    <span class="modal-cancel" onclick="closeSaveModal()">Cancel</span>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── Supabase ─────────────────────────────────────────────────
+  const SUPABASE_URL = 'https://qplidmfishaclysckruq.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbGlkbWZpc2hhY2x5c2NrcnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc2ODMsImV4cCI6MjA4OTc2MzY4M30.YEhxwrw-HxofmV4N3KRpbgDcT_a_OyqIkx49Wu7CjR0';
+  let sbToken = null;
+
+  function sbH(extra = {}) {
+    return Object.assign({
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${sbToken || SUPABASE_KEY}`
+    }, extra);
+  }
+
+  // ── Defaults config ──────────────────────────────────────────
+  const SECTIONS = [
+    {
+      id: 'exterior', label: 'Exterior & Systems',
+      items: [
+        { id: 'roof_patch',    label: 'Roof — Patch',                type: 'toggle', cost: 1500 },
+        { id: 'roof_replace',  label: 'Roof — Replace',              type: 'toggle', cost: 12000 },
+        { id: 'ext_siding',    label: 'Exterior Siding (repair)',     type: 'toggle', cost: 3000 },
+        { id: 'ext_paint',     label: 'Exterior Paint',               type: 'toggle', cost: 4000 },
+        { id: 'win_glass',     label: 'Windows — Glass only',         type: 'count',  cost: 150,  unit: 'window' },
+        { id: 'win_full',      label: 'Windows — Full replacement',   type: 'count',  cost: 400,  unit: 'window' },
+        { id: 'ac_service',    label: 'AC — Service',                 type: 'toggle', cost: 500 },
+        { id: 'ac_replace',    label: 'AC — Replace',                 type: 'toggle', cost: 6500 },
+        { id: 'water_heater',  label: 'Water Heater — Replace',       type: 'toggle', cost: 1200 },
+        { id: 'elec_service',  label: 'Electric Panel — Service',     type: 'toggle', cost: 500 },
+        { id: 'elec_replace',  label: 'Electric Panel — Replace',     type: 'toggle', cost: 3500 },
+        { id: 'insulation',    label: 'Insulation (attic)',            type: 'toggle', cost: 2000 },
+        { id: 'foundation',    label: 'Foundation (per pier)',         type: 'count',  cost: 350,  unit: 'pier' },
+        { id: 'gutters',       label: 'Gutters — Replace',            type: 'toggle', cost: 1500 },
+        { id: 'fascia',        label: 'Fascia / Soffit repair',        type: 'toggle', cost: 1500 },
+        { id: 'fence',         label: 'Fence — Replace',              type: 'toggle', cost: 3500 },
+        { id: 'tree_work',     label: 'Exterior Tree Work',            type: 'toggle', cost: 1500 },
+        { id: 'landscaping',   label: 'Base Landscaping',             type: 'toggle', cost: 2500 },
+        { id: 'sprinklers',    label: 'Sprinklers — Repair',          type: 'toggle', cost: 800 },
+      ]
+    },
+    {
+      id: 'interior', label: 'Interior & Kitchen',
+      items: [
+        { id: 'demo',           label: 'Demo',                        type: 'toggle', cost: 3000 },
+        { id: 'texture',        label: 'Texture / Sheetrock',         type: 'toggle', cost: 3000 },
+        { id: 'int_paint',      label: 'Interior Paint',              type: 'toggle', cost: 4000 },
+        { id: 'lvp',            label: 'LVP Flooring',                type: 'sqft',   rate: 4.50 },
+        { id: 'carpet',         label: 'Carpet',                      type: 'sqft',   rate: 3.00 },
+        { id: 'subfloor',       label: 'Subfloor repair',             type: 'toggle', cost: 1500 },
+        { id: 'trim',           label: 'Trim — Floor + Door',         type: 'toggle', cost: 2500 },
+        { id: 'doors_int',      label: 'Doors — Interior',            type: 'count',  cost: 250,  unit: 'door' },
+        { id: 'doors_ext',      label: 'Doors — Exterior',            type: 'count',  cost: 500,  unit: 'door' },
+        { id: 'cab_replace',    label: 'Cabinets — Replace',          type: 'toggle', cost: 8000 },
+        { id: 'cab_paint',      label: 'Cabinets — Paint + Hardware', type: 'toggle', cost: 1500 },
+        { id: 'countertops',    label: 'Countertops',                 type: 'toggle', cost: 3500 },
+        { id: 'backsplash',     label: 'Kitchen Backsplash',          type: 'toggle', cost: 800 },
+        { id: 'garage_door',    label: 'Garage Door',                 type: 'toggle', cost: 1200 },
+        { id: 'permit',         label: 'Permit Allowance',            type: 'toggle', cost: 1500 },
+      ]
+    },
+    {
+      id: 'bathroom', label: 'Bathrooms', bathSection: true,
+      items: [
+        { id: 'vanity',        label: 'Vanity',                type: 'per_bath', cost: 400 },
+        { id: 'shower_basic',  label: 'Shower — Basic rehab',  type: 'per_bath', cost: 1500 },
+        { id: 'shower_full',   label: 'Shower — Full replace', type: 'per_bath', cost: 4000 },
+        { id: 'tile_floor',    label: 'Tile Floors',           type: 'per_bath', cost: 800 },
+        { id: 'plumbing_fix',  label: 'Plumbing Fixtures',     type: 'per_bath', cost: 200 },
+      ]
+    },
+    {
+      id: 'fixtures', label: 'Light Fixtures & Fans',
+      items: [
+        { id: 'ceiling_fan',   label: 'Ceiling Fan',    type: 'count', cost: 150, unit: 'fan' },
+        { id: 'light_fixture', label: 'Light Fixture',  type: 'count', cost: 100, unit: 'fixture' },
+      ]
+    }
+  ];
+
+  // ── State ────────────────────────────────────────────────────
+  let currentUser = null;
+  let authMode = 'signin';
+  let activeId = null;
+  let activeName = null;
+
+  const state = { propertyName: '', bathCount: 1, items: {} };
+
+  SECTIONS.forEach(s => s.items.forEach(def => {
+    state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0 };
+  }));
+
+  // ── Helpers ──────────────────────────────────────────────────
+  function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+
+  function itemDef(id) {
+    for (const s of SECTIONS)
+      for (const d of s.items)
+        if (d.id === id) return { section: s, def: d };
+    return null;
+  }
+
+  function itemTotal(def, s) {
+    if (!s.enabled) return 0;
+    if (def.type === 'toggle')   return s.cost;
+    if (def.type === 'count')    return s.cost * s.qty;
+    if (def.type === 'sqft')     return def.rate * (s.sqft || 0);
+    if (def.type === 'per_bath') return s.cost * state.bathCount;
+    return 0;
+  }
+
+  function sectionTotal(sec) {
+    return sec.items.reduce((sum, d) => sum + itemTotal(d, state.items[d.id]), 0);
+  }
+
+  function subtotal() {
+    return SECTIONS.reduce((sum, s) => sum + sectionTotal(s), 0);
+  }
+
+  // ── Render ───────────────────────────────────────────────────
+  function renderAll() {
+    document.getElementById('main').innerHTML = SECTIONS.map(renderSection).join('');
+    updateFooter();
+  }
+
+  function renderSection(sec) {
+    const total = sectionTotal(sec);
+    const count = sec.items.filter(d => state.items[d.id].enabled).length;
+    return `
+      <div class="section" id="sec-${sec.id}">
+        <div class="section-header open" onclick="toggleSec('${sec.id}')">
+          <div class="section-header-left">
+            <span class="section-name">${sec.label}</span>
+            <span class="section-badge${count ? ' show' : ''}" id="badge-${sec.id}">${count}</span>
+          </div>
+          <div class="section-right">
+            <span class="section-subtotal${total ? ' lit' : ''}" id="stotal-${sec.id}">${total ? fmt(total) : ''}</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="section-body" id="body-${sec.id}">
+          ${sec.bathSection ? `
+            <div class="bath-counter">
+              <span class="bath-counter-label">Number of Bathrooms</span>
+              <div class="counter-ctrl">
+                <button class="counter-btn" onclick="adjBath(-1)">−</button>
+                <span class="counter-val" id="bathVal">${state.bathCount}</span>
+                <button class="counter-btn" onclick="adjBath(1)">+</button>
+              </div>
+            </div>` : ''}
+          ${sec.items.map(d => renderItem(d)).join('')}
+        </div>
+      </div>`;
+  }
+
+  function renderItem(def) {
+    const s = state.items[def.id];
+    const total = itemTotal(def, s);
+    let badge = '';
+    if (def.type === 'toggle')   badge = fmt(s.cost);
+    if (def.type === 'count')    badge = `${fmt(s.cost)} ea`;
+    if (def.type === 'sqft')     badge = `$${def.rate}/sqft`;
+    if (def.type === 'per_bath') badge = `${fmt(s.cost)}/bath`;
+    if (s.enabled && total > 0)  badge = fmt(total);
+
+    let detail = '';
+    if (s.enabled) {
+      if (def.type === 'toggle') {
+        detail = `<div class="item-detail">
+          <span class="detail-label">Cost $</span>
+          <input class="cost-edit" type="number" inputmode="numeric" value="${s.cost}"
+            onclick="event.stopPropagation()"
+            onchange="setCost('${def.id}',this.value)">
+        </div>`;
+      } else if (def.type === 'count') {
+        detail = `<div class="item-detail">
+          <div class="qty-ctrl">
+            <button class="qty-btn" onclick="event.stopPropagation();adjQty('${def.id}',-1)">−</button>
+            <span class="qty-val">${s.qty}</span>
+            <button class="qty-btn" onclick="event.stopPropagation();adjQty('${def.id}',1)">+</button>
+          </div>
+          <span class="detail-label">${def.unit || 'unit'}s @ ${fmt(s.cost)}</span>
+          <span class="detail-total">${fmt(total)}</span>
+        </div>`;
+      } else if (def.type === 'sqft') {
+        detail = `<div class="item-detail">
+          <input class="sqft-input" type="number" inputmode="numeric" placeholder="sq ft"
+            value="${s.sqft || ''}"
+            onclick="event.stopPropagation()"
+            oninput="setSqft('${def.id}',this.value)">
+          <span class="detail-label">sqft @ $${def.rate}</span>
+          <span class="detail-total">${s.sqft > 0 ? fmt(total) : '—'}</span>
+        </div>`;
+      } else if (def.type === 'per_bath') {
+        detail = `<div class="item-detail">
+          <span class="detail-label">${state.bathCount} bath${state.bathCount !== 1 ? 's' : ''} × ${fmt(s.cost)}</span>
+          <span class="detail-total">${fmt(total)}</span>
+        </div>`;
+      }
+    }
+
+    return `
+      <div class="item-row${s.enabled ? ' on' : ''}" id="item-${def.id}">
+        <div class="item-main" onclick="toggleItem('${def.id}')">
+          <div class="item-check">${s.enabled ? '✓' : ''}</div>
+          <span class="item-name">${def.label}</span>
+          <span class="item-badge">${badge}</span>
+        </div>
+        ${detail}
+      </div>`;
+  }
+
+  // ── Update helpers (no full re-render) ───────────────────────
+  function refreshItem(id) {
+    const el = document.getElementById('item-' + id);
+    if (!el) return;
+    const { def } = itemDef(id);
+    el.outerHTML = renderItem(def);
+    refreshSectionMeta(itemDef(id).section.id);
+    updateFooter();
+  }
+
+  function refreshSectionMeta(secId) {
+    const sec = SECTIONS.find(s => s.id === secId);
+    if (!sec) return;
+    const total = sectionTotal(sec);
+    const count = sec.items.filter(d => state.items[d.id].enabled).length;
+    const tEl = document.getElementById('stotal-' + secId);
+    const bEl = document.getElementById('badge-' + secId);
+    if (tEl) { tEl.textContent = total ? fmt(total) : ''; tEl.className = `section-subtotal${total ? ' lit' : ''}`; }
+    if (bEl) { bEl.textContent = count; bEl.className = `section-badge${count ? ' show' : ''}`; }
+  }
+
+  function updateFooter() {
+    const sub  = subtotal();
+    const cont = sub * 0.1;
+    document.getElementById('subtotalDisplay').textContent    = fmt(sub);
+    document.getElementById('contingencyDisplay').textContent = fmt(cont);
+    document.getElementById('totalDisplay').textContent       = fmt(sub + cont);
+  }
+
+  // ── Interactions ─────────────────────────────────────────────
+  function toggleItem(id) {
+    state.items[id].enabled = !state.items[id].enabled;
+    refreshItem(id);
+  }
+
+  function adjQty(id, delta) {
+    state.items[id].qty = Math.max(1, (state.items[id].qty || 1) + delta);
+    refreshItem(id);
+  }
+
+  function setCost(id, val) {
+    state.items[id].cost = parseFloat(val) || 0;
+    refreshItem(id);
+  }
+
+  function setSqft(id, val) {
+    state.items[id].sqft = parseFloat(val) || 0;
+    refreshItem(id);
+  }
+
+  function adjBath(delta) {
+    state.bathCount = Math.max(1, state.bathCount + delta);
+    const el = document.getElementById('bathVal');
+    if (el) el.textContent = state.bathCount;
+    const bathSec = SECTIONS.find(s => s.bathSection);
+    if (bathSec) {
+      bathSec.items.forEach(d => {
+        if (state.items[d.id].enabled) refreshItem(d.id);
+      });
+      refreshSectionMeta(bathSec.id);
+    }
+    updateFooter();
+  }
+
+  function toggleSec(id) {
+    const body   = document.getElementById('body-' + id);
+    const header = body.previousElementSibling;
+    const closing = !body.classList.contains('closed');
+    if (closing) {
+      body.classList.add('closed');
+      header.classList.remove('open');
+      header.classList.add('closed');
+    } else {
+      body.classList.remove('closed');
+      header.classList.remove('closed');
+      header.classList.add('open');
+    }
+  }
+
+  // ── Copy total ───────────────────────────────────────────────
+  function copyTotal() {
+    const total = Math.round(subtotal() * 1.1);
+    navigator.clipboard.writeText(String(total))
+      .then(() => showToast('✓ Total copied — paste into Repair Costs', 'success'))
+      .catch(() => showToast(fmt(total) + ' — copy manually'));
+  }
+
+  // ── Save ─────────────────────────────────────────────────────
+  function openSaveModal() {
+    if (!currentUser) { openAuthModal(); return; }
+    if (activeId) { doSave(activeName); return; }
+    const inp = document.getElementById('wtNameInput');
+    inp.value = state.propertyName || '';
+    document.getElementById('saveModal').classList.add('open');
+    setTimeout(() => inp.focus(), 60);
+  }
+  function closeSaveModal() { document.getElementById('saveModal').classList.remove('open'); }
+
+  async function confirmSave() {
+    const name = document.getElementById('wtNameInput').value.trim();
+    if (!name) { document.getElementById('wtNameInput').focus(); return; }
+    closeSaveModal();
+    await doSave(name);
+  }
+
+  async function doSave(name) {
+    showToast('Saving...');
+    const sub   = subtotal();
+    const total = Math.round(sub * 1.1);
+    const body  = {
+      user_id: currentUser.id, name,
+      property_name: state.propertyName,
+      bath_count: state.bathCount,
+      items: state.items,
+      subtotal: Math.round(sub),
+      contingency_pct: 10,
+      total,
+      updated_at: new Date().toISOString()
+    };
+    try {
+      let res;
+      if (activeId) {
+        res = await fetch(`${SUPABASE_URL}/rest/v1/walkthroughs?id=eq.${activeId}`, {
+          method: 'PATCH',
+          headers: sbH({ 'Prefer': 'return=representation' }),
+          body: JSON.stringify(body)
+        }).then(r => r.json());
+      } else {
+        res = await fetch(`${SUPABASE_URL}/rest/v1/walkthroughs`, {
+          method: 'POST',
+          headers: sbH({ 'Prefer': 'return=representation' }),
+          body: JSON.stringify(body)
+        }).then(r => r.json());
+        const newId = Array.isArray(res) ? res[0]?.id : res?.id;
+        if (newId) { activeId = newId; activeName = name; }
+      }
+      showToast('✓ Saved — ' + name, 'success');
+    } catch(e) {
+      showToast('⚠ Save failed', 'danger');
+    }
+  }
+
+  // ── Auth ─────────────────────────────────────────────────────
+  function loadSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sb_session'));
+      if (s?.access_token) { sbToken = s.access_token; currentUser = s.user; return true; }
+    } catch {}
+    return false;
+  }
+
+  function updateAuthUI() {
+    const el = document.getElementById('authStatus');
+    el.innerHTML = currentUser
+      ? `<span class="auth-badge">${currentUser.email}</span>`
+      : `<button class="sign-in-btn" onclick="openAuthModal()">Sign In</button>`;
+  }
+
+  function openAuthModal() {
+    authMode = 'signin';
+    syncAuthModal();
+    document.getElementById('authModal').classList.add('open');
+    setTimeout(() => document.getElementById('authEmail').focus(), 80);
+  }
+  function closeAuthModal() { document.getElementById('authModal').classList.remove('open'); }
+
+  function syncAuthModal() {
+    const si = authMode === 'signin';
+    document.getElementById('authTitle').textContent      = si ? 'Sign In' : 'Create Account';
+    document.getElementById('authSubmitBtn').textContent  = si ? 'Sign In' : 'Create Account';
+    document.getElementById('authToggle').innerHTML = si
+      ? `Don't have an account? <a onclick="toggleAuthMode()">Create one</a>`
+      : `Already have an account? <a onclick="toggleAuthMode()">Sign in</a>`;
+  }
+
+  function toggleAuthMode() { authMode = authMode === 'signin' ? 'signup' : 'signin'; syncAuthModal(); }
+  function clearAuthErr()   { document.getElementById('authError').textContent = ''; }
+
+  function togglePw() {
+    const inp = document.getElementById('authPassword');
+    const btn = document.getElementById('togglePwBtn');
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'HIDE' : 'SHOW';
+  }
+
+  async function submitAuth() {
+    const email = document.getElementById('authEmail').value.trim();
+    const pass  = document.getElementById('authPassword').value;
+    if (!email || !pass) return;
+    const btn = document.getElementById('authSubmitBtn');
+    btn.disabled = true; btn.textContent = '...';
+    try {
+      const url = authMode === 'signup'
+        ? `${SUPABASE_URL}/auth/v1/signup`
+        : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ email, password: pass })
+      }).then(r => r.json());
+
+      if (res.access_token) {
+        sbToken = res.access_token;
+        currentUser = res.user;
+        localStorage.setItem('sb_session', JSON.stringify({ access_token: res.access_token, user: res.user }));
+        closeAuthModal();
+        updateAuthUI();
+        showToast('✓ Signed in', 'success');
+      } else {
+        document.getElementById('authError').textContent = res.error_description || res.msg || 'Sign in failed';
+      }
+    } catch { document.getElementById('authError').textContent = 'Connection error'; }
+    btn.disabled = false; syncAuthModal();
+  }
+
+  // ── Toast ────────────────────────────────────────────────────
+  function showToast(msg, type = '') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast' + (type ? ' ' + type : '');
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  // ── Boot ─────────────────────────────────────────────────────
+  loadSession();
+  updateAuthUI();
+  renderAll();
+</script>
+</body>
+</html>
