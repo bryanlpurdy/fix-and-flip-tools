@@ -50,6 +50,9 @@
     font-family: 'DM Sans', sans-serif;
     font-size: 1rem;
     min-height: 100vh;
+    padding-bottom: 20px;
+  }
+  body.editor-mode {
     padding-bottom: calc(190px + env(safe-area-inset-bottom, 0px));
   }
 
@@ -68,17 +71,6 @@
   }
 
   .header-left { display: flex; align-items: center; gap: 14px; }
-
-  .back-btn {
-    color: var(--muted);
-    font-size: 0.85rem;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    padding: 6px 0;
-  }
-  .back-btn:hover { color: var(--text); }
 
   .header-title {
     font-family: 'Bebas Neue', sans-serif;
@@ -554,13 +546,119 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   .toast.success { border-color: var(--accent2); color: var(--accent2); }
   .toast.danger  { border-color: var(--danger);  color: var(--danger);  }
+
+  /* ── Auth info (signed in) ── */
+  .auth-info { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .sign-out-btn {
+    background: none; border: none;
+    color: var(--muted); font-size: 0.7rem;
+    cursor: pointer; padding: 0; text-decoration: underline;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .sign-out-btn:active { color: var(--danger); }
+
+  /* ── Editor nav (back + new, shown only in editor) ── */
+  .editor-nav {
+    display: none;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-btn {
+    background: none; border: none;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem; font-weight: 600;
+    cursor: pointer; padding: 4px 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .nav-btn:active { color: var(--text); }
+  .nav-btn-new { color: var(--accent); }
+  .nav-btn-new:active { color: var(--text); }
+
+  /* ── List view ── */
+  #editorView { display: none; }
+
+  .list-signin {
+    text-align: center;
+    padding: 56px 28px 40px;
+  }
+  .list-signin-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem; letter-spacing: 2px;
+    color: var(--accent); margin-bottom: 10px;
+  }
+  .list-signin-sub {
+    font-size: 0.92rem; color: var(--muted);
+    line-height: 1.55; margin-bottom: 28px;
+  }
+  .list-signin-btn {
+    width: 100%; padding: 15px;
+    background: var(--accent); color: #0d0f0e;
+    border: none; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer; margin-bottom: 14px;
+  }
+  .list-signin-btn:active { background: #d8ff7a; }
+  .list-signin-guest { font-size: 0.85rem; color: var(--muted); }
+  .list-signin-guest a { color: var(--accent); cursor: pointer; }
+
+  .list-content { padding: 16px; }
+  .list-new-btn {
+    width: 100%; padding: 16px;
+    background: var(--accent); color: #0d0f0e;
+    border: none; border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem; font-weight: 700;
+    cursor: pointer; margin-bottom: 22px;
+  }
+  .list-new-btn:active { background: #d8ff7a; }
+
+  .list-section-label {
+    font-size: 0.72rem; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .wt-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px; margin-bottom: 10px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wt-card:active { background: var(--surface2); }
+  .wt-card-top {
+    display: flex; justify-content: space-between;
+    align-items: flex-start; margin-bottom: 4px;
+  }
+  .wt-card-name { font-size: 1rem; font-weight: 600; color: var(--text); flex: 1; }
+  .wt-card-del {
+    background: none; border: none;
+    color: var(--muted); font-size: 0.8rem;
+    cursor: pointer; padding: 2px 0 2px 14px; flex-shrink: 0;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .wt-card-del:active { color: var(--danger); }
+  .wt-card-addr { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
+  .wt-card-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .wt-card-total { font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--accent); }
+  .wt-card-date { font-size: 0.75rem; color: var(--muted); }
+
+  .list-empty {
+    text-align: center; color: var(--muted);
+    padding: 40px 16px; font-size: 0.92rem; line-height: 1.6;
+  }
 </style>
 </head>
 <body>
 
 <header>
   <div class="header-left">
-    <a href="index.html" class="back-btn">← Analyzer</a>
     <span class="header-title">Property Walkthrough</span>
   </div>
   <div id="authStatus">
@@ -568,16 +666,36 @@
   </div>
 </header>
 
-<div class="property-bar">
-  <div class="property-label">Property Address</div>
-  <input type="text" class="property-input" id="propertyName"
-    placeholder="123 Oak Street, Dallas TX"
-    oninput="state.propertyName = this.value">
+<div class="editor-nav" id="editorNav">
+  <button class="nav-btn" onclick="showList()">← My Walkthroughs</button>
+  <button class="nav-btn nav-btn-new" onclick="newWalkthrough()">+ New</button>
 </div>
 
-<main id="main"></main>
+<div id="listView">
+  <div id="listSignin" class="list-signin">
+    <div class="list-signin-title">Property Walkthrough</div>
+    <div class="list-signin-sub">Sign in to save and revisit your walkthroughs across visits.</div>
+    <button class="list-signin-btn" onclick="openAuthModal()">Sign In</button>
+    <div class="list-signin-guest">or <a onclick="newWalkthrough()">continue as guest</a></div>
+  </div>
+  <div id="listContent" class="list-content" style="display:none">
+    <button class="list-new-btn" onclick="newWalkthrough()">+ New Walkthrough</button>
+    <div class="list-section-label">Saved Walkthroughs</div>
+    <div id="wtList"></div>
+  </div>
+</div>
 
-<div class="footer">
+<div id="editorView">
+  <div class="property-bar">
+    <div class="property-label">Property Address</div>
+    <input type="text" class="property-input" id="propertyName"
+      placeholder="123 Oak Street, Dallas TX"
+      oninput="state.propertyName = this.value">
+  </div>
+  <main id="main"></main>
+</div>
+
+<div class="footer" id="mainFooter" style="display:none">
   <div class="footer-rows">
     <div class="footer-row">
       <span class="footer-row-label">Subtotal</span>
@@ -642,6 +760,17 @@
     </div>
     <button class="modal-btn" onclick="confirmSave()">Save</button>
     <span class="modal-cancel" onclick="closeSaveModal()">Cancel</span>
+  </div>
+</div>
+
+<!-- Delete Modal -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" style="color:var(--danger)">Delete Walkthrough</div>
+    <div class="modal-sub" id="deleteModalSub"></div>
+    <button class="modal-btn" style="background:var(--danger);color:#fff" onclick="confirmDelete()">Delete</button>
+    <span class="modal-cancel" onclick="closeDeleteModal()">Cancel</span>
   </div>
 </div>
 
@@ -731,6 +860,8 @@
   let authMode = 'signin';
   let activeId = null;
   let activeName = null;
+  let currentView = 'list';
+  let deleteTargetId = null;
 
   const state = { propertyName: '', bathCount: 1, items: {} };
 
@@ -956,6 +1087,132 @@
     }
   }
 
+  // ── View management ──────────────────────────────────────────
+  function showList() {
+    currentView = 'list';
+    document.getElementById('listView').style.display   = 'block';
+    document.getElementById('editorView').style.display = 'none';
+    document.getElementById('editorNav').style.display  = 'none';
+    document.getElementById('mainFooter').style.display = 'none';
+    document.body.classList.remove('editor-mode');
+    if (currentUser) {
+      document.getElementById('listSignin').style.display  = 'none';
+      document.getElementById('listContent').style.display = 'block';
+      loadWalkthroughs();
+    } else {
+      document.getElementById('listSignin').style.display  = 'block';
+      document.getElementById('listContent').style.display = 'none';
+    }
+    window.scrollTo(0, 0);
+  }
+
+  function showEditor() {
+    currentView = 'editor';
+    document.getElementById('listView').style.display   = 'none';
+    document.getElementById('editorView').style.display = 'block';
+    document.getElementById('editorNav').style.display  = 'flex';
+    document.getElementById('mainFooter').style.display = 'block';
+    document.body.classList.add('editor-mode');
+    window.scrollTo(0, 0);
+  }
+
+  function newWalkthrough() {
+    activeId = null; activeName = null;
+    state.propertyName = ''; state.bathCount = 1;
+    SECTIONS.forEach(s => s.items.forEach(def => {
+      state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0 };
+    }));
+    document.getElementById('propertyName').value = '';
+    renderAll();
+    showEditor();
+  }
+
+  // ── Walkthroughs list ─────────────────────────────────────────
+  async function loadWalkthroughs() {
+    document.getElementById('wtList').innerHTML = '<div class="list-empty">Loading...</div>';
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/walkthroughs?user_id=eq.${currentUser.id}&order=updated_at.desc`,
+        { headers: sbH() }
+      ).then(r => r.json());
+      renderList(Array.isArray(res) ? res : []);
+    } catch {
+      document.getElementById('wtList').innerHTML = '<div class="list-empty">Could not load walkthroughs.</div>';
+    }
+  }
+
+  function fmtDate(iso) {
+    return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  function renderList(list) {
+    const el = document.getElementById('wtList');
+    if (!list.length) {
+      el.innerHTML = '<div class="list-empty">No walkthroughs yet.<br>Tap New Walkthrough to get started.</div>';
+      return;
+    }
+    el.innerHTML = list.map(wt => {
+      const safeName = wt.name.replace(/'/g, "\\'");
+      return `<div class="wt-card" onclick="openWalkthrough('${wt.id}')">
+        <div class="wt-card-top">
+          <div class="wt-card-name">${wt.name}</div>
+          <button class="wt-card-del" onclick="event.stopPropagation();promptDelete('${wt.id}','${safeName}')">Delete</button>
+        </div>
+        <div class="wt-card-addr">${wt.property_name || '—'}</div>
+        <div class="wt-card-bottom">
+          <span class="wt-card-total">${fmt(wt.total)}</span>
+          <span class="wt-card-date">${fmtDate(wt.updated_at)}</span>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function openWalkthrough(id) {
+    showToast('Loading...');
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/walkthroughs?id=eq.${id}`, { headers: sbH() }).then(r => r.json());
+      const wt = Array.isArray(res) ? res[0] : res;
+      if (!wt) { showToast('⚠ Not found', 'danger'); return; }
+      SECTIONS.forEach(s => s.items.forEach(def => {
+        state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0 };
+      }));
+      activeId = wt.id; activeName = wt.name;
+      state.propertyName = wt.property_name || '';
+      state.bathCount = wt.bath_count || 1;
+      if (wt.items) Object.keys(wt.items).forEach(k => { if (state.items[k]) Object.assign(state.items[k], wt.items[k]); });
+      document.getElementById('propertyName').value = state.propertyName;
+      renderAll();
+      showEditor();
+    } catch { showToast('⚠ Failed to load', 'danger'); }
+  }
+
+  function promptDelete(id, name) {
+    deleteTargetId = id;
+    document.getElementById('deleteModalSub').textContent = `"${name}" will be permanently deleted.`;
+    document.getElementById('deleteModal').classList.add('open');
+  }
+  function closeDeleteModal() {
+    document.getElementById('deleteModal').classList.remove('open');
+    deleteTargetId = null;
+  }
+  async function confirmDelete() {
+    if (!deleteTargetId) return;
+    const id = deleteTargetId;
+    closeDeleteModal();
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/walkthroughs?id=eq.${id}`, { method: 'DELETE', headers: sbH() });
+      showToast('Deleted', 'success');
+      loadWalkthroughs();
+    } catch { showToast('⚠ Delete failed', 'danger'); }
+  }
+
+  function signOut() {
+    sbToken = null; currentUser = null; activeId = null; activeName = null;
+    localStorage.removeItem('sb_session');
+    updateAuthUI();
+    showList();
+  }
+
   // ── Copy total ───────────────────────────────────────────────
   function copyTotal() {
     const total = Math.round(subtotal() * 1.1);
@@ -1031,7 +1288,10 @@
   function updateAuthUI() {
     const el = document.getElementById('authStatus');
     el.innerHTML = currentUser
-      ? `<span class="auth-badge">${currentUser.email}</span>`
+      ? `<div class="auth-info">
+           <span class="auth-badge">${currentUser.email}</span>
+           <button class="sign-out-btn" onclick="signOut()">Sign Out</button>
+         </div>`
       : `<button class="sign-in-btn" onclick="openAuthModal()">Sign In</button>`;
   }
 
@@ -1086,6 +1346,7 @@
         closeAuthModal();
         updateAuthUI();
         showToast('✓ Signed in', 'success');
+        showList();
       } else {
         document.getElementById('authError').textContent = res.error_description || res.msg || 'Sign in failed';
       }
@@ -1106,6 +1367,7 @@
   loadSession();
   updateAuthUI();
   renderAll();
+  showList();
 </script>
 </body>
 </html>
