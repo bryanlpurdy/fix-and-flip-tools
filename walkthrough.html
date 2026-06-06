@@ -1667,20 +1667,15 @@
     const errEl = document.getElementById('authError');
     btn.disabled = true; btn.textContent = '...';
     errEl.textContent = '';
-
-    const url = authMode === 'signup'
-      ? `${SUPABASE_URL}/auth/v1/signup`
-      : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
-
     try {
-      const r = await fetch(url, {
+      const url = authMode === 'signup'
+        ? `${SUPABASE_URL}/auth/v1/signup`
+        : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
         body: JSON.stringify({ email, password: pass })
-      });
-
-      let res = {};
-      try { res = await r.json(); } catch {}
+      }).then(r => r.json()).catch(() => ({}));
 
       if (res.access_token) {
         sbToken = res.access_token;
@@ -1694,9 +1689,8 @@
         errEl.textContent = res.error_description || res.message || res.msg || 'Invalid email or password';
       }
     } catch {
-      errEl.textContent = navigator.onLine ? 'Invalid email or password' : 'No internet connection';
+      errEl.textContent = 'Sign in failed — please try again';
     }
-
     btn.disabled = false;
     syncAuthModal();
   }
