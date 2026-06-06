@@ -1663,18 +1663,29 @@
     const email = document.getElementById('authEmail').value.trim();
     const pass  = document.getElementById('authPassword').value;
     if (!email || !pass) return;
-    const btn = document.getElementById('authSubmitBtn');
+    const btn   = document.getElementById('authSubmitBtn');
+    const errEl = document.getElementById('authError');
     btn.disabled = true; btn.textContent = '...';
+    errEl.textContent = '';
+
+    const url = authMode === 'signup'
+      ? `${SUPABASE_URL}/auth/v1/signup`
+      : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 15000);
+
     try {
-      const url = authMode === 'signup'
-        ? `${SUPABASE_URL}/auth/v1/signup`
-        : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
-      const r   = await fetch(url, {
+      const r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-        body: JSON.stringify({ email, password: pass })
+        body: JSON.stringify({ email, password: pass }),
+        signal: controller.signal
       });
-      const res = await r.json().catch(() => ({}));
+      clearTimeout(tid);
+
+      let res = {};
+      try { res = await r.json(); } catch {}
 
       if (res.access_token) {
         sbToken = res.access_token;
@@ -1685,11 +1696,17 @@
         showToast('✓ Signed in', 'success');
         showList();
       } else {
-        document.getElementById('authError').textContent =
-          res.error_description || res.message || res.msg || 'Incorrect email or password';
+        errEl.textContent = res.error_description || res.message || res.msg || 'Invalid email or password';
       }
-    } catch { document.getElementById('authError').textContent = 'Unable to connect — check your internet'; }
-    btn.disabled = false; syncAuthModal();
+    } catch (e) {
+      clearTimeout(tid);
+      errEl.textContent = e.name === 'AbortError'
+        ? 'Request timed out — please try again'
+        : (navigator.onLine ? 'Invalid email or password' : 'No internet connection');
+    }
+
+    btn.disabled = false;
+    syncAuthModal();
   }
 
   // ── Toast ────────────────────────────────────────────────────
