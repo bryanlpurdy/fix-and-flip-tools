@@ -1672,17 +1672,12 @@
       ? `${SUPABASE_URL}/auth/v1/signup`
       : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
 
-    const controller = new AbortController();
-    const tid = setTimeout(() => controller.abort(), 15000);
-
     try {
       const r = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-        body: JSON.stringify({ email, password: pass }),
-        signal: controller.signal
+        body: JSON.stringify({ email, password: pass })
       });
-      clearTimeout(tid);
 
       let res = {};
       try { res = await r.json(); } catch {}
@@ -1698,11 +1693,8 @@
       } else {
         errEl.textContent = res.error_description || res.message || res.msg || 'Invalid email or password';
       }
-    } catch (e) {
-      clearTimeout(tid);
-      errEl.textContent = e.name === 'AbortError'
-        ? 'Request timed out — please try again'
-        : (navigator.onLine ? 'Invalid email or password' : 'No internet connection');
+    } catch {
+      errEl.textContent = navigator.onLine ? 'Invalid email or password' : 'No internet connection';
     }
 
     btn.disabled = false;
