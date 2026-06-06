@@ -583,7 +583,12 @@
 
   .list-signin {
     text-align: center;
-    padding: 56px 28px 40px;
+    padding: 0 28px 40px;
+  }
+  .list-signin-illustration {
+    width: 100%;
+    display: block;
+    margin-bottom: 28px;
   }
   .list-signin-title {
     font-family: 'Bebas Neue', sans-serif;
@@ -673,6 +678,85 @@
 
 <div id="listView">
   <div id="listSignin" class="list-signin">
+    <svg class="list-signin-illustration" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#040a05"/>
+          <stop offset="100%" stop-color="#0f1c10"/>
+        </linearGradient>
+      </defs>
+      <!-- Sky -->
+      <rect width="360" height="200" fill="url(#skyGrad)"/>
+      <!-- Stars -->
+      <g fill="#c8f564">
+        <circle cx="22"  cy="18"  r="1.2" opacity="0.7"/>
+        <circle cx="55"  cy="10"  r="0.9" opacity="0.5"/>
+        <circle cx="98"  cy="28"  r="1.4" opacity="0.6"/>
+        <circle cx="145" cy="11"  r="0.9" opacity="0.5"/>
+        <circle cx="172" cy="38"  r="0.8" opacity="0.4"/>
+        <circle cx="205" cy="16"  r="1.1" opacity="0.6"/>
+        <circle cx="248" cy="9"   r="1.0" opacity="0.5"/>
+        <circle cx="278" cy="32"  r="1.3" opacity="0.7"/>
+        <circle cx="338" cy="22"  r="0.9" opacity="0.5"/>
+        <circle cx="72"  cy="52"  r="0.8" opacity="0.4"/>
+        <circle cx="318" cy="55"  r="0.9" opacity="0.4"/>
+      </g>
+      <!-- Moon -->
+      <circle cx="306" cy="44" r="22" fill="#c8f564" opacity="0.10"/>
+      <circle cx="306" cy="44" r="17" fill="#c8f564" opacity="0.07"/>
+      <circle cx="317" cy="40" r="16" fill="#040a05"/>
+      <circle cx="306" cy="44" r="17" fill="none" stroke="#c8f564" stroke-width="1" opacity="0.25"/>
+      <!-- Ground -->
+      <rect y="164" width="360" height="36" fill="#090f09"/>
+      <!-- Background treeline -->
+      <polygon points="0,164 18,130 36,164"   fill="#0c160d"/>
+      <polygon points="22,164 42,122 62,164"  fill="#0e1a0f"/>
+      <polygon points="300,164 320,125 340,164" fill="#0c160d"/>
+      <polygon points="324,164 344,132 360,164" fill="#0e1a0f"/>
+      <!-- Left foreground trees -->
+      <polygon points="38,164 62,100 86,164"  fill="#132015"/>
+      <polygon points="58,164 78,115 98,164"  fill="#192b1b"/>
+      <!-- Right foreground trees -->
+      <polygon points="274,164 296,104 318,164" fill="#132015"/>
+      <polygon points="256,164 276,118 296,164" fill="#192b1b"/>
+      <!-- House body -->
+      <rect x="110" y="108" width="140" height="56" fill="#1a2b1c"/>
+      <!-- Roof -->
+      <polygon points="88,112 180,48 272,112" fill="#c8f564"/>
+      <polygon points="88,112 180,48 272,112" fill="none" stroke="#9cbf3e" stroke-width="1.5"/>
+      <!-- Chimney -->
+      <rect x="222" y="58" width="16" height="32" fill="#13200f"/>
+      <rect x="219" y="55" width="22" height="8" rx="1" fill="#1a2b1c"/>
+      <!-- Smoke -->
+      <circle cx="230" cy="48" r="5"  fill="#1a2a1b" opacity="0.55"/>
+      <circle cx="235" cy="40" r="4"  fill="#1a2a1b" opacity="0.35"/>
+      <circle cx="229" cy="32" r="3"  fill="#1a2a1b" opacity="0.2"/>
+      <!-- Left window -->
+      <rect x="122" y="120" width="38" height="30" rx="2" fill="#ffb347" opacity="0.88"/>
+      <line x1="141" y1="120" x2="141" y2="150" stroke="#1a2b1c" stroke-width="2"/>
+      <line x1="122" y1="135" x2="160" y2="135" stroke="#1a2b1c" stroke-width="2"/>
+      <!-- Left window glow -->
+      <rect x="119" y="117" width="44" height="36" rx="4" fill="#ffb347" opacity="0.07"/>
+      <!-- Right window -->
+      <rect x="200" y="120" width="38" height="30" rx="2" fill="#ffb347" opacity="0.88"/>
+      <line x1="219" y1="120" x2="219" y2="150" stroke="#1a2b1c" stroke-width="2"/>
+      <line x1="200" y1="135" x2="238" y2="135" stroke="#1a2b1c" stroke-width="2"/>
+      <!-- Right window glow -->
+      <rect x="197" y="117" width="44" height="36" rx="4" fill="#ffb347" opacity="0.07"/>
+      <!-- Door -->
+      <rect x="162" y="128" width="36" height="36" rx="3" fill="#0d1a0e"/>
+      <rect x="164" y="130" width="32" height="32" rx="2" fill="#111e12"/>
+      <circle cx="190" cy="148" r="2.5" fill="#c8f564"/>
+      <!-- Walkway -->
+      <polygon points="160,164 200,164 215,200 145,200" fill="#141f15"/>
+      <line x1="150" y1="178" x2="210" y2="178" stroke="#1c2b1d" stroke-width="1"/>
+      <line x1="147" y1="192" x2="213" y2="192" stroke="#1c2b1d" stroke-width="1"/>
+      <!-- "For Sale" sign in yard -->
+      <rect x="84" y="138" width="2" height="26" fill="#2a3a2b"/>
+      <rect x="74" y="136" width="22" height="14" rx="1" fill="#c8f564"/>
+      <text x="85" y="146" text-anchor="middle" font-family="sans-serif" font-size="5" font-weight="bold" fill="#0d0f0e">FOR</text>
+      <text x="85" y="144" text-anchor="middle" font-family="sans-serif" font-size="4.5" font-weight="bold" fill="#0d0f0e" dy="5">SALE</text>
+    </svg>
     <div class="list-signin-title">Property Walkthrough</div>
     <div class="list-signin-sub">Sign in to save and revisit your walkthroughs across visits.</div>
     <button class="list-signin-btn" onclick="openAuthModal()">Sign In</button>
