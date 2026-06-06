@@ -1669,11 +1669,12 @@
       const url = authMode === 'signup'
         ? `${SUPABASE_URL}/auth/v1/signup`
         : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
-      const res = await fetch(url, {
+      const r   = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
         body: JSON.stringify({ email, password: pass })
-      }).then(r => r.json());
+      });
+      const res = await r.json().catch(() => ({}));
 
       if (res.access_token) {
         sbToken = res.access_token;
@@ -1684,9 +1685,10 @@
         showToast('✓ Signed in', 'success');
         showList();
       } else {
-        document.getElementById('authError').textContent = res.error_description || res.msg || 'Sign in failed';
+        document.getElementById('authError').textContent =
+          res.error_description || res.message || res.msg || 'Incorrect email or password';
       }
-    } catch { document.getElementById('authError').textContent = 'Connection error'; }
+    } catch { document.getElementById('authError').textContent = 'Unable to connect — check your internet'; }
     btn.disabled = false; syncAuthModal();
   }
 
