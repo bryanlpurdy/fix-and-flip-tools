@@ -494,6 +494,15 @@
   }
   .modal-toggle a { color: var(--accent); cursor: pointer; }
 
+  .modal-btn.loading {
+    opacity: 0.75;
+    animation: btn-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes btn-pulse {
+    0%, 100% { opacity: 0.75; }
+    50%       { opacity: 0.45; }
+  }
+
   /* ── Toast ── */
   .toast {
     position: fixed;
@@ -1665,7 +1674,9 @@
     if (!email || !pass) return;
     const btn   = document.getElementById('authSubmitBtn');
     const errEl = document.getElementById('authError');
-    btn.disabled = true; btn.textContent = '...';
+    btn.disabled = true;
+    btn.textContent = 'Signing In...';
+    btn.classList.add('loading');
     errEl.textContent = '';
     try {
       const url = authMode === 'signup'
@@ -1692,6 +1703,7 @@
       errEl.textContent = 'Unable to reach server — try again shortly';
     }
     btn.disabled = false;
+    btn.classList.remove('loading');
     syncAuthModal();
   }
 
