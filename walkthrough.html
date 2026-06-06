@@ -666,9 +666,7 @@
   <div class="header-left">
     <span class="header-title">Property Walkthrough</span>
   </div>
-  <div id="authStatus">
-    <button class="sign-in-btn" onclick="openAuthModal()">Sign In</button>
-  </div>
+  <div id="authStatus"></div>
 </header>
 
 <div class="editor-nav" id="editorNav">
@@ -1376,7 +1374,7 @@
            <span class="auth-badge">${currentUser.email}</span>
            <button class="sign-out-btn" onclick="signOut()">Sign Out</button>
          </div>`
-      : `<button class="sign-in-btn" onclick="openAuthModal()">Sign In</button>`;
+      : '';
   }
 
   function openAuthModal() {
