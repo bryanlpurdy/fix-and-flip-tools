@@ -516,6 +516,106 @@
   .toast.success { border-color: var(--accent2); color: var(--accent2); }
   .toast.danger  { border-color: var(--danger);  color: var(--danger);  }
 
+  /* ── Item photos ── */
+  .item-photos {
+    padding: 10px 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+  }
+  .photo-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+  .photo-thumb { position: relative; display: flex; flex-direction: column; gap: 4px; width: 90px; }
+  .photo-thumb img {
+    width: 90px; height: 90px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer; display: block;
+  }
+  .photo-del {
+    position: absolute; top: 4px; right: 4px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.65);
+    border: none; color: #fff;
+    font-size: 0.9rem; line-height: 1;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .photo-caption {
+    width: 90px; background: none; border: none;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.7rem; padding: 3px 0; outline: none;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .photo-caption::placeholder { color: var(--border); }
+  .photo-caption:focus { border-bottom-color: var(--accent); color: var(--text); }
+  .add-photo-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 14px;
+    border: 1px dashed var(--border); border-radius: 8px;
+    color: var(--muted); font-size: 0.85rem;
+    cursor: pointer; width: fit-content;
+    user-select: none; -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .add-photo-btn:active { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Misc section ── */
+  .misc-content { padding: 14px 16px; background: var(--bg); }
+  .misc-sub-label {
+    font-size: 0.72rem; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: 10px; margin-top: 4px;
+  }
+  .misc-expense-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+  }
+  .misc-expense-name {
+    flex: 1; background: none; border: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem;
+    outline: none; padding: 2px 0;
+  }
+  .misc-expense-name::placeholder { color: var(--muted); }
+  .misc-expense-cost {
+    width: 80px; background: none; border: none;
+    border-bottom: 1px solid rgba(200,245,100,0.35);
+    color: var(--accent);
+    font-family: 'DM Mono', monospace; font-size: 0.9rem;
+    padding: 2px 0; outline: none; text-align: right;
+  }
+  .misc-expense-cost:focus { border-bottom-color: var(--accent); }
+  .misc-expense-del {
+    background: none; border: none; color: var(--muted);
+    font-size: 1.3rem; cursor: pointer; padding: 4px;
+    line-height: 1; flex-shrink: 0;
+  }
+  .misc-expense-del:active { color: var(--danger); }
+  .misc-add-btn {
+    width: 100%; padding: 12px; background: none;
+    border: 1px dashed var(--border); border-radius: 8px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    cursor: pointer; margin: 12px 0 20px;
+  }
+  .misc-add-btn:active { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Photo lightbox ── */
+  .photo-viewer {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.93); z-index: 500;
+    align-items: center; justify-content: center;
+  }
+  .photo-viewer.open { display: flex; }
+  .photo-viewer img {
+    max-width: 95vw; max-height: 88vh;
+    object-fit: contain; border-radius: 8px;
+  }
+
   /* ── Auth info (signed in) ── */
   .auth-info { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
   .sign-out-btn {
@@ -829,6 +929,10 @@
   </div>
 </div>
 
+<div id="photoViewer" class="photo-viewer" onclick="closePhotoViewer()">
+  <img id="photoViewerImg" src="" alt="">
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -907,7 +1011,8 @@
         { id: 'ceiling_fan',   label: 'Ceiling Fan',    type: 'count', cost: 150, unit: 'fan' },
         { id: 'light_fixture', label: 'Light Fixture',  type: 'count', cost: 100, unit: 'fixture' },
       ]
-    }
+    },
+    { id: 'misc', label: 'Misc Expenses / General Photos', miscSection: true, items: [] }
   ];
 
   // ── State ────────────────────────────────────────────────────
@@ -918,10 +1023,10 @@
   let currentView = 'list';
   let deleteTargetId = null;
 
-  const state = { propertyName: '', items: {} };
+  const state = { propertyName: '', items: {}, misc: { expenses: [], photos: [] } };
 
   SECTIONS.forEach(s => s.items.forEach(def => {
-    state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0 };
+    state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
   }));
 
   // ── Helpers ──────────────────────────────────────────────────
@@ -947,7 +1052,13 @@
   }
 
   function subtotal() {
-    return SECTIONS.reduce((sum, s) => sum + sectionTotal(s), 0);
+    const secTotal  = SECTIONS.filter(s => !s.miscSection).reduce((sum, s) => sum + sectionTotal(s), 0);
+    const miscTotal = (state.misc.expenses || []).reduce((sum, e) => sum + (parseFloat(e.cost) || 0), 0);
+    return secTotal + miscTotal;
+  }
+
+  function getMiscTotal() {
+    return (state.misc.expenses || []).reduce((sum, e) => sum + (parseFloat(e.cost) || 0), 0);
   }
 
   // ── Render ───────────────────────────────────────────────────
@@ -957,6 +1068,7 @@
   }
 
   function renderSection(sec) {
+    if (sec.miscSection) return renderMiscSection(sec);
     const total = sectionTotal(sec);
     const count = sec.items.filter(d => state.items[d.id].enabled).length;
     return `
@@ -1027,6 +1139,22 @@
           <span class="detail-total">${s.sqft > 0 ? fmt(total) : '—'}</span>
         </div>`;
       }
+      // Photo panel
+      const photos = s.photos || [];
+      detail += `<div class="item-photos">
+        ${photos.length ? `<div class="photo-grid">${photos.map((p, i) => `
+          <div class="photo-thumb">
+            <img src="${p.url}" loading="lazy" onclick="viewPhoto(this.src)">
+            <button class="photo-del" onclick="removeItemPhoto('${def.id}',${i})">×</button>
+            <input class="photo-caption" type="text" placeholder="Add note..."
+              value="${(p.caption || '').replace(/"/g, '&quot;')}"
+              onblur="updateItemPhotoCaption('${def.id}',${i},this.value)">
+          </div>`).join('')}</div>` : ''}
+        <label class="add-photo-btn">📷 Add Photo
+          <input type="file" accept="image/*" style="display:none"
+            onchange="handleItemPhoto('${def.id}',this)">
+        </label>
+      </div>`;
     }
 
     const badgeEl = `<span class="item-badge">${badge}</span>`;
@@ -1145,8 +1273,9 @@
   function newWalkthrough() {
     activeId = null; activeName = null;
     state.propertyName = '';
+    state.misc = { expenses: [], photos: [] };
     SECTIONS.forEach(s => s.items.forEach(def => {
-      state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0 };
+      state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
     }));
     document.getElementById('propertyName').value = '';
     renderAll();
@@ -1200,11 +1329,15 @@
       const wt = Array.isArray(res) ? res[0] : res;
       if (!wt) { showToast('⚠ Not found', 'danger'); return; }
       SECTIONS.forEach(s => s.items.forEach(def => {
-        state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0 };
+        state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
       }));
+      state.misc = { expenses: [], photos: [] };
       activeId = wt.id; activeName = wt.name;
       state.propertyName = wt.property_name || '';
-      if (wt.items) Object.keys(wt.items).forEach(k => { if (state.items[k]) Object.assign(state.items[k], wt.items[k]); });
+      if (wt.items) {
+        if (wt.items._misc_) state.misc = wt.items._misc_;
+        Object.keys(wt.items).forEach(k => { if (k !== '_misc_' && state.items[k]) Object.assign(state.items[k], wt.items[k]); });
+      }
       document.getElementById('propertyName').value = state.propertyName;
       renderAll();
       showEditor();
@@ -1236,6 +1369,189 @@
     localStorage.removeItem('sb_session');
     updateAuthUI();
     showList();
+  }
+
+  // ── Photos ───────────────────────────────────────────────────
+  async function uploadPhotoFile(file) {
+    const ext  = ((file.name.split('.').pop()) || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+    const path = `${currentUser.id}/${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+    const up   = await fetch(`${SUPABASE_URL}/storage/v1/object/walkthrough-photos/${path}`, {
+      method: 'POST',
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${sbToken}`, 'Content-Type': file.type || 'image/jpeg' },
+      body: file
+    });
+    if (!up.ok) throw new Error(`Upload ${up.status}`);
+    const sign = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/walkthrough-photos/${path}`, {
+      method: 'POST', headers: sbH(), body: JSON.stringify({ expiresIn: 31536000 })
+    }).then(r => r.json());
+    let url = sign.signedURL || sign.signedUrl || '';
+    if (url && url.startsWith('/')) url = SUPABASE_URL + url;
+    if (!url) throw new Error('No signed URL');
+    return { path, url };
+  }
+
+  async function handleItemPhoto(itemId, input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!currentUser) { showToast('Sign in to add photos', 'danger'); return; }
+    showToast('Uploading...');
+    try {
+      const photo = await uploadPhotoFile(file);
+      if (!state.items[itemId].photos) state.items[itemId].photos = [];
+      state.items[itemId].photos.push({ ...photo, caption: '' });
+      refreshItem(itemId);
+      showToast('✓ Photo added', 'success');
+    } catch { showToast('⚠ Upload failed', 'danger'); }
+  }
+
+  async function handleMiscPhoto(input) {
+    const file = input.files?.[0];
+    if (!file) return;
+    if (!currentUser) { showToast('Sign in to add photos', 'danger'); return; }
+    showToast('Uploading...');
+    try {
+      const photo = await uploadPhotoFile(file);
+      state.misc.photos.push({ ...photo, caption: '' });
+      refreshMisc();
+      showToast('✓ Photo added', 'success');
+    } catch { showToast('⚠ Upload failed', 'danger'); }
+  }
+
+  async function removeItemPhoto(itemId, index) {
+    const photo = (state.items[itemId]?.photos || [])[index];
+    if (photo?.path) {
+      try {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/walkthrough-photos`, {
+          method: 'DELETE', headers: sbH(), body: JSON.stringify({ prefixes: [photo.path] })
+        });
+      } catch {}
+    }
+    if (state.items[itemId]?.photos) state.items[itemId].photos.splice(index, 1);
+    refreshItem(itemId);
+  }
+
+  async function removeMiscPhoto(index) {
+    const photo = (state.misc.photos || [])[index];
+    if (photo?.path) {
+      try {
+        await fetch(`${SUPABASE_URL}/storage/v1/object/walkthrough-photos`, {
+          method: 'DELETE', headers: sbH(), body: JSON.stringify({ prefixes: [photo.path] })
+        });
+      } catch {}
+    }
+    state.misc.photos.splice(index, 1);
+    refreshMisc();
+  }
+
+  function updateItemPhotoCaption(itemId, index, caption) {
+    if (state.items[itemId]?.photos?.[index] != null) state.items[itemId].photos[index].caption = caption;
+  }
+  function updateMiscPhotoCaption(index, caption) {
+    if (state.misc.photos?.[index] != null) state.misc.photos[index].caption = caption;
+  }
+
+  function viewPhoto(url) {
+    document.getElementById('photoViewerImg').src = url;
+    document.getElementById('photoViewer').classList.add('open');
+  }
+  function closePhotoViewer() {
+    document.getElementById('photoViewer').classList.remove('open');
+    document.getElementById('photoViewerImg').src = '';
+  }
+
+  // ── Misc section ─────────────────────────────────────────────
+  function renderMiscSection(sec) {
+    const total = getMiscTotal();
+    return `
+      <div class="section" id="sec-misc">
+        <div class="section-header closed" onclick="toggleSec('misc')">
+          <div class="section-header-left">
+            <span class="section-name">${sec.label}</span>
+          </div>
+          <div class="section-right">
+            <span class="section-subtotal${total ? ' lit' : ''}" id="stotal-misc">${total ? fmt(total) : ''}</span>
+            <span class="chevron">▼</span>
+          </div>
+        </div>
+        <div class="section-body closed" id="body-misc">
+          ${renderMiscBody()}
+        </div>
+      </div>`;
+  }
+
+  function renderMiscBody() {
+    const expenses = state.misc.expenses || [];
+    const photos   = state.misc.photos   || [];
+    return `<div class="misc-content">
+      <div class="misc-sub-label">Custom Expenses</div>
+      ${expenses.map(e => `
+        <div class="misc-expense-row">
+          <input class="misc-expense-name" type="text"
+            value="${(e.label || '').replace(/"/g, '&quot;')}" placeholder="Expense description..."
+            onblur="updateMiscExpense('${e.id}','label',this.value)">
+          <input class="misc-expense-cost" type="text" inputmode="numeric"
+            value="${e.cost ? fmt(e.cost) : ''}" placeholder="$0"
+            onfocus="this.value='${Math.round(e.cost || 0) || ''}';this.select()"
+            onblur="updateMiscExpense('${e.id}','cost',this.value,this)">
+          <button class="misc-expense-del" onclick="removeMiscExpense('${e.id}')">×</button>
+        </div>`).join('')}
+      <button class="misc-add-btn" onclick="addMiscExpense()">+ Add Expense</button>
+      <div class="misc-sub-label">General Photos</div>
+      <div class="photo-grid">
+        ${photos.map((p, i) => `
+          <div class="photo-thumb">
+            <img src="${p.url}" loading="lazy" onclick="viewPhoto(this.src)">
+            <button class="photo-del" onclick="removeMiscPhoto(${i})">×</button>
+            <input class="photo-caption" type="text" placeholder="Add note..."
+              value="${(p.caption || '').replace(/"/g, '&quot;')}"
+              onblur="updateMiscPhotoCaption(${i},this.value)">
+          </div>`).join('')}
+      </div>
+      <label class="add-photo-btn" style="margin-top:10px">📷 Add Photo
+        <input type="file" accept="image/*" style="display:none"
+          onchange="handleMiscPhoto(this)">
+      </label>
+    </div>`;
+  }
+
+  function refreshMisc() {
+    const body = document.getElementById('body-misc');
+    if (body) body.innerHTML = renderMiscBody();
+    const total = getMiscTotal();
+    const tEl = document.getElementById('stotal-misc');
+    if (tEl) { tEl.textContent = total ? fmt(total) : ''; tEl.className = `section-subtotal${total ? ' lit' : ''}`; }
+    updateFooter();
+  }
+
+  function addMiscExpense() {
+    const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
+    state.misc.expenses.push({ id, label: '', cost: 0 });
+    refreshMisc();
+    // Focus the new expense name input
+    setTimeout(() => {
+      const rows = document.querySelectorAll('.misc-expense-name');
+      if (rows.length) rows[rows.length - 1].focus();
+    }, 50);
+  }
+
+  function removeMiscExpense(id) {
+    state.misc.expenses = state.misc.expenses.filter(e => e.id !== id);
+    refreshMisc();
+  }
+
+  function updateMiscExpense(id, field, rawValue, inputEl) {
+    const exp = state.misc.expenses.find(e => e.id === id);
+    if (!exp) return;
+    if (field === 'cost') {
+      exp.cost = parseFloat(String(rawValue).replace(/[^0-9.]/g, '')) || 0;
+      if (inputEl) inputEl.value = exp.cost > 0 ? fmt(exp.cost) : '';
+    } else {
+      exp[field] = rawValue;
+    }
+    const total = getMiscTotal();
+    const tEl = document.getElementById('stotal-misc');
+    if (tEl) { tEl.textContent = total ? fmt(total) : ''; tEl.className = `section-subtotal${total ? ' lit' : ''}`; }
+    updateFooter();
   }
 
   // ── Copy total ───────────────────────────────────────────────
@@ -1271,7 +1587,7 @@
     const body  = {
       user_id: currentUser.id, name,
       property_name: state.propertyName,
-      items: state.items,
+      items: { ...state.items, _misc_: state.misc },
       subtotal: Math.round(sub),
       contingency_pct: 10,
       total,
