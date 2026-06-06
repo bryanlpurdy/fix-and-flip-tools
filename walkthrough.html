@@ -183,37 +183,6 @@
   }
   .section-body.closed { max-height: 0; }
 
-  /* ── Bath counter ── */
-  .bath-counter {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 13px 16px;
-    background: var(--surface2);
-    border-bottom: 1px solid var(--border);
-  }
-  .bath-counter-label { font-size: 0.9rem; color: var(--label); }
-  .counter-ctrl { display: flex; align-items: center; gap: 18px; }
-  .counter-btn {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text);
-    font-size: 1.3rem;
-    line-height: 1;
-    cursor: pointer;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .counter-btn:active { opacity: 0.6; }
-  .counter-val {
-    font-family: 'DM Mono', monospace;
-    font-size: 1.2rem;
-    color: var(--accent);
-    min-width: 20px;
-    text-align: center;
-  }
-
   /* ── Item row ── */
   .item-row {
     border-bottom: 1px solid var(--border);
@@ -923,13 +892,13 @@
       ]
     },
     {
-      id: 'bathroom', label: 'Bathrooms', bathSection: true,
+      id: 'bathroom', label: 'Bathrooms',
       items: [
-        { id: 'vanity',        label: 'Vanity',                type: 'per_bath', cost: 300 },
-        { id: 'shower_basic',  label: 'Shower — Basic rehab',  type: 'per_bath', cost: 1500 },
-        { id: 'shower_full',   label: 'Shower — Full replace', type: 'per_bath', cost: 4000 },
-        { id: 'tile_floor',    label: 'Tile Floors',           type: 'per_bath', cost: 500 },
-        { id: 'plumbing_fix',  label: 'Plumbing Fixtures',     type: 'per_bath', cost: 200 },
+        { id: 'vanity',        label: 'Vanity',                type: 'count', cost: 300,  unit: 'vanity' },
+        { id: 'shower_basic',  label: 'Shower — Basic rehab',  type: 'count', cost: 1500, unit: 'shower' },
+        { id: 'shower_full',   label: 'Shower — Full replace', type: 'count', cost: 4000, unit: 'shower' },
+        { id: 'tile_floor',    label: 'Tile Floors',           type: 'count', cost: 500,  unit: 'bath' },
+        { id: 'plumbing_fix',  label: 'Plumbing Fixtures',     type: 'count', cost: 200,  unit: 'bath' },
       ]
     },
     {
@@ -949,7 +918,7 @@
   let currentView = 'list';
   let deleteTargetId = null;
 
-  const state = { propertyName: '', bathCount: 1, items: {} };
+  const state = { propertyName: '', items: {} };
 
   SECTIONS.forEach(s => s.items.forEach(def => {
     state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0 };
@@ -970,7 +939,6 @@
     if (def.type === 'toggle')   return s.cost;
     if (def.type === 'count')    return s.cost * s.qty;
     if (def.type === 'sqft')     return def.rate * (s.sqft || 0);
-    if (def.type === 'per_bath') return s.cost * state.bathCount;
     return 0;
   }
 
@@ -1004,15 +972,6 @@
           </div>
         </div>
         <div class="section-body closed" id="body-${sec.id}">
-          ${sec.bathSection ? `
-            <div class="bath-counter">
-              <span class="bath-counter-label">Number of Bathrooms</span>
-              <div class="counter-ctrl">
-                <button class="counter-btn" onclick="adjBath(-0.5)">−</button>
-                <span class="counter-val" id="bathVal">${state.bathCount % 1 === 0 ? state.bathCount : state.bathCount.toFixed(1)}</span>
-                <button class="counter-btn" onclick="adjBath(0.5)">+</button>
-              </div>
-            </div>` : ''}
           ${sec.items.map(d => renderItem(d)).join('')}
         </div>
       </div>`;
@@ -1025,7 +984,6 @@
     if (def.type === 'toggle')   badge = fmt(s.cost);
     if (def.type === 'count')    badge = `${fmt(s.cost)} ea`;
     if (def.type === 'sqft')     badge = `$${def.rate}/sqft`;
-    if (def.type === 'per_bath') badge = `${fmt(s.cost)}/bath`;
     if (s.enabled && total > 0)  badge = fmt(total);
 
     let detail = '';
@@ -1067,11 +1025,6 @@
             oninput="setSqft('${def.id}',this.value)">
           <span class="detail-label">sqft @ $${def.rate}</span>
           <span class="detail-total">${s.sqft > 0 ? fmt(total) : '—'}</span>
-        </div>`;
-      } else if (def.type === 'per_bath') {
-        detail = `<div class="item-detail">
-          <span class="detail-label">${state.bathCount} bath${state.bathCount !== 1 ? 's' : ''} × ${fmt(s.cost)}</span>
-          <span class="detail-total">${fmt(total)}</span>
         </div>`;
       }
     }
@@ -1144,19 +1097,6 @@
     refreshItem(id);
   }
 
-  function adjBath(delta) {
-    state.bathCount = Math.max(0.5, +(state.bathCount + delta).toFixed(1));
-    const el = document.getElementById('bathVal');
-    if (el) el.textContent = state.bathCount % 1 === 0 ? state.bathCount : state.bathCount.toFixed(1);
-    const bathSec = SECTIONS.find(s => s.bathSection);
-    if (bathSec) {
-      bathSec.items.forEach(d => {
-        if (state.items[d.id].enabled) refreshItem(d.id);
-      });
-      refreshSectionMeta(bathSec.id);
-    }
-    updateFooter();
-  }
 
   function toggleSec(id) {
     const body   = document.getElementById('body-' + id);
@@ -1204,7 +1144,7 @@
 
   function newWalkthrough() {
     activeId = null; activeName = null;
-    state.propertyName = ''; state.bathCount = 1;
+    state.propertyName = '';
     SECTIONS.forEach(s => s.items.forEach(def => {
       state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0 };
     }));
@@ -1264,7 +1204,6 @@
       }));
       activeId = wt.id; activeName = wt.name;
       state.propertyName = wt.property_name || '';
-      state.bathCount = wt.bath_count || 1;
       if (wt.items) Object.keys(wt.items).forEach(k => { if (state.items[k]) Object.assign(state.items[k], wt.items[k]); });
       document.getElementById('propertyName').value = state.propertyName;
       renderAll();
@@ -1332,7 +1271,6 @@
     const body  = {
       user_id: currentUser.id, name,
       property_name: state.propertyName,
-      bath_count: state.bathCount,
       items: state.items,
       subtotal: Math.round(sub),
       contingency_pct: 10,
