@@ -954,6 +954,7 @@
     {
       id: 'exterior', label: 'Exterior & High Ticket Systems',
       items: [
+        { id: 'ext_demo',      label: 'Exterior Demo',               type: 'toggle', cost: 1500,  step: 250 },
         { id: 'roof_patch',    label: 'Roof — Patch',                type: 'toggle', cost: 1500,  step: 250 },
         { id: 'roof_replace',  label: 'Roof — Replace',              type: 'toggle', cost: 12000, step: 250 },
         { id: 'ext_siding',    label: 'Exterior Siding (repair)',     type: 'toggle', cost: 3000,  step: 250 },
@@ -978,7 +979,7 @@
     {
       id: 'interior', label: 'Interior & Kitchen',
       items: [
-        { id: 'demo',           label: 'Demo',                        type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'demo',           label: 'Interior Demo',               type: 'toggle', cost: 1500,  step: 250 },
         { id: 'texture',        label: 'Texture / Sheetrock',         type: 'toggle', cost: 3000,  step: 250 },
         { id: 'int_paint',      label: 'Interior Paint',              type: 'toggle', cost: 4000,  step: 250 },
         { id: 'lvp',            label: 'LVP Flooring',                type: 'sqft',   rate: 4.50 },
@@ -991,7 +992,9 @@
         { id: 'cab_paint',      label: 'Cabinets — Paint + Hardware', type: 'toggle', cost: 1500,  step: 250 },
         { id: 'countertops',    label: 'Countertops',                 type: 'toggle', cost: 3500,  step: 250 },
         { id: 'backsplash',     label: 'Kitchen Backsplash',          type: 'toggle', cost: 800,   step: 250 },
-        { id: 'garage_door',    label: 'Garage Door',                 type: 'toggle', cost: 1200,  step: 250 },
+        { id: 'ceiling_fan',   label: 'Ceiling Fan',                 type: 'count',  cost: 150,   unit: 'fan' },
+        { id: 'light_fixture', label: 'Light Fixture',               type: 'count',  cost: 100,   unit: 'fixture' },
+        { id: 'garage_door',   label: 'Garage Door',                 type: 'toggle', cost: 1200,  step: 250 },
         { id: 'permit',         label: 'Permit Allowance',            type: 'toggle', cost: 500,   step: 250 },
       ]
     },
@@ -1003,13 +1006,6 @@
         { id: 'shower_full',   label: 'Shower — Full replace', type: 'count', cost: 4000, unit: 'shower' },
         { id: 'tile_floor',    label: 'Tile Floors',           type: 'count', cost: 500,  unit: 'bath' },
         { id: 'plumbing_fix',  label: 'Plumbing Fixtures',     type: 'count', cost: 200,  unit: 'bath' },
-      ]
-    },
-    {
-      id: 'fixtures', label: 'Light Fixtures & Fans',
-      items: [
-        { id: 'ceiling_fan',   label: 'Ceiling Fan',    type: 'count', cost: 150, unit: 'fan' },
-        { id: 'light_fixture', label: 'Light Fixture',  type: 'count', cost: 100, unit: 'fixture' },
       ]
     },
     { id: 'misc', label: 'Misc Expenses / General Photos', miscSection: true, items: [] }
