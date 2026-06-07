@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A mobile-first web app for fix-and-flip real estate investors. Currently one tool: a **Property Walkthrough estimator** that lets the user walk a property, toggle repair items, adjust costs, attach photos, and save estimates to the cloud.
+A mobile-first web app for fix-and-flip real estate investors. Currently one tool: a **Property Walkthrough estimator** that lets the user walk a property, toggle repair items, adjust costs, attach photos, and save estimates to the cloud. Long-term vision is a **suite of tools** for investors, with potential to monetize beyond Bryan's own business.
 
 Owner/user: Bryan Purdy (bryan.lee.purdy@gmail.com)
 
@@ -40,12 +40,16 @@ create table walkthroughs (
   subtotal numeric not null default 0,
   contingency_pct numeric not null default 10,
   total numeric not null default 0,
+  notes text not null default '',
+  shared boolean not null default false,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 alter table walkthroughs enable row level security;
 create policy "Users manage own walkthroughs" on walkthroughs
   for all using (auth.uid() = user_id);
+create policy "Public read shared walkthroughs" on walkthroughs
+  for select using (shared = true);
 ```
 
 ### Storage — `walkthrough-photos` bucket
@@ -65,9 +69,26 @@ create policy "Users manage own walkthroughs" on walkthroughs
 - **Repo:** `https://github.com/bryanlpurdy/fix-and-flip-tools`
 - **Branch:** `main`
 - **Hosting:** GitHub Pages (auto-deploys from `main` on push — takes ~1 min)
+- **Current URL:** `https://bryanlpurdy.github.io/fix-and-flip-tools/walkthrough.html`
 - **Workflow:** edit locally → `git add` → `git commit` → `git push` → GitHub Pages redeploys
 
 There is no CI, no build step, no package.json. Push and it's live.
+
+### Custom Domain (pending decision)
+
+Bryan has an existing business site at **bluestarrealtygroup.com** hosted on GoDaddy. Two options discussed:
+
+**Option 1 — Subdomain (preferred starting point):** `tools.bluestarrealtygroup.com`
+- Free, no new domain needed
+- Setup: add a CNAME record in GoDaddy pointing to `bryanlpurdy.github.io`, add a `CNAME` file to the repo root containing `tools.bluestarrealtygroup.com`
+- Good fit if tools stay tied to the Blue Star brand
+
+**Option 2 — Standalone product domain:** e.g. `flipstacktools.com`, `rehabtools.io`
+- Better if monetizing as a SaaS product sold to other investors outside the business
+- ~$15/yr on GoDaddy, same GitHub Pages setup
+- Would eventually want custom-domain auth, billing, etc.
+
+Decision: start with Option 1, revisit if the product scales beyond Blue Star's own use.
 
 ---
 
@@ -79,28 +100,39 @@ There is no CI, no build step, no package.json. Push and it's live.
 const state = {
   propertyName: '',
   items: {},          // keyed by item id: { enabled, qty, sqft, cost, photos: [] }
-  misc: { expenses: [], photos: [] }
+  misc: { expenses: [], photos: [] },
+  notes: ''           // property comments (free text)
 };
 ```
 
-Misc expenses/photos are saved into the `items` JSONB column under the special key `_misc_`:
+Misc expenses/photos are saved into the `items` JSONB column under the special key `_misc_`. Notes save as a top-level `notes` column:
 ```js
-// saving:  items: { ...state.items, _misc_: state.misc }
-// loading: if (wt.items._misc_) state.misc = wt.items._misc_;
+// saving:  { items: { ...state.items, _misc_: state.misc }, notes: state.notes }
+// loading: state.misc = wt.items._misc_; state.notes = wt.notes;
 ```
 
 ### Sections (SECTIONS config)
 
-1. **Exterior & High Ticket Systems** — toggle/count items (roof, AC, electric, windows, etc.). First item is "Exterior Demo".
-2. **Interior & Kitchen** — toggle/count/sqft items. "Interior Demo" is the first item. Ceiling Fan and Light Fixture live here.
+Section order (top to bottom in the editor):
+1. **Interior & Kitchen** — toggle/count/sqft items. "Interior Demo" is the first item. Ceiling Fan and Light Fixture live here.
+2. **Exterior & High Ticket Items** — toggle/count items (roof, AC, electric, windows, etc.). First item is "Exterior Demo".
 3. **Bathrooms** — all `count` type (per-item qty, no global bath counter).
 4. **Misc Expenses / General Photos** — `{ id: 'misc', miscSection: true, items: [] }` — freehand dollar expenses + general property photos.
+5. **Property Comments** — free-text notes section, rendered after SECTIONS via `renderNotesSection()`.
 
 ### Item types
 
 - `toggle` — on/off with adjustable cost
 - `count` — integer quantity with per-unit cost
 - `sqft` — square footage with per-sqft rate
+
+### Sharing
+
+- Each walkthrough has a `shared boolean` column. When `true`, a Supabase RLS policy allows anonymous SELECT on that row.
+- Share URL format: `walkthrough.html?share=<UUID>`
+- On page load, if `?share=` is present the app skips normal boot and calls `loadSharedView(id)` — fetches with anon key only, renders `renderShareReport(wt)` in `#shareView`
+- The report shows only enabled items, photos/captions, misc expenses, property comments, and budget totals — no edit controls
+- Owner can revoke by patching `shared = false` (Disable button on the list card)
 
 ### Auth
 
