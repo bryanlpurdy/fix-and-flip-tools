@@ -1166,7 +1166,7 @@
           <input class="sqft-input" type="number" inputmode="numeric" placeholder="sq ft"
             value="${s.sqft || ''}"
             onclick="event.stopPropagation()"
-            oninput="setSqft('${def.id}',this.value)">
+            onblur="setSqft('${def.id}',this.value)">
           <span class="detail-label">sqft @ $${def.rate}</span>
           <span class="detail-total">${s.sqft > 0 ? fmt(total) : '—'}</span>
         </div>`;
