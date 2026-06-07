@@ -756,11 +756,6 @@
   }
   .wt-card-share-btn:active { background: var(--accent); color: var(--bg); }
   .wt-card-share-btn.active { border-color: var(--accent2); color: var(--accent2); }
-  .wt-card-share-off {
-    background: none; border: none; color: var(--muted); font-size: 0.72rem;
-    cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: underline; padding: 0;
-  }
-  .wt-card-share-off:active { color: var(--danger); }
 
   .list-empty {
     text-align: center; color: var(--muted);
@@ -1432,10 +1427,7 @@
     el.innerHTML = list.map(wt => {
       const safeName = wt.name.replace(/'/g, "\\'");
       const shareControls = wt.shared
-        ? `<div class="wt-card-share-row">
-             <button class="wt-card-share-btn active" onclick="event.stopPropagation();copyShareLink('${wt.id}')">🔗 Shared</button>
-             <button class="wt-card-share-off" onclick="event.stopPropagation();disableShare('${wt.id}')">Disable</button>
-           </div>`
+        ? `<button class="wt-card-share-btn active" onclick="event.stopPropagation();disableShare('${wt.id}')">🔗 Shared</button>`
         : `<button class="wt-card-share-btn" onclick="event.stopPropagation();enableShare('${wt.id}')">Share</button>`;
       return `<div class="wt-card" onclick="openWalkthrough('${wt.id}')">
         <div class="wt-card-top">
