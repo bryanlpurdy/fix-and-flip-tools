@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Icon Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  body { background: #1c2220; font-family: 'DM Sans', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 40px 20px; gap: 48px; margin: 0; }
+  .row { display: flex; flex-wrap: wrap; justify-content: center; gap: 40px; }
+  .option { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .label { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px; color: #9ab09e; }
+  .desc { font-size: 0.82rem; color: #6b7d74; text-align: center; max-width: 160px; line-height: 1.5; }
+  /* Simulate iOS rounded corners */
+  svg { border-radius: 38px; display: block; }
+  .sizes { display: flex; align-items: flex-end; gap: 12px; }
+  .size-label { font-size: 0.7rem; color: #6b7d74; text-align: center; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div style="font-family:'Bebas Neue',sans-serif;font-size:2rem;letter-spacing:3px;color:#c8f564;margin-bottom:8px;">Icon Options</div>
+<div style="font-size:0.85rem;color:#6b7d74;margin-bottom:16px;">Shown at home screen size (180px) and notification size (60px)</div>
+
+<div class="row">
+
+  <!-- Option A: House + Star -->
+  <div class="option">
+    <div class="label">Option A</div>
+    <div class="sizes">
+      <div>
+        <svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="180" height="180" rx="38" fill="#0d0f0e"/>
+          <!-- Roof -->
+          <polygon points="90,20 158,85 22,85" fill="#c8f564"/>
+          <!-- Chimney -->
+          <rect x="108" y="32" width="14" height="26" rx="2" fill="#c8f564"/>
+          <!-- Body -->
+          <rect x="30" y="83" width="120" height="74" rx="4" fill="#c8f564"/>
+          <!-- Star cutout -->
+          <text x="90" y="138" text-anchor="middle" font-size="46" fill="#0d0f0e">★</text>
+        </svg>
+        <div class="size-label">180px</div>
+      </div>
+      <div>
+        <svg width="60" height="60" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="180" height="180" rx="38" fill="#0d0f0e"/>
+          <polygon points="90,20 158,85 22,85" fill="#c8f564"/>
+          <rect x="108" y="32" width="14" height="26" rx="2" fill="#c8f564"/>
+          <rect x="30" y="83" width="120" height="74" rx="4" fill="#c8f564"/>
+          <text x="90" y="138" text-anchor="middle" font-size="46" fill="#0d0f0e">★</text>
+        </svg>
+        <div class="size-label">60px</div>
+      </div>
+    </div>
+    <div class="desc">House + Star cutout — ties Blue Star into the house shape</div>
+  </div>
+
+  <!-- Option B: B★ Monogram -->
+  <div class="option">
+    <div class="label">Option B</div>
+    <div class="sizes">
+      <div>
+        <svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="180" height="180" rx="38" fill="#0d0f0e"/>
+          <!-- Large B -->
+          <text x="70" y="128" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="108" fill="#c8f564">B</text>
+          <!-- Star top right -->
+          <text x="138" y="68" text-anchor="middle" font-size="40" fill="#c8f564">★</text>
+        </svg>
+        <div class="size-label">180px</div>
+      </div>
+      <div>
+        <svg width="60" height="60" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="180" height="180" rx="38" fill="#0d0f0e"/>
+          <text x="70" y="128" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-weight="bold" font-size="108" fill="#c8f564">B</text>
+          <text x="138" y="68" text-anchor="middle" font-size="40" fill="#c8f564">★</text>
+        </svg>
+        <div class="size-label">60px</div>
+      </div>
+    </div>
+    <div class="desc">B★ Monogram — directly branded to Blue Star, bold at any size</div>
+  </div>
+
+  <!-- Option C: House with flip arrows -->
+  <div class="option">
+    <div class="label">Option C</div>
+    <div class="sizes">
+      <div>
+        <svg width="180" height="180" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="180" height="180" rx="38" fill="#0d0f0e"/>
+          <!-- House smaller, shifted up -->
+          <polygon points="90,14 148,62 32,62" fill="#c8f564"/>
+          <rect x="38" y="60" width="104" height="60" rx="3" fill="#c8f564"/>
+          <!-- Door cutout -->
+          <rect x="72" y="84" width="36" height="36" rx="3" fill="#0d0f0e"/>
+          <!-- Flip arrows below -->
+          <!-- Left arrow arc (going left then up) -->
+          <path d="M 55,142 A 35,35 0 0 1 125,142" fill="none" stroke="#c8f564" stroke-width="9" stroke-linecap="round"/>
+          <polygon points="125,142 138,130 140,148" fill="#c8f564"/>
+          <path d="M 125,142 A 35,35 0 0 1 55,142" fill="none" stroke="#c8f564" stroke-width="9" stroke-linecap="round" opacity="0.4"/>
+          <polygon points="55,142 42,154 40,136" fill="#c8f564" opacity="0.4"/>
+        </svg>
+        <div class="size-label">180px</div>
+      </div>
+      <div>
+        <svg width="60" height="60" viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg">
+          <rect width="180" height="180" rx="38" fill="#0d0f0e"/>
+          <polygon points="90,14 148,62 32,62" fill="#c8f564"/>
+          <rect x="38" y="60" width="104" height="60" rx="3" fill="#c8f564"/>
+          <rect x="72" y="84" width="36" height="36" rx="3" fill="#0d0f0e"/>
+          <path d="M 55,142 A 35,35 0 0 1 125,142" fill="none" stroke="#c8f564" stroke-width="9" stroke-linecap="round"/>
+          <polygon points="125,142 138,130 140,148" fill="#c8f564"/>
+          <path d="M 125,142 A 35,35 0 0 1 55,142" fill="none" stroke="#c8f564" stroke-width="9" stroke-linecap="round" opacity="0.4"/>
+          <polygon points="55,142 42,154 40,136" fill="#c8f564" opacity="0.4"/>
+        </svg>
+        <div class="size-label">60px</div>
+      </div>
+    </div>
+    <div class="desc">House + Flip arrows — captures the fix &amp; flip concept directly</div>
+  </div>
+
+</div>
+
+</body>
+</html>
