@@ -69,7 +69,8 @@ create policy "Public read shared walkthroughs" on walkthroughs
 - **Repo:** `https://github.com/bryanlpurdy/fix-and-flip-tools`
 - **Branch:** `main`
 - **Hosting:** GitHub Pages (auto-deploys from `main` on push — takes ~1 min)
-- **Current URL:** `https://bryanlpurdy.github.io/fix-and-flip-tools/walkthrough.html`
+- **Live URL:** `https://tools.bluestarrealtygroup.com/walkthrough.html`
+- **Fallback URL:** `https://bryanlpurdy.github.io/fix-and-flip-tools/walkthrough.html`
 - **Workflow:** edit locally → `git add` → `git commit` → `git push` → GitHub Pages redeploys
 
 There is no CI, no build step, no package.json. Push and it's live.
@@ -88,7 +89,7 @@ Bryan has an existing business site at **bluestarrealtygroup.com** hosted on GoD
 - ~$15/yr on GoDaddy, same GitHub Pages setup
 - Would eventually want custom-domain auth, billing, etc.
 
-Decision: start with Option 1, revisit if the product scales beyond Blue Star's own use.
+**Status: Option 1 is live.** Custom domain `tools.bluestarrealtygroup.com` is configured with a GoDaddy CNAME record pointing to `bryanlpurdy.github.io`, CNAME file in repo root, and HTTPS enforced via GitHub Pages + Let's Encrypt.
 
 ---
 
