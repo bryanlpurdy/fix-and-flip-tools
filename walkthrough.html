@@ -961,7 +961,29 @@
   // ── Defaults config ──────────────────────────────────────────
   const SECTIONS = [
     {
-      id: 'exterior', label: 'Exterior & High Ticket Systems',
+      id: 'interior', label: 'Interior & Kitchen',
+      items: [
+        { id: 'demo',           label: 'Interior Demo',               type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'texture',        label: 'Texture / Sheetrock',         type: 'toggle', cost: 3000,  step: 250 },
+        { id: 'int_paint',      label: 'Interior Paint',              type: 'toggle', cost: 4000,  step: 250 },
+        { id: 'lvp',            label: 'LVP Flooring',                type: 'sqft',   rate: 4.50 },
+        { id: 'carpet',         label: 'Carpet',                      type: 'sqft',   rate: 3.00 },
+        { id: 'subfloor',       label: 'Subfloor repair',             type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'trim',           label: 'Trim — Floor + Door',         type: 'toggle', cost: 2500,  step: 250 },
+        { id: 'doors_int',      label: 'Doors — Interior',            type: 'count',  cost: 250,   unit: 'door' },
+        { id: 'doors_ext',      label: 'Doors — Exterior',            type: 'count',  cost: 500,   unit: 'door' },
+        { id: 'cab_replace',    label: 'Cabinets — Replace',          type: 'toggle', cost: 8000,  step: 250 },
+        { id: 'cab_paint',      label: 'Cabinets — Paint + Hardware', type: 'toggle', cost: 1500,  step: 250 },
+        { id: 'countertops',    label: 'Countertops',                 type: 'toggle', cost: 3500,  step: 250 },
+        { id: 'backsplash',     label: 'Kitchen Backsplash',          type: 'toggle', cost: 800,   step: 250 },
+        { id: 'ceiling_fan',   label: 'Ceiling Fan',                 type: 'count',  cost: 150,   unit: 'fan' },
+        { id: 'light_fixture', label: 'Light Fixture',               type: 'count',  cost: 100,   unit: 'fixture' },
+        { id: 'garage_door',   label: 'Garage Door',                 type: 'toggle', cost: 1200,  step: 250 },
+        { id: 'permit',         label: 'Permit Allowance',            type: 'toggle', cost: 500,   step: 250 },
+      ]
+    },
+    {
+      id: 'exterior', label: 'Exterior & High Ticket Items',
       items: [
         { id: 'ext_demo',      label: 'Exterior Demo',               type: 'toggle', cost: 1500,  step: 250 },
         { id: 'roof_patch',    label: 'Roof — Patch',                type: 'toggle', cost: 1500,  step: 250 },
@@ -983,28 +1005,6 @@
         { id: 'tree_work',     label: 'Exterior Tree Work',            type: 'toggle', cost: 1000,  step: 250 },
         { id: 'landscaping',   label: 'Base Landscaping',             type: 'toggle', cost: 1000,  step: 250 },
         { id: 'sprinklers',    label: 'Sprinklers — Repair',          type: 'toggle', cost: 500,   step: 50 },
-      ]
-    },
-    {
-      id: 'interior', label: 'Interior & Kitchen',
-      items: [
-        { id: 'demo',           label: 'Interior Demo',               type: 'toggle', cost: 1500,  step: 250 },
-        { id: 'texture',        label: 'Texture / Sheetrock',         type: 'toggle', cost: 3000,  step: 250 },
-        { id: 'int_paint',      label: 'Interior Paint',              type: 'toggle', cost: 4000,  step: 250 },
-        { id: 'lvp',            label: 'LVP Flooring',                type: 'sqft',   rate: 4.50 },
-        { id: 'carpet',         label: 'Carpet',                      type: 'sqft',   rate: 3.00 },
-        { id: 'subfloor',       label: 'Subfloor repair',             type: 'toggle', cost: 1500,  step: 250 },
-        { id: 'trim',           label: 'Trim — Floor + Door',         type: 'toggle', cost: 2500,  step: 250 },
-        { id: 'doors_int',      label: 'Doors — Interior',            type: 'count',  cost: 250,   unit: 'door' },
-        { id: 'doors_ext',      label: 'Doors — Exterior',            type: 'count',  cost: 500,   unit: 'door' },
-        { id: 'cab_replace',    label: 'Cabinets — Replace',          type: 'toggle', cost: 8000,  step: 250 },
-        { id: 'cab_paint',      label: 'Cabinets — Paint + Hardware', type: 'toggle', cost: 1500,  step: 250 },
-        { id: 'countertops',    label: 'Countertops',                 type: 'toggle', cost: 3500,  step: 250 },
-        { id: 'backsplash',     label: 'Kitchen Backsplash',          type: 'toggle', cost: 800,   step: 250 },
-        { id: 'ceiling_fan',   label: 'Ceiling Fan',                 type: 'count',  cost: 150,   unit: 'fan' },
-        { id: 'light_fixture', label: 'Light Fixture',               type: 'count',  cost: 100,   unit: 'fixture' },
-        { id: 'garage_door',   label: 'Garage Door',                 type: 'toggle', cost: 1200,  step: 250 },
-        { id: 'permit',         label: 'Permit Allowance',            type: 'toggle', cost: 500,   step: 250 },
       ]
     },
     {
