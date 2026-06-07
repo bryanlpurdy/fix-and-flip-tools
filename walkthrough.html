@@ -1394,7 +1394,7 @@
     const sign = await signRes.json();
     console.log('[photo sign] status:', signRes.status, 'body:', JSON.stringify(sign));
     let url = sign.signedURL || sign.signedUrl || '';
-    if (url && url.startsWith('/')) url = SUPABASE_URL + url;
+    if (url && url.startsWith('/')) url = url.startsWith('/storage/') ? SUPABASE_URL + url : `${SUPABASE_URL}/storage/v1${url}`;
     console.log('[photo] final url:', url);
     if (!url) throw new Error('No signed URL');
     return { path, url };
