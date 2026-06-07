@@ -25,6 +25,12 @@
   alter table walkthroughs enable row level security;
   create policy "Users manage own walkthroughs" on walkthroughs
     for all using (auth.uid() = user_id);
+
+  -- Run these to add sharing and notes support:
+  alter table walkthroughs add column if not exists shared boolean not null default false;
+  alter table walkthroughs add column if not exists notes text not null default '';
+  create policy "Public read shared walkthroughs" on walkthroughs
+    for select using (shared = true);
 -->
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -741,12 +747,78 @@
   .wt-card-addr { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
   .wt-card-bottom { display: flex; justify-content: space-between; align-items: center; }
   .wt-card-total { font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--accent); }
+  .wt-card-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
   .wt-card-date { font-size: 0.75rem; color: var(--muted); }
+  .wt-card-share-row { display: flex; align-items: center; gap: 8px; }
+  .wt-card-share-btn {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--muted); font-size: 0.72rem; padding: 3px 9px;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px;
+  }
+  .wt-card-share-btn:active { border-color: var(--accent2); color: var(--accent2); }
+  .wt-card-share-btn.active { border-color: var(--accent2); color: var(--accent2); }
+  .wt-card-share-off {
+    background: none; border: none; color: var(--muted); font-size: 0.72rem;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; text-decoration: underline; padding: 0;
+  }
+  .wt-card-share-off:active { color: var(--danger); }
 
   .list-empty {
     text-align: center; color: var(--muted);
     padding: 40px 16px; font-size: 0.92rem; line-height: 1.6;
   }
+
+  /* ── Property Comments (notes) ── */
+  .notes-content { padding: 12px 16px 16px; }
+  .notes-textarea {
+    width: 100%; min-height: 120px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text);
+    font-size: 0.9rem; font-family: 'DM Sans', sans-serif;
+    padding: 12px; outline: none; resize: vertical; line-height: 1.6;
+  }
+  .notes-textarea:focus { border-color: var(--accent); }
+  .notes-textarea::placeholder { color: var(--muted); }
+
+  /* ── Share report view ── */
+  #shareView { display: none; min-height: 100vh; }
+  .sr-wrap { max-width: 600px; margin: 0 auto; padding: 24px 16px 56px; }
+  .sr-app-name { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+  .sr-prop { font-family: 'Bebas Neue', sans-serif; font-size: 2.2rem; line-height: 1.1; color: var(--text); margin-bottom: 4px; }
+  .sr-wt-name { font-size: 0.9rem; color: var(--muted); margin-bottom: 4px; }
+  .sr-date { font-size: 0.78rem; color: var(--muted); margin-bottom: 24px; }
+  .sr-total-hero {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 20px; margin-bottom: 32px; text-align: center;
+  }
+  .sr-total-label { font-size: 0.7rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .sr-total-amount { font-family: 'DM Mono', monospace; font-size: 2.4rem; color: var(--accent); }
+  .sr-section { margin-bottom: 28px; }
+  .sr-section-hdr {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding-bottom: 8px; border-bottom: 1px solid var(--border); margin-bottom: 12px;
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 1px; color: var(--label);
+  }
+  .sr-section-hdr span:last-child { font-family: 'DM Mono', monospace; font-size: 0.9rem; color: var(--accent); }
+  .sr-item { margin-bottom: 10px; }
+  .sr-item-row { display: flex; align-items: baseline; gap: 8px; }
+  .sr-item-name { flex: 1; font-size: 0.92rem; color: var(--text); }
+  .sr-item-detail { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .sr-item-cost { font-family: 'DM Mono', monospace; font-size: 0.88rem; color: var(--label); white-space: nowrap; }
+  .sr-photos { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+  .sr-photo { width: 100px; }
+  .sr-photo img { width: 100px; height: 100px; object-fit: cover; border-radius: 8px; cursor: pointer; display: block; }
+  .sr-caption { font-size: 0.72rem; color: var(--muted); margin-top: 4px; word-break: break-word; line-height: 1.4; }
+  .sr-notes-text { font-size: 0.9rem; color: var(--text); line-height: 1.7; white-space: pre-wrap; }
+  .sr-summary {
+    border-top: 1px solid var(--border); padding-top: 16px; margin-top: 32px; margin-bottom: 24px;
+  }
+  .sr-sum-row { display: flex; justify-content: space-between; font-size: 0.9rem; color: var(--muted); padding: 5px 0; }
+  .sr-sum-row span:last-child { font-family: 'DM Mono', monospace; }
+  .sr-sum-total { color: var(--text); font-weight: 600; font-size: 1rem; padding-top: 12px; border-top: 1px solid var(--border); margin-top: 6px; }
+  .sr-footer { text-align: center; font-size: 0.75rem; color: var(--muted); padding-top: 8px; }
+  .sr-loading, .sr-error { text-align: center; padding: 80px 24px; color: var(--muted); font-size: 0.95rem; }
+  .sr-error { color: var(--danger); }
 </style>
 </head>
 <body>
@@ -869,6 +941,8 @@
   </div>
   <main id="main"></main>
 </div>
+
+<div id="shareView"></div>
 
 <div class="footer" id="mainFooter" style="display:none">
   <div class="footer-rows">
@@ -1054,7 +1128,7 @@
   let deleteTargetId = null;
   let captionCtx = null;
 
-  const state = { propertyName: '', items: {}, misc: { expenses: [], photos: [] } };
+  const state = { propertyName: '', items: {}, misc: { expenses: [], photos: [] }, notes: '' };
 
   SECTIONS.forEach(s => s.items.forEach(def => {
     state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
@@ -1095,8 +1169,27 @@
 
   // ── Render ───────────────────────────────────────────────────
   function renderAll() {
-    document.getElementById('main').innerHTML = SECTIONS.map(renderSection).join('');
+    document.getElementById('main').innerHTML = SECTIONS.map(renderSection).join('') + renderNotesSection();
     updateFooter();
+  }
+
+  function renderNotesSection() {
+    return `
+      <div class="section" id="sec-notes">
+        <div class="section-header closed" onclick="toggleSec('notes')">
+          <div class="section-header-left">
+            <span class="section-name">Property Comments</span>
+          </div>
+          <div class="section-right"><span class="chevron">▼</span></div>
+        </div>
+        <div class="section-body closed" id="body-notes">
+          <div class="notes-content">
+            <textarea class="notes-textarea"
+              placeholder="Add general notes, observations, or comments about the property..."
+              onblur="state.notes = this.value">${esc(state.notes || '')}</textarea>
+          </div>
+        </div>
+      </div>`;
   }
 
   function renderSection(sec) {
@@ -1304,6 +1397,7 @@
     activeId = null; activeName = null;
     state.propertyName = '';
     state.misc = { expenses: [], photos: [] };
+    state.notes = '';
     SECTIONS.forEach(s => s.items.forEach(def => {
       state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
     }));
@@ -1338,6 +1432,12 @@
     }
     el.innerHTML = list.map(wt => {
       const safeName = wt.name.replace(/'/g, "\\'");
+      const shareControls = wt.shared
+        ? `<div class="wt-card-share-row">
+             <button class="wt-card-share-btn active" onclick="event.stopPropagation();copyShareLink('${wt.id}')">🔗 Shared</button>
+             <button class="wt-card-share-off" onclick="event.stopPropagation();disableShare('${wt.id}')">Disable</button>
+           </div>`
+        : `<button class="wt-card-share-btn" onclick="event.stopPropagation();enableShare('${wt.id}')">Share</button>`;
       return `<div class="wt-card" onclick="openWalkthrough('${wt.id}')">
         <div class="wt-card-top">
           <div class="wt-card-name">${wt.name}</div>
@@ -1346,7 +1446,10 @@
         <div class="wt-card-addr">${wt.property_name || '—'}</div>
         <div class="wt-card-bottom">
           <span class="wt-card-total">${fmt(wt.total)}</span>
-          <span class="wt-card-date">${fmtDate(wt.updated_at)}</span>
+          <div class="wt-card-meta">
+            ${shareControls}
+            <span class="wt-card-date">${fmtDate(wt.updated_at)}</span>
+          </div>
         </div>
       </div>`;
     }).join('');
@@ -1362,8 +1465,10 @@
         state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
       }));
       state.misc = { expenses: [], photos: [] };
+      state.notes = '';
       activeId = wt.id; activeName = wt.name;
       state.propertyName = wt.property_name || '';
+      state.notes = wt.notes || '';
       if (wt.items) {
         if (wt.items._misc_) state.misc = wt.items._misc_;
         Object.keys(wt.items).forEach(k => { if (k !== '_misc_' && state.items[k]) Object.assign(state.items[k], wt.items[k]); });
@@ -1392,6 +1497,47 @@
       showToast('Deleted', 'success');
       loadWalkthroughs();
     } catch { showToast('⚠ Delete failed', 'danger'); }
+  }
+
+  // ── Sharing ──────────────────────────────────────────────────
+  function shareUrl(id) {
+    return `${location.origin}${location.pathname}?share=${id}`;
+  }
+  async function enableShare(id) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/walkthroughs?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: sbH({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ shared: true })
+      });
+      await navigator.clipboard.writeText(shareUrl(id)).catch(() => {});
+      showToast('✓ Link copied — sharing on', 'success');
+      loadWalkthroughs();
+    } catch { showToast('⚠ Could not enable sharing', 'danger'); }
+  }
+  async function disableShare(id) {
+    try {
+      await fetch(`${SUPABASE_URL}/rest/v1/walkthroughs?id=eq.${id}`, {
+        method: 'PATCH',
+        headers: sbH({ 'Prefer': 'return=minimal' }),
+        body: JSON.stringify({ shared: false })
+      });
+      showToast('Sharing disabled', 'success');
+      loadWalkthroughs();
+    } catch { showToast('⚠ Could not disable sharing', 'danger'); }
+  }
+  function copyShareLink(id) {
+    navigator.clipboard.writeText(shareUrl(id))
+      .then(() => showToast('✓ Link copied', 'success'))
+      .catch(() => showToast(shareUrl(id)));
+  }
+
+  function showShareView() {
+    document.getElementById('listView').style.display    = 'none';
+    document.getElementById('editorView').style.display  = 'none';
+    document.getElementById('editorNav').style.display   = 'none';
+    document.getElementById('mainFooter').style.display  = 'none';
+    document.getElementById('shareView').style.display   = 'block';
   }
 
   function signOut() {
@@ -1654,6 +1800,7 @@
     const body  = {
       user_id: currentUser.id, name,
       property_name: state.propertyName,
+      notes: state.notes,
       items: { ...state.items, _misc_: state.misc },
       subtotal: Math.round(sub),
       contingency_pct: 10,
@@ -1770,6 +1917,119 @@
     syncAuthModal();
   }
 
+  // ── Share report ─────────────────────────────────────────────
+  async function loadSharedView(id) {
+    document.getElementById('shareView').innerHTML = '<div class="sr-loading">Loading walkthrough...</div>';
+    showShareView();
+    try {
+      const res = await fetch(
+        `${SUPABASE_URL}/rest/v1/walkthroughs?id=eq.${id}&shared=eq.true`,
+        { headers: { 'apikey': SUPABASE_KEY, 'Accept': 'application/json' } }
+      ).then(r => r.json());
+      const wt = Array.isArray(res) ? res[0] : null;
+      if (!wt) {
+        document.getElementById('shareView').innerHTML = '<div class="sr-error">This walkthrough is not available or sharing has been disabled.</div>';
+        return;
+      }
+      document.getElementById('shareView').innerHTML = renderShareReport(wt);
+    } catch {
+      document.getElementById('shareView').innerHTML = '<div class="sr-error">Could not load walkthrough — check your connection and try again.</div>';
+    }
+  }
+
+  function renderShareReport(wt) {
+    const items = wt.items || {};
+    const misc  = items._misc_ || { expenses: [], photos: [] };
+    const notes = wt.notes || '';
+
+    let sectionsHtml = '';
+    for (const sec of SECTIONS) {
+      if (sec.miscSection) continue;
+      const enabledDefs = sec.items.filter(def => items[def.id]?.enabled);
+      if (!enabledDefs.length) continue;
+      const secTotal = enabledDefs.reduce((sum, def) => {
+        const s = items[def.id];
+        if (def.type === 'toggle') return sum + (s.cost || 0);
+        if (def.type === 'count')  return sum + (s.cost || 0) * (s.qty || 1);
+        if (def.type === 'sqft')   return sum + def.rate * (s.sqft || 0);
+        return sum;
+      }, 0);
+      const itemsHtml = enabledDefs.map(def => {
+        const s = items[def.id];
+        let lineTotal = 0, detail = '';
+        if (def.type === 'toggle') { lineTotal = s.cost || 0; }
+        if (def.type === 'count')  { lineTotal = (s.cost || 0) * (s.qty || 1); detail = `${s.qty || 1} ${def.unit || 'unit'}${(s.qty||1) !== 1 ? 's' : ''}`; }
+        if (def.type === 'sqft')   { lineTotal = def.rate * (s.sqft || 0); detail = `${(s.sqft||0).toLocaleString()} sqft`; }
+        const photosHtml = (s.photos || []).length ? `
+          <div class="sr-photos">${(s.photos||[]).map(p => `
+            <div class="sr-photo">
+              <img src="${p.url}" loading="lazy" onclick="viewPhoto(this.src)">
+              ${p.caption ? `<div class="sr-caption">${esc(p.caption)}</div>` : ''}
+            </div>`).join('')}
+          </div>` : '';
+        return `<div class="sr-item">
+          <div class="sr-item-row">
+            <span class="sr-item-name">${def.label}</span>
+            ${detail ? `<span class="sr-item-detail">${detail}</span>` : ''}
+            <span class="sr-item-cost">${fmt(lineTotal)}</span>
+          </div>${photosHtml}</div>`;
+      }).join('');
+      sectionsHtml += `<div class="sr-section">
+        <div class="sr-section-hdr"><span>${sec.label}</span><span>${fmt(secTotal)}</span></div>
+        ${itemsHtml}</div>`;
+    }
+
+    const miscExpenses = misc.expenses || [];
+    const miscPhotos   = misc.photos   || [];
+    const miscTotal    = miscExpenses.reduce((s, e) => s + (parseFloat(e.cost) || 0), 0);
+    let miscHtml = '';
+    if (miscExpenses.length || miscPhotos.length) {
+      miscHtml = `<div class="sr-section">
+        <div class="sr-section-hdr"><span>Misc Expenses / General Photos</span><span>${miscTotal ? fmt(miscTotal) : ''}</span></div>
+        ${miscExpenses.filter(e => e.label || e.cost).map(e => `
+          <div class="sr-item"><div class="sr-item-row">
+            <span class="sr-item-name">${esc(e.label || 'Expense')}</span>
+            <span class="sr-item-cost">${fmt(e.cost || 0)}</span>
+          </div></div>`).join('')}
+        ${miscPhotos.length ? `<div class="sr-photos">${miscPhotos.map(p => `
+          <div class="sr-photo">
+            <img src="${p.url}" loading="lazy" onclick="viewPhoto(this.src)">
+            ${p.caption ? `<div class="sr-caption">${esc(p.caption)}</div>` : ''}
+          </div>`).join('')}</div>` : ''}
+      </div>`;
+    }
+
+    const notesHtml = notes.trim() ? `<div class="sr-section">
+      <div class="sr-section-hdr"><span>Property Comments</span><span></span></div>
+      <p class="sr-notes-text">${esc(notes).replace(/\n/g, '<br>')}</p>
+    </div>` : '';
+
+    const sub = wt.subtotal || 0;
+    const contPct = wt.contingency_pct || 10;
+    const cont = Math.round(sub * contPct / 100);
+    const total = wt.total || 0;
+
+    return `<div class="sr-wrap">
+      <div class="sr-head">
+        <div class="sr-app-name">Fix &amp; Flip Tools — Walkthrough Report</div>
+        <h1 class="sr-prop">${esc(wt.property_name || wt.name)}</h1>
+        ${wt.property_name && wt.property_name !== wt.name ? `<div class="sr-wt-name">${esc(wt.name)}</div>` : ''}
+        <div class="sr-date">Updated ${fmtDate(wt.updated_at)}</div>
+      </div>
+      <div class="sr-total-hero">
+        <div class="sr-total-label">Total Budget</div>
+        <div class="sr-total-amount">${fmt(total)}</div>
+      </div>
+      ${sectionsHtml}${miscHtml}${notesHtml}
+      <div class="sr-summary">
+        <div class="sr-sum-row"><span>Subtotal</span><span>${fmt(sub)}</span></div>
+        <div class="sr-sum-row"><span>Contingency (${contPct}%)</span><span>${fmt(cont)}</span></div>
+        <div class="sr-sum-row sr-sum-total"><span>Total Budget</span><span>${fmt(total)}</span></div>
+      </div>
+      <div class="sr-footer">Shared via Fix &amp; Flip Tools</div>
+    </div>`;
+  }
+
   // ── Toast ────────────────────────────────────────────────────
   function showToast(msg, type = '') {
     const t = document.getElementById('toast');
@@ -1780,10 +2040,15 @@
   }
 
   // ── Boot ─────────────────────────────────────────────────────
-  loadSession();
-  updateAuthUI();
-  renderAll();
-  showList();
+  const _shareId = new URLSearchParams(location.search).get('share');
+  if (_shareId) {
+    loadSharedView(_shareId);
+  } else {
+    loadSession();
+    updateAuthUI();
+    renderAll();
+    showList();
+  }
 </script>
 </body>
 </html>
