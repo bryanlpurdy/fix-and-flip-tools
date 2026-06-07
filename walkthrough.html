@@ -738,12 +738,11 @@
   }
   .wt-card-name { font-size: 1rem; font-weight: 600; color: var(--text); flex: 1; }
   .wt-card-del {
-    background: none; border: none;
-    color: var(--muted); font-size: 0.8rem;
-    cursor: pointer; padding: 2px 0 2px 14px; flex-shrink: 0;
-    font-family: 'DM Sans', sans-serif;
+    background: none; border: 1px solid var(--danger); border-radius: 4px;
+    color: var(--danger); font-size: 0.72rem; padding: 3px 9px;
+    cursor: pointer; flex-shrink: 0; font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px;
   }
-  .wt-card-del:active { color: var(--danger); }
+  .wt-card-del:active { background: var(--danger); color: var(--bg); }
   .wt-card-addr { font-size: 0.85rem; color: var(--muted); margin-bottom: 12px; }
   .wt-card-bottom { display: flex; justify-content: space-between; align-items: center; }
   .wt-card-total { font-family: 'DM Mono', monospace; font-size: 1rem; color: var(--accent); }
@@ -751,11 +750,11 @@
   .wt-card-date { font-size: 0.75rem; color: var(--muted); }
   .wt-card-share-row { display: flex; align-items: center; gap: 8px; }
   .wt-card-share-btn {
-    background: none; border: 1px solid var(--label); border-radius: 4px;
-    color: var(--label); font-size: 0.72rem; padding: 3px 9px;
+    background: none; border: 1px solid var(--accent); border-radius: 4px;
+    color: var(--accent); font-size: 0.72rem; padding: 3px 9px;
     cursor: pointer; font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px;
   }
-  .wt-card-share-btn:active { border-color: var(--accent2); color: var(--accent2); }
+  .wt-card-share-btn:active { background: var(--accent); color: var(--bg); }
   .wt-card-share-btn.active { border-color: var(--accent2); color: var(--accent2); }
   .wt-card-share-off {
     background: none; border: none; color: var(--muted); font-size: 0.72rem;
