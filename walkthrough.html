@@ -553,14 +553,25 @@
     display: flex; align-items: center; justify-content: center;
   }
   .photo-caption {
-    width: 90px; background: none; border: none;
+    width: 90px;
+    font-size: 0.75rem;
+    color: var(--label);
+    padding: 4px 0;
+    cursor: pointer;
     border-bottom: 1px solid var(--border);
-    color: var(--muted);
-    font-size: 0.7rem; padding: 3px 0; outline: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-height: 22px;
     font-family: 'DM Sans', sans-serif;
   }
-  .photo-caption::placeholder { color: var(--border); }
-  .photo-caption:focus { border-bottom-color: var(--accent); color: var(--text); }
+  .photo-caption:active { border-bottom-color: var(--accent); }
+  .caption-ph { color: var(--muted); font-style: italic; }
+  .caption-modal-img {
+    width: 100%; border-radius: 8px; object-fit: cover;
+    max-height: 180px; margin-bottom: 16px; display: block;
+  }
+  .caption-modal-textarea { resize: none; line-height: 1.6; font-size: 0.95rem; margin-bottom: 14px; }
   .add-photo-btn {
     display: inline-flex; align-items: center; gap: 8px;
     padding: 9px 14px;
@@ -943,6 +954,19 @@
   <img id="photoViewerImg" src="" alt="">
 </div>
 
+<!-- Caption Editor Modal -->
+<div class="modal-overlay" id="captionModal">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Add Note</div>
+    <img id="captionModalImg" src="" alt="" class="caption-modal-img">
+    <textarea id="captionModalText" class="modal-input caption-modal-textarea"
+      rows="4" placeholder="Add a note about this photo..."></textarea>
+    <button class="modal-btn" onclick="saveCaptionModal()">Done</button>
+    <span class="modal-cancel" onclick="closeCaptionModal()">Cancel</span>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1028,6 +1052,7 @@
   let activeName = null;
   let currentView = 'list';
   let deleteTargetId = null;
+  let captionCtx = null;
 
   const state = { propertyName: '', items: {}, misc: { expenses: [], photos: [] } };
 
@@ -1037,6 +1062,7 @@
 
   // ── Helpers ──────────────────────────────────────────────────
   function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+  function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 
   function itemDef(id) {
     for (const s of SECTIONS)
@@ -1152,9 +1178,7 @@
           <div class="photo-thumb">
             <img src="${p.url}" loading="lazy" onclick="viewPhoto(this.src)">
             <button class="photo-del" onclick="removeItemPhoto('${def.id}',${i})">×</button>
-            <input class="photo-caption" type="text" placeholder="Add note..."
-              value="${(p.caption || '').replace(/"/g, '&quot;')}"
-              onblur="updateItemPhotoCaption('${def.id}',${i},this.value)">
+            <div class="photo-caption" data-type="item" data-id="${def.id}" data-idx="${i}" onclick="openCaptionModal(this)">${p.caption ? esc(p.caption) : '<span class="caption-ph">Add note...</span>'}</div>
           </div>`).join('')}</div>` : ''}
         <label class="add-photo-btn">📷 Add Photo
           <input type="file" accept="image/*" style="display:none"
@@ -1465,6 +1489,36 @@
     document.getElementById('photoViewerImg').src = '';
   }
 
+  function openCaptionModal(el) {
+    const type = el.dataset.type;
+    const idx  = parseInt(el.dataset.idx);
+    const itemId = el.dataset.id || null;
+    const photo = type === 'item'
+      ? state.items[itemId]?.photos?.[idx]
+      : state.misc.photos?.[idx];
+    if (!photo) return;
+    captionCtx = { type, itemId, index: idx };
+    document.getElementById('captionModalImg').src = photo.url;
+    document.getElementById('captionModalText').value = photo.caption || '';
+    document.getElementById('captionModal').classList.add('open');
+    setTimeout(() => document.getElementById('captionModalText').focus(), 80);
+  }
+  function saveCaptionModal() {
+    const caption = document.getElementById('captionModalText').value;
+    if (captionCtx?.type === 'item') {
+      updateItemPhotoCaption(captionCtx.itemId, captionCtx.index, caption);
+      refreshItem(captionCtx.itemId);
+    } else if (captionCtx?.type === 'misc') {
+      updateMiscPhotoCaption(captionCtx.index, caption);
+      refreshMisc();
+    }
+    closeCaptionModal();
+  }
+  function closeCaptionModal() {
+    document.getElementById('captionModal').classList.remove('open');
+    captionCtx = null;
+  }
+
   // ── Misc section ─────────────────────────────────────────────
   function renderMiscSection(sec) {
     const total = getMiscTotal();
@@ -1508,9 +1562,7 @@
           <div class="photo-thumb">
             <img src="${p.url}" loading="lazy" onclick="viewPhoto(this.src)">
             <button class="photo-del" onclick="removeMiscPhoto(${i})">×</button>
-            <input class="photo-caption" type="text" placeholder="Add note..."
-              value="${(p.caption || '').replace(/"/g, '&quot;')}"
-              onblur="updateMiscPhotoCaption(${i},this.value)">
+            <div class="photo-caption" data-type="misc" data-idx="${i}" onclick="openCaptionModal(this)">${p.caption ? esc(p.caption) : '<span class="caption-ph">Add note...</span>'}</div>
           </div>`).join('')}
       </div>
       <label class="add-photo-btn" style="margin-top:10px">📷 Add Photo
