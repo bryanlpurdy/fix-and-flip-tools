@@ -1497,7 +1497,11 @@
       ? state.items[itemId]?.photos?.[idx]
       : state.misc.photos?.[idx];
     if (!photo) return;
-    captionCtx = { type, itemId, index: idx };
+    const scrollY = window.scrollY;
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${scrollY}px`;
+    document.body.style.width = '100%';
+    captionCtx = { type, itemId, index: idx, scrollY };
     document.getElementById('captionModalImg').src = photo.url;
     document.getElementById('captionModalText').value = photo.caption || '';
     document.getElementById('captionModal').classList.add('open');
@@ -1505,7 +1509,6 @@
   }
   function saveCaptionModal() {
     const caption = document.getElementById('captionModalText').value;
-    const scrollY = window.scrollY;
     if (captionCtx?.type === 'item') {
       updateItemPhotoCaption(captionCtx.itemId, captionCtx.index, caption);
       refreshItem(captionCtx.itemId);
@@ -1514,9 +1517,13 @@
       refreshMisc();
     }
     closeCaptionModal();
-    requestAnimationFrame(() => window.scrollTo(0, scrollY));
   }
   function closeCaptionModal() {
+    const scrollY = captionCtx?.scrollY || 0;
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.width = '';
+    window.scrollTo(0, scrollY);
     document.getElementById('captionModal').classList.remove('open');
     captionCtx = null;
   }
