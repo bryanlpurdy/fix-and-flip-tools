@@ -886,23 +886,24 @@
     <div class="modal-handle"></div>
     <div class="modal-title" id="authTitle">Sign In</div>
     <div class="modal-sub">Save walkthroughs to your account.</div>
-    <div class="modal-field">
-      <label class="modal-label">Email</label>
-      <input type="text" class="modal-input" id="authEmail"
-        placeholder="you@example.com" oninput="clearAuthErr()">
-    </div>
-    <div class="modal-field">
-      <label class="modal-label">Password</label>
-      <div class="pw-row">
-        <input type="password" class="modal-input" id="authPassword"
-          placeholder="••••••••" oninput="clearAuthErr()"
-          onkeydown="if(event.key==='Enter')submitAuth()"
-          autocomplete="current-password">
-        <button class="toggle-pw" onclick="togglePw()" id="togglePwBtn" type="button">SHOW</button>
+    <form id="authForm" onsubmit="submitAuth();return false;" autocomplete="on">
+      <div class="modal-field">
+        <label class="modal-label">Email</label>
+        <input type="email" class="modal-input" id="authEmail"
+          placeholder="you@example.com" autocomplete="username" oninput="clearAuthErr()">
       </div>
-    </div>
-    <div class="modal-error" id="authError"></div>
-    <button class="modal-btn" id="authSubmitBtn" onclick="submitAuth()">Sign In</button>
+      <div class="modal-field">
+        <label class="modal-label">Password</label>
+        <div class="pw-row">
+          <input type="password" class="modal-input" id="authPassword"
+            placeholder="••••••••" oninput="clearAuthErr()"
+            autocomplete="current-password">
+          <button class="toggle-pw" onclick="togglePw()" id="togglePwBtn" type="button">SHOW</button>
+        </div>
+      </div>
+      <div class="modal-error" id="authError"></div>
+      <button class="modal-btn" id="authSubmitBtn" type="submit">Sign In</button>
+    </form>
     <div class="modal-toggle" id="authToggle">
       Don't have an account? <a onclick="toggleAuthMode()">Create one</a>
     </div>
@@ -1652,6 +1653,7 @@
     const si = authMode === 'signin';
     document.getElementById('authTitle').textContent      = si ? 'Sign In' : 'Create Account';
     document.getElementById('authSubmitBtn').textContent  = si ? 'Sign In' : 'Create Account';
+    document.getElementById('authPassword').autocomplete  = si ? 'current-password' : 'new-password';
     document.getElementById('authToggle').innerHTML = si
       ? `Don't have an account? <a onclick="toggleAuthMode()">Create one</a>`
       : `Already have an account? <a onclick="toggleAuthMode()">Sign in</a>`;
