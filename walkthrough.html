@@ -1385,17 +1385,12 @@
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${sbToken}`, 'Content-Type': file.type || 'image/jpeg' },
       body: file
     });
-    const upText = await up.clone().text().catch(() => '');
-    console.log('[photo upload] status:', up.status, 'body:', upText);
-    if (!up.ok) throw new Error(`Upload ${up.status}: ${upText}`);
-    const signRes = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/walkthrough-photos/${path}`, {
+    if (!up.ok) throw new Error(`Upload ${up.status}`);
+    const sign = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/walkthrough-photos/${path}`, {
       method: 'POST', headers: sbH(), body: JSON.stringify({ expiresIn: 31536000 })
-    });
-    const sign = await signRes.json();
-    console.log('[photo sign] status:', signRes.status, 'body:', JSON.stringify(sign));
+    }).then(r => r.json());
     let url = sign.signedURL || sign.signedUrl || '';
     if (url && url.startsWith('/')) url = url.startsWith('/storage/') ? SUPABASE_URL + url : `${SUPABASE_URL}/storage/v1${url}`;
-    console.log('[photo] final url:', url);
     if (!url) throw new Error('No signed URL');
     return { path, url };
   }
