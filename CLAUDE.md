@@ -23,9 +23,13 @@ Owner/user: Bryan Purdy (bryan.lee.purdy@gmail.com)
 ## Supabase Configuration
 
 ```
-Project URL: https://qplidmfishaclysckruq.supabase.co
+Project URL (original): https://qplidmfishaclysckruq.supabase.co
+Custom domain (active): https://api.bluestarrealtygroup.com
 Anon public key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbGlkbWZpc2hhY2x5c2NrcnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc2ODMsImV4cCI6MjA4OTc2MzY4M30.YEhxwrw-HxofmV4N3KRpbgDcT_a_OyqIkx49Wu7CjR0
+Plan: Pro ($25/mo) + Custom Domain add-on ($10/mo)
 ```
+
+**`SUPABASE_URL` in `walkthrough.html` is set to `https://api.bluestarrealtygroup.com`** — do not revert to the `.supabase.co` subdomain. The custom domain was added to fix AT&T ISP DNS resolution failures with Supabase's free-tier subdomain.
 
 ### Database — `walkthroughs` table
 
@@ -75,21 +79,19 @@ create policy "Public read shared walkthroughs" on walkthroughs
 
 There is no CI, no build step, no package.json. Push and it's live.
 
-### Custom Domain (pending decision)
+### Custom Domains
 
-Bryan has an existing business site at **bluestarrealtygroup.com** hosted on GoDaddy. Two options discussed:
+**Frontend:** `tools.bluestarrealtygroup.com` (GitHub Pages)
+- GoDaddy CNAME → `bryanlpurdy.github.io`
+- `CNAME` file in repo root
+- HTTPS enforced via GitHub Pages + Let's Encrypt
 
-**Option 1 — Subdomain (preferred starting point):** `tools.bluestarrealtygroup.com`
-- Free, no new domain needed
-- Setup: add a CNAME record in GoDaddy pointing to `bryanlpurdy.github.io`, add a `CNAME` file to the repo root containing `tools.bluestarrealtygroup.com`
-- Good fit if tools stay tied to the Blue Star brand
+**Supabase API:** `api.bluestarrealtygroup.com` (Supabase Custom Domain add-on)
+- GoDaddy CNAME → `qplidmfishaclysckruq.supabase.co`
+- TXT record `_acme-challenge.api` verified for SSL
+- Configured in Supabase Settings → Custom Domains
 
-**Option 2 — Standalone product domain:** e.g. `flipstacktools.com`, `rehabtools.io`
-- Better if monetizing as a SaaS product sold to other investors outside the business
-- ~$15/yr on GoDaddy, same GitHub Pages setup
-- Would eventually want custom-domain auth, billing, etc.
-
-**Status: Option 1 is live.** Custom domain `tools.bluestarrealtygroup.com` is configured with a GoDaddy CNAME record pointing to `bryanlpurdy.github.io`, CNAME file in repo root, and HTTPS enforced via GitHub Pages + Let's Encrypt.
+**Standalone product domain** (e.g. `flipstacktools.com`) remains an option if the tools are ever monetized as a SaaS product outside the Blue Star brand.
 
 ---
 
@@ -155,7 +157,7 @@ Section order (top to bottom in the editor):
 
 ## Known Gotchas
 
-- **Supabase free tier pauses** inactive projects. If DNS stops resolving (`ERR_NAME_NOT_RESOLVED`), the project needs to be manually restarted in the Supabase dashboard. It can take a few minutes to become healthy again.
+- **Supabase plan is Pro** — no free-tier pausing. The project stays active 24/7.
 - **No AbortController** on auth fetches — was tried, broke logins during Supabase cold start.
 - **Signed URL path prefix** — Supabase Storage sign endpoint omits `/storage/v1` from the returned path. Fixed with the conditional prepend above.
 - The `anon` key is intentionally in client-side code — it's the Supabase public anon key, not a secret. RLS policies are the security boundary.
