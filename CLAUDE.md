@@ -155,6 +155,16 @@ Section order (top to bottom in the editor):
 
 ---
 
+## AI Coding Guidelines
+
+### Think Before Coding
+Don't assume. Don't hide confusion. Before implementing, explicitly state assumptions, flag ambiguity, and ask for clarification when the request could be interpreted multiple ways. Surface tradeoffs before writing code, not after.
+
+### Surgical Changes
+Touch only what you must. When editing `walkthrough.html` (a large single-file app), don't improve unrelated sections or refactor working code while fixing something else. Match the existing style. Remove only what the current change made unused.
+
+---
+
 ## Known Gotchas
 
 - **Supabase plan is Pro** — no free-tier pausing. The project stays active 24/7.
