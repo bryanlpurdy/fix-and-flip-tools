@@ -2,11 +2,12 @@
 
 ## Project Overview
 
-A web app suite for fix-and-flip real estate investors. Currently two tools:
-- **Property Walkthrough** (`walkthrough.html`) — mobile-first estimator: walk a property, toggle repair items, adjust costs, attach photos, save to cloud.
-- **Deal Analyzer** (`deal-analyzer.html`) — desktop-primary deal analysis tool with a responsive mobile view.
+A web app suite for fix-and-flip real estate investors. Three files:
+- **`index.html`** — hub/launcher page: sign in once (or continue as guest), then choose a tool.
+- **`walkthrough.html`** — Property Walkthrough: mobile-first estimator — walk a property, toggle repair items, adjust costs, attach photos, save to cloud.
+- **`deal-analyzer.html`** — Deal Analyzer: desktop-primary deal analysis tool with a full responsive mobile view.
 
-Long-term vision: a **suite of tools** for investors and Realtors, with potential to monetize as a SaaS product beyond Bryan's own business. A central hub landing page (`index.html`) is planned — sign in once, access all tools.
+Long-term vision: expand the suite for investors and Realtors, with potential to monetize as a SaaS product beyond Bryan's own business.
 
 Owner/user: Bryan Purdy (bryan.lee.purdy@gmail.com)
 
@@ -15,9 +16,9 @@ Owner/user: Bryan Purdy (bryan.lee.purdy@gmail.com)
 ## Tech Stack
 
 - **Vanilla HTML/CSS/JS — single file per tool, no build step, no framework**
+- `index.html` — hub/launcher page (sign in once, pick a tool)
 - `walkthrough.html` — Property Walkthrough app (HTML + CSS + JS in one file)
 - `deal-analyzer.html` — Deal Analyzer app (HTML + CSS + JS in one file)
-- `index.html` — homepage / tool launcher (hub page, planned upgrade)
 - **Supabase** backend via direct REST API (not the JS SDK):
   - Auth: `/auth/v1/token` and `/auth/v1/signup`
   - Database: `/rest/v1/walkthroughs`, `/rest/v1/deals` (PostgREST)
@@ -34,7 +35,13 @@ Anon public key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 Plan: Pro ($25/mo) + Custom Domain add-on ($10/mo)
 ```
 
-**`SUPABASE_URL` in both `walkthrough.html` and `deal-analyzer.html` is set to `https://api.bluestarrealtygroup.com`** — do not revert to the `.supabase.co` subdomain. The custom domain was added to fix AT&T ISP DNS resolution failures with Supabase's free-tier subdomain.
+**`SUPABASE_URL` in all three files (`index.html`, `walkthrough.html`, `deal-analyzer.html`) is set to `https://api.bluestarrealtygroup.com`** — do not revert to the `.supabase.co` subdomain. The custom domain was added to fix AT&T ISP DNS resolution failures with Supabase's free-tier subdomain.
+
+### Email Templates
+
+Supabase email templates have been customized in **Authentication → Email Templates**:
+- **Confirm signup** — branded dark-green HTML template matching the app aesthetic, with "Fix & Flip Tools / by Blue Star Realty Group" header and lime green CTA button.
+- **Reset Password** — same branding and layout, with password-reset–specific copy.
 
 ### Database — `walkthroughs` table
 
@@ -96,6 +103,7 @@ The `data` column stores the full deal state: `{ name, inputs: {...}, results: {
 - **Repo:** `https://github.com/bryanlpurdy/fix-and-flip-tools`
 - **Branch:** `main`
 - **Hosting:** GitHub Pages (auto-deploys from `main` on push — takes ~1 min)
+- **Hub:** `https://tools.bluestarrealtygroup.com` (index.html)
 - **Walkthrough:** `https://tools.bluestarrealtygroup.com/walkthrough.html`
 - **Deal Analyzer:** `https://tools.bluestarrealtygroup.com/deal-analyzer.html`
 - **Fallback:** `https://bryanlpurdy.github.io/fix-and-flip-tools/`
@@ -116,6 +124,43 @@ There is no CI, no build step, no package.json. Push and it's live.
 - Configured in Supabase Settings → Custom Domains
 
 **Standalone product domain** (e.g. `flipstacktools.com`) remains an option if the tools are ever monetized as a SaaS product outside the Blue Star brand.
+
+---
+
+## App Architecture — `index.html` (Hub)
+
+The hub is the entry point for the suite. It handles auth and redirects users to tools.
+
+### Views
+- **Sign-in view** (default) — full-page centered card: email/password form, sign-up toggle, "Continue as Guest" button.
+- **Hub view** (after auth) — header with brand + auth status, tool card grid.
+
+### Auth flow
+```js
+initAuth()           // on load: checks sb_session in localStorage, verifies with Supabase
+  → valid session    → showHub()   (user sees tool cards, signed in)
+  → no/expired session → showSignin()
+
+submitAuth()         // sign in or sign up
+  → success          → saveSession() → showHub()
+
+continueAsGuest()    // skip auth
+  → showHub()        (currentUser = null, walkthrough note shown)
+
+signOut()            // clear session
+  → clearSession() → backToSignin()
+```
+
+### Shared session
+All three files use the same `localStorage` key `sb_session` (`{ access_token, user }`). Signing in on the hub means both tools open already authenticated — no second login required.
+
+### Guest mode
+Deal Analyzer is fully usable as a guest. Property Walkthrough requires sign-in to save — a warning note is shown on its tool card for guest users.
+
+### Back navigation
+Both tools have a `← All Tools` / `← Fix & Flip Tools` link back to `index.html`:
+- Desktop: `<a href="index.html" class="hub-back">← All Tools</a>` in each tool's `<header>`
+- Deal Analyzer mobile: `<a href="index.html" class="msv-hub-back">← Fix & Flip Tools</a>` inside `#mobileSigninView` (positioned absolute top-left, since the header is hidden on mobile sign-in)
 
 ---
 
@@ -184,35 +229,45 @@ Section order (top to bottom in the editor):
 ### Layout
 Desktop (>1024px): three-column — saved deals sidebar (resizable) | inputs panel | results panel (sticky).
 
-Mobile (≤1024px): two-view pattern controlled entirely by **JavaScript** (not CSS media queries — see gotcha below):
-- **List view** — deal cards showing name, ARV, color-coded profit. Default on mobile load.
-- **Editor view** — single-column scrolling inputs + sticky bottom bar with live Expected Profit + Save button.
+Mobile (≤1024px): three-view pattern controlled entirely by **JavaScript** (not CSS media queries — see gotcha below):
+- **Sign-in view** (`#mobileSigninView`) — full-screen landing: app icon, title, Sign In button, Continue as Guest. Shown when not signed in on mobile.
+- **List view** (`#mobileListView`) — deal cards showing name, ARV, color-coded profit. Shown when signed in on mobile.
+- **Editor view** (`.layout`) — single-column scrolling inputs + sticky bottom bar with live Expected Profit + Save button.
 
 ### Mobile View Switching
 ```js
 function isMobile() { return window.innerWidth <= 1024; }
 
 function showMobileList() {
-  document.getElementById('mobileListView').style.display = 'block';
+  const signedIn = !!currentUser;
+  document.getElementById('mobileSigninView').style.display = signedIn ? 'none' : 'block';
+  document.getElementById('mobileListView').style.display  = signedIn ? 'block' : 'none';
   document.querySelector('.layout').style.display = 'none';
   document.body.classList.remove('mobile-editor');
+  if (signedIn) document.body.classList.remove('mobile-signin');
+  else          document.body.classList.add('mobile-signin');
 }
 
 function showMobileEditor() {
-  document.getElementById('mobileListView').style.display = 'none';
+  document.getElementById('mobileSigninView').style.display = 'none';
+  document.getElementById('mobileListView').style.display   = 'none';
   document.querySelector('.layout').style.display = '';
+  document.body.classList.remove('mobile-signin');
   document.body.classList.add('mobile-editor');
+  window.scrollTo(0, 0);
 }
 ```
-`body.mobile-editor` is still used as a CSS hook for editor-mode styling (single-column grid, sticky profit bar, etc.) but show/hide is always driven by JS inline styles, not CSS selectors. **Do not switch this back to a CSS-only approach** — it proved unreliable across browsers and screen sizes.
+`body.mobile-editor` is used as a CSS hook for editor-mode styling (single-column grid, sticky profit bar, etc.) but show/hide is always driven by JS inline styles, not CSS selectors. **Do not switch this back to a CSS-only approach** — it proved unreliable across browsers and screen sizes.
 
-On init: `if (isMobile()) showMobileList();` runs before `calculate()` and `initAuth()`.
+`body.mobile-signin` hides the header (`header { display: none !important }`) during the sign-in landing screen. `showMobileEditor()` **must remove this class** — forgetting to do so was a previous bug where the sign-in screen remained visible on top of the editor.
+
+On init: `loadSession()` runs synchronously first, then `if (isMobile()) showMobileList()`, then `initAuth()` (async).
 
 ### Auth
-Same Supabase email+password pattern as the walkthrough. Session in `localStorage` as `sb_session`. Guest mode is supported in the Deal Analyzer (deals saved to `localStorage` under `flipDeals` key). Signed-in users get cloud sync via the `deals` Supabase table.
+Same Supabase email+password pattern as the walkthrough. Session in `localStorage` as `sb_session`. Guest mode is supported in the Deal Analyzer (no local storage fallback — guest users just can't save). Signed-in users get cloud sync via the `deals` Supabase table.
 
 ### Deal Data Flow
-Inputs → `calculate()` → results panel updates live. Save → `openSaveModal()` → `confirmSave()` → Supabase or localStorage. Load → `loadCloudDeal(id)` → `populateFields(inputs)` → `calculate()`.
+Inputs → `calculate()` → results panel updates live. Save → `openSaveModal()` → `confirmSave()` → Supabase. Load → `loadCloudDeal(id)` → `populateFields(inputs)` → `calculate()`.
 
 ---
 
@@ -222,7 +277,7 @@ Inputs → `calculate()` → results panel updates live. Save → `openSaveModal
 Don't assume. Don't hide confusion. Before implementing, explicitly state assumptions, flag ambiguity, and ask for clarification when the request could be interpreted multiple ways. Surface tradeoffs before writing code, not after.
 
 ### Surgical Changes
-Touch only what you must. When editing `walkthrough.html` (a large single-file app), don't improve unrelated sections or refactor working code while fixing something else. Match the existing style. Remove only what the current change made unused.
+Touch only what you must. When editing any of these large single-file apps, don't improve unrelated sections or refactor working code while fixing something else. Match the existing style. Remove only what the current change made unused.
 
 ---
 
@@ -233,4 +288,5 @@ Touch only what you must. When editing `walkthrough.html` (a large single-file a
 - **Signed URL path prefix** — Supabase Storage sign endpoint omits `/storage/v1` from the returned path. Fixed with the conditional prepend above.
 - The `anon` key is intentionally in client-side code — it's the Supabase public anon key, not a secret. RLS policies are the security boundary.
 - **Deal Analyzer mobile view — use JS, not CSS** — CSS `body:not(.mobile-editor)` media query selectors proved unreliable across browsers/screen sizes for show/hide. The current approach uses `element.style.display` inline styles controlled by `showMobileList()` / `showMobileEditor()`. Do not revert to a CSS-only approach.
-- **Both files must use the custom Supabase URL** — `deal-analyzer.html` previously still pointed to `qplidmfishaclysckruq.supabase.co`. Always use `https://api.bluestarrealtygroup.com` in both files.
+- **`showMobileEditor()` must hide `#mobileSigninView` and remove `body.mobile-signin`** — previously missing these caused the sign-in screen to remain visible on top of the editor when clicking "Continue as Guest".
+- **All three files must use the custom Supabase URL** — always use `https://api.bluestarrealtygroup.com` in `index.html`, `walkthrough.html`, and `deal-analyzer.html`. Never revert to `qplidmfishaclysckruq.supabase.co`.
