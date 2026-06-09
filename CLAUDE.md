@@ -118,8 +118,8 @@ Misc expenses/photos are saved into the `items` JSONB column under the special k
 
 Section order (top to bottom in the editor):
 1. **Interior & Kitchen** — toggle/count/sqft items. "Interior Demo" is the first item. Ceiling Fan and Light Fixture live here.
-2. **Exterior & High Ticket Items** — toggle/count items (roof, AC, electric, windows, etc.). First item is "Exterior Demo".
-3. **Bathrooms** — all `count` type (per-item qty, no global bath counter).
+2. **Bathrooms** — all `count` type (per-item qty, no global bath counter).
+3. **Exterior & High Ticket Items** — toggle/count items (roof, AC, electric, windows, etc.). First item is "Exterior Demo".
 4. **Misc Expenses / General Photos** — `{ id: 'misc', miscSection: true, items: [] }` — freehand dollar expenses + general property photos.
 5. **Property Comments** — free-text notes section, rendered after SECTIONS via `renderNotesSection()`.
 
