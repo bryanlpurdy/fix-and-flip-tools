@@ -679,7 +679,7 @@
   .list-signin {
     text-align: center;
     padding: 0 28px 40px;
-    max-width: 480px;
+    max-width: 900px;
     margin: 0 auto;
   }
   .list-signin-illustration {
@@ -708,6 +708,12 @@
   .list-signin-btn:active { background: #d8ff7a; }
   .list-signin-guest { font-size: 0.85rem; color: var(--muted); }
   .list-signin-guest a { color: var(--accent); cursor: pointer; }
+  @media (min-width: 481px) {
+    .list-signin-illustration { max-width: 560px; }
+    .list-signin-title { font-size: 2.4rem; }
+    .list-signin-sub { font-size: 1.05rem; margin-bottom: 36px; }
+    .list-signin-btn { max-width: 420px; }
+  }
 
   .list-content { padding: 16px; }
   .list-new-btn {
