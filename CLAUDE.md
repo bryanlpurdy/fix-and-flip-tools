@@ -2,7 +2,11 @@
 
 ## Project Overview
 
-A mobile-first web app for fix-and-flip real estate investors. Currently one tool: a **Property Walkthrough estimator** that lets the user walk a property, toggle repair items, adjust costs, attach photos, and save estimates to the cloud. Long-term vision is a **suite of tools** for investors, with potential to monetize beyond Bryan's own business.
+A web app suite for fix-and-flip real estate investors. Currently two tools:
+- **Property Walkthrough** (`walkthrough.html`) — mobile-first estimator: walk a property, toggle repair items, adjust costs, attach photos, save to cloud.
+- **Deal Analyzer** (`deal-analyzer.html`) — desktop-primary deal analysis tool with a responsive mobile view.
+
+Long-term vision: a **suite of tools** for investors and Realtors, with potential to monetize as a SaaS product beyond Bryan's own business. A central hub landing page (`index.html`) is planned — sign in once, access all tools.
 
 Owner/user: Bryan Purdy (bryan.lee.purdy@gmail.com)
 
@@ -11,11 +15,12 @@ Owner/user: Bryan Purdy (bryan.lee.purdy@gmail.com)
 ## Tech Stack
 
 - **Vanilla HTML/CSS/JS — single file per tool, no build step, no framework**
-- `walkthrough.html` — the entire walkthrough app (HTML + CSS + JS in one file)
-- `index.html` — homepage / tool launcher
+- `walkthrough.html` — Property Walkthrough app (HTML + CSS + JS in one file)
+- `deal-analyzer.html` — Deal Analyzer app (HTML + CSS + JS in one file)
+- `index.html` — homepage / tool launcher (hub page, planned upgrade)
 - **Supabase** backend via direct REST API (not the JS SDK):
   - Auth: `/auth/v1/token` and `/auth/v1/signup`
-  - Database: `/rest/v1/walkthroughs` (PostgREST)
+  - Database: `/rest/v1/walkthroughs`, `/rest/v1/deals` (PostgREST)
   - Storage: `/storage/v1/object/walkthrough-photos/{path}`
 
 ---
@@ -29,7 +34,7 @@ Anon public key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 Plan: Pro ($25/mo) + Custom Domain add-on ($10/mo)
 ```
 
-**`SUPABASE_URL` in `walkthrough.html` is set to `https://api.bluestarrealtygroup.com`** — do not revert to the `.supabase.co` subdomain. The custom domain was added to fix AT&T ISP DNS resolution failures with Supabase's free-tier subdomain.
+**`SUPABASE_URL` in both `walkthrough.html` and `deal-analyzer.html` is set to `https://api.bluestarrealtygroup.com`** — do not revert to the `.supabase.co` subdomain. The custom domain was added to fix AT&T ISP DNS resolution failures with Supabase's free-tier subdomain.
 
 ### Database — `walkthroughs` table
 
@@ -56,6 +61,24 @@ create policy "Public read shared walkthroughs" on walkthroughs
   for select using (shared = true);
 ```
 
+### Database — `deals` table (Deal Analyzer)
+
+```sql
+create table deals (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade,
+  name text not null,
+  data jsonb not null default '{}',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table deals enable row level security;
+create policy "Users manage own deals" on deals
+  for all using (auth.uid() = user_id);
+```
+
+The `data` column stores the full deal state: `{ name, inputs: {...}, results: { profit, totalCosts }, savedAt }`.
+
 ### Storage — `walkthrough-photos` bucket
 
 - Private bucket, accessed via signed URLs (1-year expiry = `31536000` seconds)
@@ -73,8 +96,9 @@ create policy "Public read shared walkthroughs" on walkthroughs
 - **Repo:** `https://github.com/bryanlpurdy/fix-and-flip-tools`
 - **Branch:** `main`
 - **Hosting:** GitHub Pages (auto-deploys from `main` on push — takes ~1 min)
-- **Live URL:** `https://tools.bluestarrealtygroup.com/walkthrough.html`
-- **Fallback URL:** `https://bryanlpurdy.github.io/fix-and-flip-tools/walkthrough.html`
+- **Walkthrough:** `https://tools.bluestarrealtygroup.com/walkthrough.html`
+- **Deal Analyzer:** `https://tools.bluestarrealtygroup.com/deal-analyzer.html`
+- **Fallback:** `https://bryanlpurdy.github.io/fix-and-flip-tools/`
 - **Workflow:** edit locally → `git add` → `git commit` → `git push` → GitHub Pages redeploys
 
 There is no CI, no build step, no package.json. Push and it's live.
@@ -155,6 +179,43 @@ Section order (top to bottom in the editor):
 
 ---
 
+## App Architecture — `deal-analyzer.html`
+
+### Layout
+Desktop (>1024px): three-column — saved deals sidebar (resizable) | inputs panel | results panel (sticky).
+
+Mobile (≤1024px): two-view pattern controlled entirely by **JavaScript** (not CSS media queries — see gotcha below):
+- **List view** — deal cards showing name, ARV, color-coded profit. Default on mobile load.
+- **Editor view** — single-column scrolling inputs + sticky bottom bar with live Expected Profit + Save button.
+
+### Mobile View Switching
+```js
+function isMobile() { return window.innerWidth <= 1024; }
+
+function showMobileList() {
+  document.getElementById('mobileListView').style.display = 'block';
+  document.querySelector('.layout').style.display = 'none';
+  document.body.classList.remove('mobile-editor');
+}
+
+function showMobileEditor() {
+  document.getElementById('mobileListView').style.display = 'none';
+  document.querySelector('.layout').style.display = '';
+  document.body.classList.add('mobile-editor');
+}
+```
+`body.mobile-editor` is still used as a CSS hook for editor-mode styling (single-column grid, sticky profit bar, etc.) but show/hide is always driven by JS inline styles, not CSS selectors. **Do not switch this back to a CSS-only approach** — it proved unreliable across browsers and screen sizes.
+
+On init: `if (isMobile()) showMobileList();` runs before `calculate()` and `initAuth()`.
+
+### Auth
+Same Supabase email+password pattern as the walkthrough. Session in `localStorage` as `sb_session`. Guest mode is supported in the Deal Analyzer (deals saved to `localStorage` under `flipDeals` key). Signed-in users get cloud sync via the `deals` Supabase table.
+
+### Deal Data Flow
+Inputs → `calculate()` → results panel updates live. Save → `openSaveModal()` → `confirmSave()` → Supabase or localStorage. Load → `loadCloudDeal(id)` → `populateFields(inputs)` → `calculate()`.
+
+---
+
 ## AI Coding Guidelines
 
 ### Think Before Coding
@@ -171,3 +232,5 @@ Touch only what you must. When editing `walkthrough.html` (a large single-file a
 - **No AbortController** on auth fetches — was tried, broke logins during Supabase cold start.
 - **Signed URL path prefix** — Supabase Storage sign endpoint omits `/storage/v1` from the returned path. Fixed with the conditional prepend above.
 - The `anon` key is intentionally in client-side code — it's the Supabase public anon key, not a secret. RLS policies are the security boundary.
+- **Deal Analyzer mobile view — use JS, not CSS** — CSS `body:not(.mobile-editor)` media query selectors proved unreliable across browsers/screen sizes for show/hide. The current approach uses `element.style.display` inline styles controlled by `showMobileList()` / `showMobileEditor()`. Do not revert to a CSS-only approach.
+- **Both files must use the custom Supabase URL** — `deal-analyzer.html` previously still pointed to `qplidmfishaclysckruq.supabase.co`. Always use `https://api.bluestarrealtygroup.com` in both files.
