@@ -78,6 +78,16 @@
 
   .header-left { display: flex; align-items: center; gap: 14px; }
 
+  .hub-back {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-decoration: none;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .hub-back:hover { color: var(--accent); }
+
   .header-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 1.35rem;
@@ -828,6 +838,7 @@
 
 <header>
   <div class="header-left">
+    <a href="index.html" class="hub-back">← All Tools</a>
     <span class="header-title">Property Walkthrough</span>
   </div>
   <div id="authStatus"></div>
