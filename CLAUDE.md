@@ -162,6 +162,7 @@ Both tools have a `← All Tools` / `← Fix & Flip Tools` link back to `index.h
 - Desktop: `<a href="index.html" class="hub-back">← All Tools</a>` in each tool's `<header>`
 - Deal Analyzer mobile sign-in: `<a href="index.html" class="msv-hub-back">← Fix & Flip Tools</a>` inside `#mobileSigninView` (positioned absolute top-left, since the header is hidden on mobile sign-in)
 - Deal Analyzer mobile list: `<a href="index.html" class="mlv-hub">← All Tools</a>` inside the `.mobile-list-nav` bar at the top of `#mobileListView` (the main header is hidden in list mode via `body.mobile-list`)
+- Walkthrough mobile list: `<a href="index.html" class="wlv-hub">← All Tools</a>` inside the `.wt-list-nav` bar at the top of `#listView` (the main header is hidden in list mode via `body.list-mode`)
 
 ---
 
@@ -206,6 +207,38 @@ Section order (top to bottom in the editor):
 - On page load, if `?share=` is present the app skips normal boot and calls `loadSharedView(id)` — fetches with anon key only, renders `renderShareReport(wt)` in `#shareView`
 - The report shows only enabled items, photos/captions, misc expenses, property comments, and budget totals — no edit controls
 - Owner can revoke by patching `shared = false` (Disable button on the list card)
+
+### View management
+
+Three views, switched by JS inline styles (same philosophy as Deal Analyzer):
+- **List view** (`#listView`) — shown on load and after `showList()`. Contains `.wt-list-nav` (hub link + title + `+ New`) at the top, then `#wlvAuthRow` (email + Sign Out, signed-in only), then either `#listSignin` (not signed in) or `#listContent` (signed in). `body.list-mode` hides the main header.
+- **Editor view** (`#editorView`) — shown by `showEditor()`. Main header reappears. `#editorNav` (← My Walkthroughs | + New) is shown below the header.
+- **Share view** (`#shareView`) — shown by `showShareView()` for `?share=<id>` URLs. Both `body.list-mode` and `body.editor-mode` are removed.
+
+```js
+function showList() {
+  // ...
+  document.body.classList.remove('editor-mode');
+  document.body.classList.add('list-mode');
+  if (currentUser) {
+    // show auth row, populate email
+  } else {
+    // hide auth row, show #listSignin
+  }
+}
+
+function showEditor() {
+  // ...
+  document.body.classList.remove('list-mode');
+  document.body.classList.add('editor-mode');
+}
+
+function showShareView() {
+  // ...
+  document.body.classList.remove('list-mode');
+  document.body.classList.remove('editor-mode');
+}
+```
 
 ### Auth
 
@@ -299,4 +332,5 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - The `anon` key is intentionally in client-side code — it's the Supabase public anon key, not a secret. RLS policies are the security boundary.
 - **Deal Analyzer mobile view — use JS, not CSS** — CSS `body:not(.mobile-editor)` media query selectors proved unreliable across browsers/screen sizes for show/hide. The current approach uses `element.style.display` inline styles controlled by `showMobileList()` / `showMobileEditor()`. Do not revert to a CSS-only approach.
 - **`showMobileEditor()` must hide `#mobileSigninView`, remove `body.mobile-signin`, and remove `body.mobile-list`** — missing either class removal leaves the main header hidden when entering the editor. The `mobile-signin` omission was a prior bug (guest login didn't navigate into the app); `mobile-list` must also be cleared when opening a deal from the list.
+- **Walkthrough `body.list-mode` hides the main header** — same pattern as `body.mobile-list` in the Deal Analyzer. `showEditor()` must remove it, or the header stays hidden in the editor. `showShareView()` must also remove it.
 - **All three files must use the custom Supabase URL** — always use `https://api.bluestarrealtygroup.com` in `index.html`, `walkthrough.html`, and `deal-analyzer.html`. Never revert to `qplidmfishaclysckruq.supabase.co`.
