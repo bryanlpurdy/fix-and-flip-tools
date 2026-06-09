@@ -831,6 +831,7 @@
     .user-email { display: none; }
     .btn-new { padding: 7px 12px !important; font-size: 0.78rem !important; }
     body.mobile-signin header { display: none !important; }
+    body.mobile-list header { display: none !important; }
 
     /* Editor mode */
     body.mobile-editor .mobile-back-btn { display: inline-flex; }
@@ -857,7 +858,48 @@
     body.mobile-editor #convFields { grid-template-columns: 1fr !important; }
 
     /* Mobile list view */
-    #mobileListView { padding: 16px; }
+    #mobileListView { padding: 0; }
+    .mobile-list-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 16px;
+      height: 52px;
+      border-bottom: 1px solid var(--border);
+      gap: 8px;
+    }
+    .mlv-hub {
+      font-size: 0.72rem; color: var(--muted); text-decoration: none;
+      letter-spacing: 0.5px; white-space: nowrap;
+      transition: color 0.15s; flex-shrink: 0;
+    }
+    .mlv-hub:hover { color: var(--accent); }
+    .mlv-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.15rem; letter-spacing: 2px;
+      color: var(--text); flex: 1; text-align: center;
+    }
+    .mlv-new {
+      background: var(--accent); color: #111; border: none;
+      border-radius: 6px; cursor: pointer;
+      font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;
+      padding: 6px 10px; white-space: nowrap; flex-shrink: 0;
+      transition: opacity 0.15s;
+    }
+    .mlv-new:hover { opacity: 0.85; }
+    .mlv-auth-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.72rem;
+    }
+    .mlv-email { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mlv-signout {
+      background: none; border: 1px solid var(--border); border-radius: 5px;
+      color: var(--muted); cursor: pointer; font-size: 0.68rem; font-weight: 600;
+      letter-spacing: 0.3px; padding: 4px 8px; flex-shrink: 0;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .mlv-signout:hover { color: var(--danger); border-color: var(--danger); }
+    .mlv-deals-area { padding: 16px; }
     .mobile-list-label {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 1rem; letter-spacing: 3px;
@@ -986,11 +1028,22 @@
 </div>
 
 <div id="mobileListView" style="display:none">
-  <div class="mobile-list-label">Saved Deals</div>
-  <div id="sidebarAuthBannerMobile" class="mobile-auth-banner" style="display:none">
-    <a onclick="openAuthModal('signin')">Sign in</a> to sync your deals across any device.
+  <div class="mobile-list-nav">
+    <a href="index.html" class="mlv-hub">← All Tools</a>
+    <div class="mlv-title">Deal Analyzer</div>
+    <button class="mlv-new" onclick="newDeal()">+ New</button>
   </div>
-  <div id="mobileDealCards"><div class="no-mobile-deals">No saved deals yet.<br>Tap <strong>+ New Deal</strong> to get started.</div></div>
+  <div id="mlvAuthRow" class="mlv-auth-row" style="display:none">
+    <span class="mlv-email" id="mlvEmail"></span>
+    <button class="mlv-signout" onclick="signOut()">Sign Out</button>
+  </div>
+  <div class="mlv-deals-area">
+    <div class="mobile-list-label">Saved Deals</div>
+    <div id="sidebarAuthBannerMobile" class="mobile-auth-banner" style="display:none">
+      <a onclick="openAuthModal('signin')">Sign in</a> to sync your deals across any device.
+    </div>
+    <div id="mobileDealCards"><div class="no-mobile-deals">No saved deals yet.<br>Tap <strong>+ New</strong> to get started.</div></div>
+  </div>
 </div>
 
 <div class="layout">
@@ -1682,8 +1735,16 @@
     document.getElementById('mobileListView').style.display = signedIn ? 'block' : 'none';
     document.querySelector('.layout').style.display = 'none';
     document.body.classList.remove('mobile-editor');
-    if (signedIn) document.body.classList.remove('mobile-signin');
-    else document.body.classList.add('mobile-signin');
+    if (signedIn) {
+      document.body.classList.remove('mobile-signin');
+      document.body.classList.add('mobile-list');
+      const authRow = document.getElementById('mlvAuthRow');
+      authRow.style.display = 'flex';
+      document.getElementById('mlvEmail').textContent = currentUser.email || '';
+    } else {
+      document.body.classList.add('mobile-signin');
+      document.body.classList.remove('mobile-list');
+    }
   }
 
   function showMobileEditor() {
@@ -1691,6 +1752,7 @@
     document.getElementById('mobileListView').style.display = 'none';
     document.querySelector('.layout').style.display = '';
     document.body.classList.remove('mobile-signin');
+    document.body.classList.remove('mobile-list');
     document.body.classList.add('mobile-editor');
     window.scrollTo(0, 0);
   }
