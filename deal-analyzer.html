@@ -3,7 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Fix & Flip Deal Analyzer</title>
+<title>Deal Analyzer — Fix &amp; Flip</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -812,13 +814,15 @@
     /* Header */
     header { padding: 12px 16px; }
     header h1 { font-size: 1.6rem; }
+    .header-left > span { display: none; }
     .btn-save, .btn-pdf { display: none !important; }
     .user-email { display: none; }
+    .btn-new { padding: 7px 12px !important; font-size: 0.78rem !important; }
+    body.mobile-signin header { display: none !important; }
 
     /* Editor mode */
     body.mobile-editor .mobile-back-btn { display: inline-flex; }
     body.mobile-editor header h1 { display: none; }
-    body.mobile-editor .header-left > span { display: none; }
     body.mobile-editor .btn-new { display: none !important; }
     body.mobile-editor .deals-sidebar,
     body.mobile-editor .resizer { display: none !important; }
@@ -893,6 +897,41 @@
       font-size: 0.9rem; font-weight: 700; padding: 12px 22px;
       cursor: pointer; flex-shrink: 0;
     }
+
+    /* Mobile sign-in landing screen */
+    #mobileSigninView {
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 40px 28px; text-align: center;
+    }
+    .msv-icon {
+      width: 80px; height: 80px;
+      border-radius: 18px; overflow: hidden;
+      margin: 0 auto 28px;
+    }
+    .msv-icon img { width: 100%; height: 100%; display: block; }
+    .msv-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2.2rem; letter-spacing: 3px;
+      color: var(--accent); margin-bottom: 10px;
+    }
+    .msv-sub {
+      font-size: 0.92rem; color: var(--muted);
+      line-height: 1.55; margin-bottom: 36px;
+      max-width: 280px;
+    }
+    .msv-signin-btn {
+      width: 100%; max-width: 320px; padding: 15px;
+      background: var(--accent); color: #0d0f0e;
+      border: none; border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 1rem; font-weight: 700;
+      cursor: pointer; margin-bottom: 14px;
+    }
+    .msv-signin-btn:active { background: #d8ff7a; }
+    .msv-guest { font-size: 0.85rem; color: var(--muted); }
+    .msv-guest a { color: var(--accent); cursor: pointer; }
   }
 </style>
 </head>
@@ -914,6 +953,14 @@
     <button class="btn btn-pdf" onclick="exportPDF()">⬇ Export PDF</button>
   </div>
 </header>
+
+<div id="mobileSigninView" style="display:none">
+  <div class="msv-icon"><img src="apple-touch-icon.png" alt="Deal Analyzer"></div>
+  <div class="msv-title">Deal Analyzer</div>
+  <div class="msv-sub">Analyze fix-and-flip deals and track your numbers.</div>
+  <button class="msv-signin-btn" onclick="openAuthModal('signin')">Sign In</button>
+  <div class="msv-guest">or <a onclick="newDeal()">continue as guest</a></div>
+</div>
 
 <div id="mobileListView" style="display:none">
   <div class="mobile-list-label">Saved Deals</div>
@@ -1439,6 +1486,7 @@
       showGuestBanner(true);
       renderSidebar();
     }
+    if (isMobile()) showMobileList();
   }
 
   function updateAuthUI() {
@@ -1530,6 +1578,7 @@
           closeAuthModal();
           showToast('✓ Signed in');
           await loadDealsFromSupabase();
+          if (isMobile()) showMobileList();
         }
       }
     } catch(e) {
@@ -1546,6 +1595,7 @@
     showGuestBanner(true);
     renderSidebar();
     showToast('Signed out', 'danger');
+    if (isMobile()) showMobileList();
   }
 
   // ── Supabase deal operations ─────────────────────────────────
@@ -1604,9 +1654,13 @@
   function isMobile() { return window.innerWidth <= 1024; }
 
   function showMobileList() {
-    document.getElementById('mobileListView').style.display = 'block';
+    const signedIn = !!currentUser;
+    document.getElementById('mobileSigninView').style.display = signedIn ? 'none' : 'block';
+    document.getElementById('mobileListView').style.display = signedIn ? 'block' : 'none';
     document.querySelector('.layout').style.display = 'none';
     document.body.classList.remove('mobile-editor');
+    if (signedIn) document.body.classList.remove('mobile-signin');
+    else document.body.classList.add('mobile-signin');
   }
 
   function showMobileEditor() {
@@ -2067,9 +2121,10 @@
   })();
 
   // ── Init ─────────────────────────────────────────────────────
-  if (isMobile()) showMobileList();
   calculate();
-  initAuth();
+  loadSession(); // sync: sets currentUser from localStorage before first render
+  if (isMobile()) showMobileList(); // correct initial view before async auth verify
+  initAuth(); // async: verifies token, calls showMobileList() again at end
 </script>
 
 </body>
