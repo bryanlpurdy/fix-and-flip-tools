@@ -684,7 +684,51 @@
   .nav-btn-new:active { color: var(--text); }
 
   /* ── List view ── */
+  body.list-mode header { display: none !important; }
   #editorView { display: none; }
+
+  .wt-list-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+  }
+  .wlv-hub {
+    font-size: 0.72rem; color: var(--muted); text-decoration: none;
+    letter-spacing: 0.5px; white-space: nowrap;
+    transition: color 0.15s; flex-shrink: 0;
+  }
+  .wlv-hub:hover { color: var(--accent); }
+  .wlv-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.15rem; letter-spacing: 2px;
+    color: var(--text); flex: 1; text-align: center;
+  }
+  .wlv-new {
+    background: var(--accent); color: #111; border: none;
+    border-radius: 6px; cursor: pointer;
+    font-size: 0.72rem; font-weight: 700; letter-spacing: 0.5px;
+    padding: 6px 10px; white-space: nowrap; flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s;
+  }
+  .wlv-new:active { opacity: 0.75; }
+  .wlv-auth-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.72rem;
+  }
+  .wlv-email { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .wlv-signout {
+    background: none; border: 1px solid var(--border); border-radius: 5px;
+    color: var(--muted); cursor: pointer; font-size: 0.68rem; font-weight: 600;
+    letter-spacing: 0.3px; padding: 4px 8px; flex-shrink: 0;
+    transition: color 0.15s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wlv-signout:active { color: var(--danger); border-color: var(--danger); }
 
   .list-signin {
     text-align: center;
@@ -850,6 +894,15 @@
 </div>
 
 <div id="listView">
+  <div class="wt-list-nav">
+    <a href="index.html" class="wlv-hub">← All Tools</a>
+    <div class="wlv-title">Property Walkthrough</div>
+    <button class="wlv-new" onclick="newWalkthrough()">+ New</button>
+  </div>
+  <div id="wlvAuthRow" class="wlv-auth-row" style="display:none">
+    <span class="wlv-email" id="wlvEmail"></span>
+    <button class="wlv-signout" onclick="signOut()">Sign Out</button>
+  </div>
   <div id="listSignin" class="list-signin">
     <svg class="list-signin-illustration" viewBox="0 0 360 200" xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -934,7 +987,6 @@
       <text x="85" y="141" text-anchor="middle" font-family="sans-serif" font-size="5.8" font-weight="bold" fill="#0a100a" letter-spacing="0.4">FOR</text>
       <text x="85" y="149" text-anchor="middle" font-family="sans-serif" font-size="5.8" font-weight="bold" fill="#0a100a" letter-spacing="0.4">SALE</text>
     </svg>
-    <div class="list-signin-title">Property Walkthrough</div>
     <div class="list-signin-sub">Sign in to save and revisit your walkthroughs across visits.</div>
     <button class="list-signin-btn" onclick="openAuthModal()">Sign In</button>
     <div class="list-signin-guest">or <a onclick="newWalkthrough()">continue as guest</a></div>
@@ -1386,13 +1438,18 @@
     document.getElementById('editorNav').style.display  = 'none';
     document.getElementById('mainFooter').style.display = 'none';
     document.body.classList.remove('editor-mode');
+    document.body.classList.add('list-mode');
     if (currentUser) {
       document.getElementById('listSignin').style.display  = 'none';
       document.getElementById('listContent').style.display = 'block';
+      const authRow = document.getElementById('wlvAuthRow');
+      authRow.style.display = 'flex';
+      document.getElementById('wlvEmail').textContent = currentUser.email || '';
       loadWalkthroughs();
     } else {
       document.getElementById('listSignin').style.display  = 'block';
       document.getElementById('listContent').style.display = 'none';
+      document.getElementById('wlvAuthRow').style.display  = 'none';
     }
     window.scrollTo(0, 0);
   }
@@ -1403,6 +1460,7 @@
     document.getElementById('editorView').style.display = 'block';
     document.getElementById('editorNav').style.display  = 'flex';
     document.getElementById('mainFooter').style.display = 'block';
+    document.body.classList.remove('list-mode');
     document.body.classList.add('editor-mode');
     window.scrollTo(0, 0);
   }
@@ -1549,6 +1607,8 @@
     document.getElementById('editorNav').style.display   = 'none';
     document.getElementById('mainFooter').style.display  = 'none';
     document.getElementById('shareView').style.display   = 'block';
+    document.body.classList.remove('list-mode');
+    document.body.classList.remove('editor-mode');
   }
 
   function signOut() {
