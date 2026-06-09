@@ -455,8 +455,13 @@
     </div>
     <div class="auth-field">
       <label>Password</label>
-      <input type="password" id="hubPassword" placeholder="••••••••" autocomplete="current-password"
-        onkeydown="if(event.key==='Enter')submitAuth()">
+      <div style="display:flex; gap:8px;">
+        <input type="password" id="hubPassword" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')submitAuth()"
+          style="flex:1; min-width:0;">
+        <button type="button" id="hubTogglePw" onclick="toggleHubPassword()"
+          style="width:52px; height:44px; flex-shrink:0; background:var(--surface2); border:1px solid var(--border); border-radius:8px; cursor:pointer; font-family:'DM Sans',sans-serif; font-size:0.7rem; font-weight:600; letter-spacing:0.5px; color:var(--muted); padding:0;">SHOW</button>
+      </div>
     </div>
 
     <div class="auth-error" id="authError"></div>
@@ -617,7 +622,11 @@
   function backToSignin() {
     document.getElementById('authError').textContent = '';
     document.getElementById('hubEmail').value = '';
-    document.getElementById('hubPassword').value = '';
+    const pw = document.getElementById('hubPassword');
+    pw.value = '';
+    pw.type  = 'password';
+    document.getElementById('hubTogglePw').textContent = 'SHOW';
+    document.getElementById('hubTogglePw').style.color = '';
     showSignin();
   }
 
@@ -675,6 +684,15 @@
       errEl.style.color = 'var(--danger)';
       errEl.textContent = data.error_description || data.msg || data.error || 'Sign in failed. Please check your credentials.';
     }
+  }
+
+  function toggleHubPassword() {
+    const input = document.getElementById('hubPassword');
+    const btn   = document.getElementById('hubTogglePw');
+    const show  = input.type === 'password';
+    input.type      = show ? 'text' : 'password';
+    btn.textContent = show ? 'HIDE' : 'SHOW';
+    btn.style.color = show ? 'var(--accent)' : 'var(--muted)';
   }
 
   function continueAsGuest() {
