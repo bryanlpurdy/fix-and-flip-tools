@@ -789,12 +789,123 @@
     header { padding: 18px 20px; }
     .inputs-panel, .results-panel { padding: 24px 20px; }
   }
+
+  /* ── Mobile back button + list view (hidden on desktop) ── */
+  .mobile-back-btn {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--label);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    letter-spacing: 0.3px;
+  }
+  .mobile-back-btn:hover { color: var(--accent); }
+  #mobileListView { display: none; }
+  .mobile-profit-bar { display: none; }
+
+  @media (max-width: 768px) {
+    /* Header */
+    header { padding: 12px 16px; }
+    header h1 { font-size: 1.6rem; }
+    .btn-save, .btn-pdf { display: none !important; }
+    .user-email { display: none; }
+
+    /* List mode — default mobile state */
+    body:not(.mobile-editor) #mobileListView { display: block; }
+    body:not(.mobile-editor) .layout { display: none !important; }
+
+    /* Editor mode */
+    body.mobile-editor .mobile-back-btn { display: inline-flex; }
+    body.mobile-editor header h1 { display: none; }
+    body.mobile-editor .header-left > span { display: none; }
+    body.mobile-editor .btn-new { display: none !important; }
+    body.mobile-editor .deals-sidebar,
+    body.mobile-editor .resizer { display: none !important; }
+    body.mobile-editor .layout { flex-direction: column; min-height: 0; }
+    body.mobile-editor .inputs-panel {
+      height: auto; overflow: visible;
+      padding: 20px 16px;
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+    }
+    body.mobile-editor .results-panel {
+      width: 100%; height: auto;
+      position: static;
+      padding: 20px 16px 100px;
+    }
+    body.mobile-editor .mobile-profit-bar { display: flex; }
+    body.mobile-editor .field-grid,
+    body.mobile-editor .field-grid.three { grid-template-columns: 1fr; }
+    body.mobile-editor .hard-money-fields.visible { grid-template-columns: 1fr !important; }
+    body.mobile-editor #convFields { grid-template-columns: 1fr !important; }
+
+    /* Mobile list view */
+    #mobileListView { padding: 16px; }
+    .mobile-list-label {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1rem; letter-spacing: 3px;
+      color: var(--muted);
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 12px;
+    }
+    .mobile-auth-banner {
+      margin-bottom: 16px; padding: 12px 14px;
+      background: rgba(200,245,100,0.05);
+      border: 1px solid rgba(200,245,100,0.15);
+      border-radius: 6px;
+      font-size: 0.75rem; color: var(--muted); line-height: 1.5;
+    }
+    .mobile-auth-banner a { color: var(--accent); cursor: pointer; font-weight: 600; }
+    .mobile-deal-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; margin-bottom: 10px;
+      cursor: pointer; display: flex; align-items: center; gap: 12px;
+      transition: border-color 0.15s;
+    }
+    .mobile-deal-card:active { border-color: var(--accent); background: rgba(200,245,100,0.04); }
+    .mdc-body { flex: 1; min-width: 0; }
+    .mdc-name { font-size: 1rem; font-weight: 500; color: var(--text); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mdc-arv { font-size: 0.78rem; color: var(--muted); font-family: 'DM Mono', monospace; margin-bottom: 3px; }
+    .mdc-profit { font-size: 0.85rem; font-family: 'DM Mono', monospace; font-weight: 500; }
+    .mdc-profit.pos { color: var(--accent2); }
+    .mdc-profit.neg { color: var(--danger); }
+    .mdc-profit.warn { color: var(--warn); }
+    .mdc-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 8px; flex-shrink: 0; }
+    .mdc-del:active { color: var(--danger); }
+    .no-mobile-deals { padding: 32px 0; text-align: center; font-size: 0.85rem; color: var(--muted); line-height: 1.7; }
+
+    /* Mobile profit bar */
+    .mobile-profit-bar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      align-items: center; justify-content: space-between; gap: 12px;
+      z-index: 500;
+    }
+    .mpb-left { flex: 1; min-width: 0; }
+    .mpb-label { font-size: 0.6rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 2px; }
+    .mpb-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.9rem; letter-spacing: 2px; line-height: 1; color: var(--accent2); }
+    .mpb-save {
+      background: var(--accent); color: #0d0f0e; border: none;
+      border-radius: 8px; font-family: 'DM Sans', sans-serif;
+      font-size: 0.9rem; font-weight: 700; padding: 12px 22px;
+      cursor: pointer; flex-shrink: 0;
+    }
+  }
 </style>
 </head>
 <body>
 
 <header>
   <div class="header-left">
+    <button class="mobile-back-btn" id="mobileBackBtn" onclick="mobileGoBack()">&#8592; Deals</button>
     <h1>Deal Analyzer</h1>
     <span>Fix &amp; Flip</span>
   </div>
@@ -808,6 +919,14 @@
     <button class="btn btn-pdf" onclick="exportPDF()">⬇ Export PDF</button>
   </div>
 </header>
+
+<div id="mobileListView">
+  <div class="mobile-list-label">Saved Deals</div>
+  <div id="sidebarAuthBannerMobile" class="mobile-auth-banner" style="display:none">
+    <a onclick="openAuthModal('signin')">Sign in</a> to sync your deals across any device.
+  </div>
+  <div id="mobileDealCards"><div class="no-mobile-deals">No saved deals yet.<br>Tap <strong>+ New Deal</strong> to get started.</div></div>
+</div>
 
 <div class="layout">
   <!-- SAVED DEALS SIDEBAR -->
@@ -1128,6 +1247,14 @@
   </div>
 </div>
 
+<div class="mobile-profit-bar" id="mobileProfitBar">
+  <div class="mpb-left">
+    <div class="mpb-label">Expected Profit</div>
+    <div class="mpb-value" id="mpbProfit">$0</div>
+  </div>
+  <button class="mpb-save" onclick="openSaveModal()">Save</button>
+</div>
+
 <!-- Auth Modal -->
 <div class="modal-overlay" id="authModal">
   <div class="modal" style="width:400px;">
@@ -1178,7 +1305,7 @@
 
 <script>
   // ── Supabase config ──────────────────────────────────────────
-  const SUPABASE_URL = 'https://qplidmfishaclysckruq.supabase.co';
+  const SUPABASE_URL = 'https://api.bluestarrealtygroup.com';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbGlkbWZpc2hhY2x5c2NrcnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc2ODMsImV4cCI6MjA4OTc2MzY4M30.YEhxwrw-HxofmV4N3KRpbgDcT_a_OyqIkx49Wu7CjR0';
   let sbAccessToken = null;
 
@@ -1334,6 +1461,8 @@
 
   function showGuestBanner(show) {
     document.getElementById('sidebarAuthBanner').style.display = show ? 'block' : 'none';
+    const mb = document.getElementById('sidebarAuthBannerMobile');
+    if (mb) mb.style.display = show ? 'block' : 'none';
   }
 
   // ── Auth modal ───────────────────────────────────────────────
@@ -1476,8 +1605,50 @@
     setTimeout(() => t.classList.remove('show'), 2200);
   }
 
+  // ── Mobile helpers ───────────────────────────────────────────
+  function isMobile() { return window.innerWidth <= 768; }
+
+  function mobileGoBack() {
+    document.body.classList.remove('mobile-editor');
+    if (currentUser) loadDealsFromSupabase();
+    else renderSidebar();
+  }
+
+  function renderMobileList(cloudDeals) {
+    const container = document.getElementById('mobileDealCards');
+    if (!container) return;
+    const mobileBanner = document.getElementById('sidebarAuthBannerMobile');
+    if (!currentUser) {
+      if (mobileBanner) mobileBanner.style.display = 'block';
+      container.innerHTML = '<div class="no-mobile-deals">Sign in to save and sync your deals across devices.</div>';
+      return;
+    }
+    if (mobileBanner) mobileBanner.style.display = 'none';
+    if (!cloudDeals || !cloudDeals.length) {
+      container.innerHTML = '<div class="no-mobile-deals">No saved deals yet.<br>Tap <strong>+ New Deal</strong> to get started.</div>';
+      return;
+    }
+    container.innerHTML = cloudDeals.map(d => {
+      const profit = d.data?.results?.profit || 0;
+      const desired = d.data?.inputs?.desiredProfit || 0;
+      const profitClass = profit >= desired ? 'pos' : profit > 0 ? 'warn' : 'neg';
+      const profitFmt = '$' + Math.round(Math.abs(profit)).toLocaleString();
+      const sign = profit < 0 ? '-' : '+';
+      const arv = d.data?.inputs?.arv || 0;
+      return `<div class="mobile-deal-card" onclick="loadCloudDeal('${d.id}')">
+        <div class="mdc-body">
+          <div class="mdc-name">${d.name}</div>
+          <div class="mdc-arv">ARV ${fmt(arv)}</div>
+          <div class="mdc-profit ${profitClass}">${sign}${profitFmt} profit</div>
+        </div>
+        <button class="mdc-del" onclick="event.stopPropagation();deleteCloudDeal(event,'${d.id}','${d.name.replace(/'/g,"\\'")}')">✕</button>
+      </div>`;
+    }).join('');
+  }
+
   // ── Sidebar ──────────────────────────────────────────────────
   function renderSidebar(cloudDeals) {
+    renderMobileList(cloudDeals);
     const list = document.getElementById('dealsList');
 
     if (currentUser && cloudDeals) {
@@ -1598,6 +1769,7 @@
       populateFields(deal.data.inputs);
       await loadDealsFromSupabase();
       showToast('Loaded: ' + deal.name);
+      if (isMobile()) document.body.classList.add('mobile-editor');
     } catch(e) {
       showToast('⚠ Error loading deal');
     }
@@ -1677,6 +1849,7 @@
     if (currentUser) loadDealsFromSupabase();
     else renderSidebar();
     showToast('New deal — enter your numbers');
+    if (isMobile()) document.body.classList.add('mobile-editor');
   }
 
   function exportPDF() { window.print(); }
@@ -1853,6 +2026,12 @@
       verdict.className = 'verdict ok'; verdictText.textContent = `⚠ Below target — ${fmt(desiredProfit - profit)} short of desired profit`;
     } else {
       verdict.className = 'verdict bad'; verdictText.textContent = `✗ Deal loses money at this purchase price`;
+    }
+
+    const mpbEl = document.getElementById('mpbProfit');
+    if (mpbEl) {
+      mpbEl.textContent = fmt(profit);
+      mpbEl.style.color = profit >= desiredProfit ? 'var(--accent2)' : profit > 0 ? 'var(--warn)' : 'var(--danger)';
     }
   }
 
