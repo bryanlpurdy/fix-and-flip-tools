@@ -160,7 +160,8 @@ Deal Analyzer is fully usable as a guest. Property Walkthrough requires sign-in 
 ### Back navigation
 Both tools have a `← All Tools` / `← Fix & Flip Tools` link back to `index.html`:
 - Desktop: `<a href="index.html" class="hub-back">← All Tools</a>` in each tool's `<header>`
-- Deal Analyzer mobile: `<a href="index.html" class="msv-hub-back">← Fix & Flip Tools</a>` inside `#mobileSigninView` (positioned absolute top-left, since the header is hidden on mobile sign-in)
+- Deal Analyzer mobile sign-in: `<a href="index.html" class="msv-hub-back">← Fix & Flip Tools</a>` inside `#mobileSigninView` (positioned absolute top-left, since the header is hidden on mobile sign-in)
+- Deal Analyzer mobile list: `<a href="index.html" class="mlv-hub">← All Tools</a>` inside the `.mobile-list-nav` bar at the top of `#mobileListView` (the main header is hidden in list mode via `body.mobile-list`)
 
 ---
 
@@ -231,7 +232,7 @@ Desktop (>1024px): three-column — saved deals sidebar (resizable) | inputs pan
 
 Mobile (≤1024px): three-view pattern controlled entirely by **JavaScript** (not CSS media queries — see gotcha below):
 - **Sign-in view** (`#mobileSigninView`) — full-screen landing: app icon, title, Sign In button, Continue as Guest. Shown when not signed in on mobile.
-- **List view** (`#mobileListView`) — deal cards showing name, ARV, color-coded profit. Shown when signed in on mobile.
+- **List view** (`#mobileListView`) — custom nav bar (`.mobile-list-nav`: `← All Tools` | `Deal Analyzer` | `+ New`) + auth row (`#mlvAuthRow`: email + Sign Out) + deal cards. The main header is hidden via `body.mobile-list`. Shown when signed in on mobile.
 - **Editor view** (`.layout`) — single-column scrolling inputs + sticky bottom bar with live Expected Profit + Save button.
 
 ### Mobile View Switching
@@ -244,8 +245,16 @@ function showMobileList() {
   document.getElementById('mobileListView').style.display  = signedIn ? 'block' : 'none';
   document.querySelector('.layout').style.display = 'none';
   document.body.classList.remove('mobile-editor');
-  if (signedIn) document.body.classList.remove('mobile-signin');
-  else          document.body.classList.add('mobile-signin');
+  if (signedIn) {
+    document.body.classList.remove('mobile-signin');
+    document.body.classList.add('mobile-list');
+    const authRow = document.getElementById('mlvAuthRow');
+    authRow.style.display = 'flex';
+    document.getElementById('mlvEmail').textContent = currentUser.email || '';
+  } else {
+    document.body.classList.add('mobile-signin');
+    document.body.classList.remove('mobile-list');
+  }
 }
 
 function showMobileEditor() {
@@ -253,13 +262,14 @@ function showMobileEditor() {
   document.getElementById('mobileListView').style.display   = 'none';
   document.querySelector('.layout').style.display = '';
   document.body.classList.remove('mobile-signin');
+  document.body.classList.remove('mobile-list');
   document.body.classList.add('mobile-editor');
   window.scrollTo(0, 0);
 }
 ```
 `body.mobile-editor` is used as a CSS hook for editor-mode styling (single-column grid, sticky profit bar, etc.) but show/hide is always driven by JS inline styles, not CSS selectors. **Do not switch this back to a CSS-only approach** — it proved unreliable across browsers and screen sizes.
 
-`body.mobile-signin` hides the header (`header { display: none !important }`) during the sign-in landing screen. `showMobileEditor()` **must remove this class** — forgetting to do so was a previous bug where the sign-in screen remained visible on top of the editor.
+`body.mobile-signin` hides the header during the sign-in landing screen. `body.mobile-list` hides the header during the list view — the list view renders its own nav bar (`.mobile-list-nav`) inside `#mobileListView` instead. `showMobileEditor()` **must remove both classes** — failing to do so leaves the header hidden when entering the editor.
 
 On init: `loadSession()` runs synchronously first, then `if (isMobile()) showMobileList()`, then `initAuth()` (async).
 
@@ -288,5 +298,5 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **Signed URL path prefix** — Supabase Storage sign endpoint omits `/storage/v1` from the returned path. Fixed with the conditional prepend above.
 - The `anon` key is intentionally in client-side code — it's the Supabase public anon key, not a secret. RLS policies are the security boundary.
 - **Deal Analyzer mobile view — use JS, not CSS** — CSS `body:not(.mobile-editor)` media query selectors proved unreliable across browsers/screen sizes for show/hide. The current approach uses `element.style.display` inline styles controlled by `showMobileList()` / `showMobileEditor()`. Do not revert to a CSS-only approach.
-- **`showMobileEditor()` must hide `#mobileSigninView` and remove `body.mobile-signin`** — previously missing these caused the sign-in screen to remain visible on top of the editor when clicking "Continue as Guest".
+- **`showMobileEditor()` must hide `#mobileSigninView`, remove `body.mobile-signin`, and remove `body.mobile-list`** — missing either class removal leaves the main header hidden when entering the editor. The `mobile-signin` omission was a prior bug (guest login didn't navigate into the app); `mobile-list` must also be cleared when opening a deal from the list.
 - **All three files must use the custom Supabase URL** — always use `https://api.bluestarrealtygroup.com` in `index.html`, `walkthrough.html`, and `deal-analyzer.html`. Never revert to `qplidmfishaclysckruq.supabase.co`.
