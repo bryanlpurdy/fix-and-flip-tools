@@ -806,7 +806,6 @@
     letter-spacing: 0.3px;
   }
   .mobile-back-btn:hover { color: var(--accent); }
-  #mobileListView { display: none; }
   .mobile-profit-bar { display: none; }
 
   @media (max-width: 1024px) {
@@ -815,10 +814,6 @@
     header h1 { font-size: 1.6rem; }
     .btn-save, .btn-pdf { display: none !important; }
     .user-email { display: none; }
-
-    /* List mode — default mobile state */
-    body:not(.mobile-editor) #mobileListView { display: block; }
-    body:not(.mobile-editor) .layout { display: none !important; }
 
     /* Editor mode */
     body.mobile-editor .mobile-back-btn { display: inline-flex; }
@@ -920,7 +915,7 @@
   </div>
 </header>
 
-<div id="mobileListView">
+<div id="mobileListView" style="display:none">
   <div class="mobile-list-label">Saved Deals</div>
   <div id="sidebarAuthBannerMobile" class="mobile-auth-banner" style="display:none">
     <a onclick="openAuthModal('signin')">Sign in</a> to sync your deals across any device.
@@ -1608,8 +1603,20 @@
   // ── Mobile helpers ───────────────────────────────────────────
   function isMobile() { return window.innerWidth <= 1024; }
 
-  function mobileGoBack() {
+  function showMobileList() {
+    document.getElementById('mobileListView').style.display = 'block';
+    document.querySelector('.layout').style.display = 'none';
     document.body.classList.remove('mobile-editor');
+  }
+
+  function showMobileEditor() {
+    document.getElementById('mobileListView').style.display = 'none';
+    document.querySelector('.layout').style.display = '';
+    document.body.classList.add('mobile-editor');
+  }
+
+  function mobileGoBack() {
+    showMobileList();
     if (currentUser) loadDealsFromSupabase();
     else renderSidebar();
   }
@@ -1769,7 +1776,7 @@
       populateFields(deal.data.inputs);
       await loadDealsFromSupabase();
       showToast('Loaded: ' + deal.name);
-      if (isMobile()) document.body.classList.add('mobile-editor');
+      if (isMobile()) showMobileEditor();
     } catch(e) {
       showToast('⚠ Error loading deal');
     }
@@ -1849,7 +1856,7 @@
     if (currentUser) loadDealsFromSupabase();
     else renderSidebar();
     showToast('New deal — enter your numbers');
-    if (isMobile()) document.body.classList.add('mobile-editor');
+    if (isMobile()) showMobileEditor();
   }
 
   function exportPDF() { window.print(); }
@@ -2060,6 +2067,7 @@
   })();
 
   // ── Init ─────────────────────────────────────────────────────
+  if (isMobile()) showMobileList();
   calculate();
   initAuth();
 </script>
