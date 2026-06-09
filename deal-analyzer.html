@@ -1664,9 +1664,12 @@
   }
 
   function showMobileEditor() {
+    document.getElementById('mobileSigninView').style.display = 'none';
     document.getElementById('mobileListView').style.display = 'none';
     document.querySelector('.layout').style.display = '';
+    document.body.classList.remove('mobile-signin');
     document.body.classList.add('mobile-editor');
+    window.scrollTo(0, 0);
   }
 
   function mobileGoBack() {
