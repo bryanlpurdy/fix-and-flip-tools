@@ -687,9 +687,9 @@
   .wt-layout { display: none; }
 
   .wt-sidebar {
-    width: 240px;
+    width: 480px;
     min-width: 140px;
-    max-width: 420px;
+    max-width: 600px;
     flex-shrink: 0;
     background: var(--surface);
     border-right: 1px solid var(--border);
@@ -830,7 +830,7 @@
   }
 
   /* Desktop footer: offset to match sidebar, not extend under it */
-  :root { --wt-sidebar-w: 240px; }
+  :root { --wt-sidebar-w: 480px; }
   body:not(.editor-mode) .footer { left: var(--wt-sidebar-w); }
 
   /* Mobile editor: hide sidebar (list view handles navigation instead) */
@@ -1787,7 +1787,7 @@
     });
     document.addEventListener('mousemove', e => {
       if (!dragging) return;
-      const newW = Math.min(420, Math.max(140, startW + (e.clientX - startX)));
+      const newW = Math.min(600, Math.max(140, startW + (e.clientX - startX)));
       sidebar.style.width = newW + 'px';
       document.documentElement.style.setProperty('--wt-sidebar-w', newW + 'px');
     });

@@ -123,9 +123,9 @@
 
   /* Resizable sidebar */
   .deals-sidebar {
-    width: 220px;
+    width: 440px;
     min-width: 120px;
-    max-width: 420px;
+    max-width: 600px;
     flex-shrink: 0;
   }
 
@@ -2233,7 +2233,7 @@
     });
     document.addEventListener('mousemove', e => {
       if (!dragging) return;
-      sidebar.style.width = Math.min(420, Math.max(120, startW + (e.clientX - startX))) + 'px';
+      sidebar.style.width = Math.min(600, Math.max(120, startW + (e.clientX - startX))) + 'px';
     });
     document.addEventListener('mouseup', () => {
       if (!dragging) return;
