@@ -708,10 +708,11 @@
   async function initAuth() {
     const hasSession = loadSession();
     if (hasSession) {
+      showHub(); // show immediately from localStorage — avoids flash on back-navigation
       const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: sbHeaders() }).catch(() => null);
       if (r?.ok) {
         currentUser = await r.json();
-        showHub();
+        renderHubUI();
       } else {
         clearSession();
         showSignin();
