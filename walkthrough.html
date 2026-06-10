@@ -1621,6 +1621,7 @@
       document.getElementById('listView').style.display  = 'none';
       document.getElementById('wtLayout').style.display  = 'flex';
       document.body.classList.remove('list-mode');
+      updateWtEmptyState();
       renderWtSidebar();
       if (currentUser) loadWalkthroughs();
       return;
@@ -1731,11 +1732,13 @@
     if (!currentUser) {
       authEl.style.display = 'block';
       listEl.innerHTML = '';
+      updateWtEmptyState();
       return;
     }
     authEl.style.display = 'none';
     if (!walks || !walks.length) {
       listEl.innerHTML = '<div class="wt-no-saves">No saved walkthroughs yet.<br>Click <strong>+ New</strong> to get started.</div>';
+      updateWtEmptyState();
       return;
     }
     listEl.innerHTML = walks.map(wt => {
@@ -2414,7 +2417,6 @@
   } else {
     loadSession();
     updateAuthUI();
-    renderAll();
     showList();
   }
 </script>
