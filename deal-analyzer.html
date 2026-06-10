@@ -160,7 +160,24 @@
     border-right: 1px solid var(--border);
     overflow-y: auto;
     height: calc(100vh - 69px);
+    position: relative;
   }
+
+  #daEmptyState {
+    display: none;
+    position: absolute; inset: 0;
+    background: var(--bg);
+    align-items: center; justify-content: center; flex-direction: column;
+    text-align: center; padding: 40px; z-index: 1;
+    color: var(--muted);
+  }
+  #daEmptyState.visible { display: flex; }
+  .da-empty-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem; letter-spacing: 2px;
+    color: var(--text); margin-bottom: 8px;
+  }
+  .da-empty-text { font-size: 0.85rem; line-height: 1.6; }
 
   .results-panel {
     width: 380px;
@@ -1062,6 +1079,11 @@
   <!-- INPUTS -->
   <div class="inputs-panel">
 
+    <div id="daEmptyState">
+      <div class="da-empty-title">No Deal Selected</div>
+      <div class="da-empty-text">Select a saved deal from the sidebar<br>or click <strong>+ New Deal</strong> to analyze one.</div>
+    </div>
+
     <!-- Property -->
     <div class="section">
       <div class="section-title"><span class="dot"></span>Property</div>
@@ -1520,6 +1542,7 @@
   let activeDealId = null;   // Supabase UUID when logged in
   let activeDealKey = null;  // localStorage key when guest
   let currentUser = null;
+  let _daEditorActive = false;
   const STORAGE_KEY = 'flipDeals';
   let authMode = 'signin'; // or 'signup'
 
@@ -1795,6 +1818,12 @@
     }).join('');
   }
 
+  function updateDaEmptyState() {
+    const el = document.getElementById('daEmptyState');
+    if (!el) return;
+    el.classList.toggle('visible', !isMobile() && !_daEditorActive);
+  }
+
   // ── Sidebar ──────────────────────────────────────────────────
   function renderSidebar(cloudDeals) {
     renderMobileList(cloudDeals);
@@ -1829,6 +1858,7 @@
       // Guest — show empty state, no localStorage deals shown on load
       list.innerHTML = '<div class="no-deals">Sign in to save and sync your deals across devices.</div>';
     }
+    updateDaEmptyState();
   }
 
   // ── Save flow ────────────────────────────────────────────────
@@ -1915,8 +1945,10 @@
       const deal = Array.isArray(data) ? data[0] : data;
       if (!deal) return;
       activeDealId = id;
+      _daEditorActive = true;
       populateFields(deal.data.inputs);
       await loadDealsFromSupabase();
+      updateDaEmptyState();
       showToast('Loaded: ' + deal.name);
       if (isMobile()) showMobileEditor();
     } catch(e) {
@@ -1929,8 +1961,10 @@
     const deal = deals[key];
     if (!deal) return;
     activeDealKey = key;
+    _daEditorActive = true;
     populateFields(deal.inputs);
     renderSidebar();
+    updateDaEmptyState();
     showToast('Loaded: ' + deal.name);
   }
 
@@ -1980,6 +2014,7 @@
   function newDeal() {
     activeDealId = null;
     activeDealKey = null;
+    _daEditorActive = true;
 
     // Zero out deal-specific fields
     ['arv','purchase','repair','holdTaxes','holdInsurance','holdUtilities',
@@ -1997,6 +2032,7 @@
     calculate();
     if (currentUser) loadDealsFromSupabase();
     else renderSidebar();
+    updateDaEmptyState();
     showToast('New deal — enter your numbers');
     if (isMobile()) showMobileEditor();
   }
@@ -2212,6 +2248,7 @@
   calculate();
   loadSession(); // sync: sets currentUser from localStorage before first render
   if (isMobile()) showMobileList(); // correct initial view before async auth verify
+  else updateDaEmptyState(); // desktop: show empty state until a deal is opened
   initAuth(); // async: verifies token, calls showMobileList() again at end
 </script>
 

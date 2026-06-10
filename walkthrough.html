@@ -773,6 +773,32 @@
   }
   .wt-sidebar-item:hover .wt-sidebar-item-del { opacity: 1; }
   .wt-sidebar-item-del:hover { color: var(--danger) !important; }
+  .wt-sidebar-item-edit {
+    position: absolute; right: 32px; top: 50%;
+    transform: translateY(-50%);
+    background: none; border: none; color: var(--muted);
+    cursor: pointer; font-size: 1.1rem;
+    opacity: 0; transition: opacity 0.15s; padding: 4px 6px;
+  }
+  .wt-sidebar-item:hover .wt-sidebar-item-edit { opacity: 1; }
+  .wt-sidebar-item-edit:hover { color: var(--accent) !important; }
+
+  /* ── Empty state overlay (desktop) ── */
+  #wtEmptyState {
+    display: none;
+    position: absolute; inset: 0;
+    background: var(--bg);
+    align-items: center; justify-content: center; flex-direction: column;
+    text-align: center; padding: 40px; z-index: 1;
+    color: var(--muted);
+  }
+  #wtEmptyState.visible { display: flex; }
+  .wt-empty-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.4rem; letter-spacing: 2px;
+    color: var(--text); margin-bottom: 8px;
+  }
+  .wt-empty-text { font-size: 0.85rem; line-height: 1.6; }
 
   .wt-resizer {
     width: 6px;
@@ -797,11 +823,15 @@
     .wt-sidebar { height: 100%; }
     .wt-resizer { height: 100%; }
     .wt-layout > #editorView {
-      flex: 1; min-width: 0;
+      flex: 1; min-width: 0; position: relative;
       overflow-y: auto; height: 100%;
       padding-bottom: 200px;
     }
   }
+
+  /* Desktop footer: offset to match sidebar, not extend under it */
+  :root { --wt-sidebar-w: 240px; }
+  body:not(.editor-mode) .footer { left: var(--wt-sidebar-w); }
 
   /* Mobile editor: hide sidebar (list view handles navigation instead) */
   body.editor-mode .wt-sidebar,
@@ -1134,6 +1164,10 @@
   </div>
   <div class="wt-resizer" id="wtResizer"></div>
   <div id="editorView">
+  <div id="wtEmptyState">
+    <div class="wt-empty-title">No Walkthrough Selected</div>
+    <div class="wt-empty-text">Select a walkthrough from the sidebar<br>or click <strong>+ New</strong> to start.</div>
+  </div>
   <div class="property-bar">
     <div class="property-label">Property Address</div>
     <input type="text" class="property-input" id="propertyName"
@@ -1202,15 +1236,15 @@
 <div class="modal-overlay" id="saveModal">
   <div class="modal">
     <div class="modal-handle"></div>
-    <div class="modal-title">Save Walkthrough</div>
-    <div class="modal-sub">Give this walkthrough a name.</div>
+    <div class="modal-title" id="wtSaveModalTitle">Save Walkthrough</div>
+    <div class="modal-sub" id="wtSaveModalSub">Give this walkthrough a name.</div>
     <div class="modal-field">
       <label class="modal-label">Name</label>
       <input type="text" class="modal-input" id="wtNameInput"
         placeholder="123 Oak St — Initial Walk"
         onkeydown="if(event.key==='Enter')confirmSave()">
     </div>
-    <button class="modal-btn" onclick="confirmSave()">Save</button>
+    <button class="modal-btn" id="wtSaveModalBtn" onclick="confirmSave()">Save</button>
     <span class="modal-cancel" onclick="closeSaveModal()">Cancel</span>
   </div>
 </div>
@@ -1332,6 +1366,9 @@
   let activeId = null;
   let activeName = null;
   let currentView = 'list';
+  let renameWtMode = false;
+  let renameWtId = null;
+  let _editorActive = false;
   let deleteTargetId = null;
   let captionCtx = null;
 
@@ -1625,6 +1662,7 @@
 
   function newWalkthrough() {
     activeId = null; activeName = null;
+    _editorActive = true;
     state.propertyName = '';
     state.misc = { expenses: [], photos: [] };
     state.notes = '';
@@ -1633,7 +1671,7 @@
     }));
     document.getElementById('propertyName').value = '';
     renderAll();
-    if (!isMobile()) renderWtSidebar(_cachedWalks);
+    if (!isMobile()) { renderWtSidebar(_cachedWalks); updateWtEmptyState(); }
     showEditor();
   }
 
@@ -1707,9 +1745,30 @@
         <div class="wt-sidebar-item-name">${wt.name}</div>
         <div class="wt-sidebar-item-addr">${wt.property_name || '—'}</div>
         <div class="wt-sidebar-item-total">${fmt(wt.total)}</div>
+        <button class="wt-sidebar-item-edit" onclick="editWtName(event,'${wt.id}','${safeName}')">✎</button>
         <button class="wt-sidebar-item-del" onclick="event.stopPropagation();promptDelete('${wt.id}','${safeName}')">✕</button>
       </div>`;
     }).join('');
+    updateWtEmptyState();
+  }
+
+  function updateWtEmptyState() {
+    const el = document.getElementById('wtEmptyState');
+    if (!el) return;
+    el.classList.toggle('visible', !isMobile() && !_editorActive);
+  }
+
+  function editWtName(e, id, name) {
+    e.stopPropagation();
+    renameWtMode = true;
+    renameWtId = id;
+    document.getElementById('wtSaveModalTitle').textContent = 'Rename Walkthrough';
+    document.getElementById('wtSaveModalSub').textContent = 'Enter a new name for this walkthrough.';
+    document.getElementById('wtSaveModalBtn').textContent = 'Rename';
+    const inp = document.getElementById('wtNameInput');
+    inp.value = name;
+    document.getElementById('saveModal').classList.add('open');
+    setTimeout(() => { inp.focus(); inp.select(); }, 50);
   }
 
   // ── Sidebar resizer ──────────────────────────────────────────
@@ -1725,7 +1784,9 @@
     });
     document.addEventListener('mousemove', e => {
       if (!dragging) return;
-      sidebar.style.width = Math.min(420, Math.max(140, startW + (e.clientX - startX))) + 'px';
+      const newW = Math.min(420, Math.max(140, startW + (e.clientX - startX)));
+      sidebar.style.width = newW + 'px';
+      document.documentElement.style.setProperty('--wt-sidebar-w', newW + 'px');
     });
     document.addEventListener('mouseup', () => {
       if (!dragging) return;
@@ -1748,6 +1809,7 @@
       state.misc = { expenses: [], photos: [] };
       state.notes = '';
       activeId = wt.id; activeName = wt.name;
+      _editorActive = true;
       state.propertyName = wt.property_name || '';
       state.notes = wt.notes || '';
       if (wt.items) {
@@ -1756,7 +1818,7 @@
       }
       document.getElementById('propertyName').value = state.propertyName;
       renderAll();
-      if (!isMobile()) renderWtSidebar(_cachedWalks);
+      if (!isMobile()) { renderWtSidebar(_cachedWalks); updateWtEmptyState(); }
       showEditor();
     } catch { showToast('⚠ Failed to load', 'danger'); }
   }
@@ -2063,17 +2125,38 @@
   function openSaveModal() {
     if (!currentUser) { openAuthModal(); return; }
     if (activeId) { doSave(activeName); return; }
+    renameWtMode = false; renameWtId = null;
+    document.getElementById('wtSaveModalTitle').textContent = 'Save Walkthrough';
+    document.getElementById('wtSaveModalSub').textContent = 'Give this walkthrough a name.';
+    document.getElementById('wtSaveModalBtn').textContent = 'Save';
     const inp = document.getElementById('wtNameInput');
     inp.value = state.propertyName || '';
     document.getElementById('saveModal').classList.add('open');
     setTimeout(() => inp.focus(), 60);
   }
-  function closeSaveModal() { document.getElementById('saveModal').classList.remove('open'); }
+  function closeSaveModal() {
+    document.getElementById('saveModal').classList.remove('open');
+    renameWtMode = false; renameWtId = null;
+  }
 
   async function confirmSave() {
     const name = document.getElementById('wtNameInput').value.trim();
     if (!name) { document.getElementById('wtNameInput').focus(); return; }
+    const wasRename = renameWtMode;
+    const renameTarget = renameWtId;
     closeSaveModal();
+    if (wasRename && renameTarget) {
+      showToast('Renaming...');
+      await fetch(`${SUPABASE_URL}/rest/v1/walkthroughs?id=eq.${renameTarget}`, {
+        method: 'PATCH',
+        headers: { ...sbH(), 'Prefer': 'return=representation', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, updated_at: new Date().toISOString() })
+      }).then(r => r.json()).catch(() => ({}));
+      if (activeId === renameTarget) activeName = name;
+      await loadWalkthroughs();
+      showToast('✓ Renamed to: ' + name, 'success');
+      return;
+    }
     await doSave(name);
   }
 
