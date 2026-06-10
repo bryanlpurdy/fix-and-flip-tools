@@ -163,10 +163,16 @@ Both tools have a `← All Tools` / `← Fix & Flip Tools` link back to `index.h
 - Deal Analyzer mobile sign-in: `<a href="index.html" class="msv-hub-back">← Fix & Flip Tools</a>` inside `#mobileSigninView` (positioned absolute top-left, since the header is hidden on mobile sign-in)
 - Deal Analyzer mobile list: `<a href="index.html" class="mlv-hub">← All Tools</a>` inside the `.mobile-list-nav` bar at the top of `#mobileListView` (the main header is hidden in list mode via `body.mobile-list`)
 - Walkthrough mobile list: `<a href="index.html" class="wlv-hub">← All Tools</a>` inside the `.wt-list-nav` bar at the top of `#listView` (the main header is hidden in list mode via `body.list-mode`)
+- Walkthrough desktop: `<a href="index.html" class="hub-back">← All Tools</a>` in the main `<header>` (always visible on desktop)
 
 ---
 
 ## App Architecture — `walkthrough.html`
+
+### Layout
+Desktop (>1024px): two-column — resizable saved walkthroughs sidebar (`#wtSidebar`, 140–420px) | editor (`#editorView`, scrollable). Both live inside `#wtLayout` (flex). Sidebar shows walkthrough cards with active highlight, `+ New` button, and a sign-in prompt when not authenticated. Drag handle (`#wtResizer`) works identically to the Deal Analyzer resizer.
+
+Mobile (≤1024px): same two-view JS-controlled pattern as before — `#listView` (list/sign-in) and `#wtLayout` (editor only, sidebar hidden via `body.editor-mode`). `#editorNav` (← My Walkthroughs | + New) shown on mobile editor, hidden on desktop.
 
 ### State
 
@@ -188,11 +194,12 @@ Misc expenses/photos are saved into the `items` JSONB column under the special k
 ### Sections (SECTIONS config)
 
 Section order (top to bottom in the editor):
-1. **Interior & Kitchen** — toggle/count/sqft items. "Interior Demo" is the first item. Ceiling Fan and Light Fixture live here.
+1. **Interior & Kitchen** — toggle/count/sqft items. "Interior Demo" is the first item. Carpet and Subfloor repair are at the bottom.
 2. **Bathrooms** — all `count` type (per-item qty, no global bath counter).
-3. **Exterior & High Ticket Items** — toggle/count items (roof, AC, electric, windows, etc.). First item is "Exterior Demo".
-4. **Misc Expenses / General Photos** — `{ id: 'misc', miscSection: true, items: [] }` — freehand dollar expenses + general property photos.
-5. **Property Comments** — free-text notes section, rendered after SECTIONS via `renderNotesSection()`.
+3. **Garage & Electric Panel** — Water Heater, Electric Panel Service/Replace, Garage Door, Insulation.
+4. **Exterior & High Ticket Items** — toggle/count items (roof, AC, windows, etc.). Permit Allowance is last.
+5. **Misc Expenses / General Photos** — `{ id: 'misc', miscSection: true, items: [] }` — freehand dollar expenses + general property photos.
+6. **Property Comments** — free-text notes section, rendered after SECTIONS via `renderNotesSection()`.
 
 ### Item types
 
@@ -211,34 +218,42 @@ Section order (top to bottom in the editor):
 ### View management
 
 Three views, switched by JS inline styles (same philosophy as Deal Analyzer):
-- **List view** (`#listView`) — shown on load and after `showList()`. Contains `.wt-list-nav` (hub link + title + `+ New`) at the top, then `#wlvAuthRow` (email + Sign Out, signed-in only), then either `#listSignin` (not signed in) or `#listContent` (signed in). `body.list-mode` hides the main header.
-- **Editor view** (`#editorView`) — shown by `showEditor()`. Main header reappears. `#editorNav` (← My Walkthroughs | + New) is shown below the header.
+- **List view** (`#listView`) — shown on load and after `showList()`. Mobile only. Contains `.wt-list-nav` (hub link + title + `+ New`) at the top, then `#wlvAuthRow` (email + Sign Out, signed-in only), then either `#listSignin` (not signed in) or `#listContent` (signed in). `body.list-mode` hides the main header.
+- **Editor view** (`#wtLayout`) — shown by `showEditor()`. On desktop this is the full two-column layout (sidebar + editor). On mobile the sidebar is hidden via `body.editor-mode`. Main header reappears. `#editorNav` (← My Walkthroughs | + New) shown only on mobile.
 - **Share view** (`#shareView`) — shown by `showShareView()` for `?share=<id>` URLs. Both `body.list-mode` and `body.editor-mode` are removed.
 
+`showList()` and `showEditor()` both branch on `isMobile()`:
+
 ```js
+function isMobile() { return window.innerWidth <= 1024; }
+
 function showList() {
   // ...
-  document.body.classList.remove('editor-mode');
-  document.body.classList.add('list-mode');
-  if (currentUser) {
-    // show auth row, populate email
-  } else {
-    // hide auth row, show #listSignin
+  if (!isMobile()) {
+    // Desktop: show layout with sidebar, call renderWtSidebar() + loadWalkthroughs()
+    document.getElementById('wtLayout').style.display = 'flex';
+    document.body.classList.remove('list-mode');
+    return;
   }
+  // Mobile: hide layout, show #listView, add body.list-mode
+  document.body.classList.add('list-mode');
+  if (currentUser) { /* show auth row */ } else { /* show #listSignin */ }
 }
 
 function showEditor() {
   // ...
-  document.body.classList.remove('list-mode');
-  document.body.classList.add('editor-mode');
-}
-
-function showShareView() {
-  // ...
-  document.body.classList.remove('list-mode');
-  document.body.classList.remove('editor-mode');
+  document.getElementById('wtLayout').style.display = isMobile() ? 'block' : 'flex';
+  if (isMobile()) {
+    document.getElementById('editorNav').style.display = 'flex';
+    document.body.classList.add('editor-mode');    // hides sidebar on mobile
+  } else {
+    document.getElementById('editorNav').style.display = 'none';
+    document.body.classList.remove('editor-mode'); // sidebar visible on desktop
+  }
 }
 ```
+
+`renderWtSidebar(walks)` populates `#wtSidebarList` with clickable cards (active highlight on `activeId`). It shows `#wtSidebarAuth` (sign-in prompt) when not signed in. `_cachedWalks` stores the last fetched list so `newWalkthrough()` and `openWalkthrough()` can refresh the active highlight without a re-fetch. `loadWalkthroughs()` re-fetches, updates `_cachedWalks`, and calls both `renderList()` (mobile) and `renderWtSidebar()` (desktop).
 
 ### Auth
 
@@ -333,4 +348,5 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **Deal Analyzer mobile view — use JS, not CSS** — CSS `body:not(.mobile-editor)` media query selectors proved unreliable across browsers/screen sizes for show/hide. The current approach uses `element.style.display` inline styles controlled by `showMobileList()` / `showMobileEditor()`. Do not revert to a CSS-only approach.
 - **`showMobileEditor()` must hide `#mobileSigninView`, remove `body.mobile-signin`, and remove `body.mobile-list`** — missing either class removal leaves the main header hidden when entering the editor. The `mobile-signin` omission was a prior bug (guest login didn't navigate into the app); `mobile-list` must also be cleared when opening a deal from the list.
 - **Walkthrough `body.list-mode` hides the main header** — same pattern as `body.mobile-list` in the Deal Analyzer. `showEditor()` must remove it, or the header stays hidden in the editor. `showShareView()` must also remove it.
+- **Walkthrough `body.editor-mode` hides the sidebar on mobile** — `body.editor-mode .wt-sidebar, body.editor-mode .wt-resizer { display: none }`. On desktop, `showEditor()` removes `editor-mode` so the sidebar stays visible. Never set `body.editor-mode` on desktop or the sidebar disappears.
 - **All three files must use the custom Supabase URL** — always use `https://api.bluestarrealtygroup.com` in `index.html`, `walkthrough.html`, and `deal-analyzer.html`. Never revert to `qplidmfishaclysckruq.supabase.co`.
