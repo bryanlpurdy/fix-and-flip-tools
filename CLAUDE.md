@@ -138,8 +138,9 @@ The hub is the entry point for the suite. It handles auth and redirects users to
 ### Auth flow
 ```js
 initAuth()           // on load: checks sb_session in localStorage, verifies with Supabase
-  → valid session    → showHub()   (user sees tool cards, signed in)
-  → no/expired session → showSignin()
+  → valid session    → showHub()
+  → expired token    → refreshSession() → showHub()  (or showSignin() if refresh fails)
+  → no session       → showSignin()
 
 submitAuth()         // sign in or sign up
   → success          → saveSession() → showHub()
@@ -152,7 +153,7 @@ signOut()            // clear session
 ```
 
 ### Shared session
-All three files use the same `localStorage` key `sb_session` (`{ access_token, user }`). Signing in on the hub means both tools open already authenticated — no second login required.
+All three files use the same `localStorage` key `sb_session` (`{ access_token, refresh_token, user }`). Signing in on the hub means both tools open already authenticated — no second login required.
 
 ### Guest mode
 Deal Analyzer is fully usable as a guest. Property Walkthrough requires sign-in to save — a warning note is shown on its tool card for guest users.
@@ -258,9 +259,11 @@ function showEditor() {
 ### Auth
 
 - Sign in / sign up via Supabase email+password
-- Session stored in `localStorage` as `sb_session` (`{ access_token, user }`)
+- Session stored in `localStorage` as `sb_session` (`{ access_token, refresh_token, user }`)
 - Auth fetch pattern: `.then(r => r.json()).catch(() => ({}))` — never use AbortController timeout (breaks cold-start logins on Supabase free tier)
 - No guest mode — saves require a signed-in account
+- **Token refresh:** `refreshSession()` calls `POST /auth/v1/token?grant_type=refresh_token`. Called on boot if token verification fails (before kicking to sign-in) and every 45 minutes via `setInterval` while the user is active.
+- Boot verifies the stored token against `/auth/v1/user` in the background. If expired: tries refresh; if refresh fails, clears session and re-renders list as signed-out.
 
 ### Photos
 
@@ -322,7 +325,9 @@ function showMobileEditor() {
 On init: `loadSession()` runs synchronously first, then `if (isMobile()) showMobileList()`, then `initAuth()` (async).
 
 ### Auth
-Same Supabase email+password pattern as the walkthrough. Session in `localStorage` as `sb_session`. Guest mode is supported in the Deal Analyzer (no local storage fallback — guest users just can't save). Signed-in users get cloud sync via the `deals` Supabase table.
+Same Supabase email+password pattern as the walkthrough. Session in `localStorage` as `sb_session` (`{ access_token, refresh_token, user }`). Guest mode is supported in the Deal Analyzer (no local storage fallback — guest users just can't save). Signed-in users get cloud sync via the `deals` Supabase table.
+
+**Token refresh:** `initAuth()` tries `refreshSession()` before clearing session on a 401. A 45-minute `setInterval` proactively refreshes the token while the user is active.
 
 ### Deal Data Flow
 Inputs → `calculate()` → results panel updates live. Save → `openSaveModal()` → `confirmSave()` → Supabase. Load → `loadCloudDeal(id)` → `populateFields(inputs)` → `calculate()`.
@@ -350,3 +355,9 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **Walkthrough `body.list-mode` hides the main header** — same pattern as `body.mobile-list` in the Deal Analyzer. `showEditor()` must remove it, or the header stays hidden in the editor. `showShareView()` must also remove it.
 - **Walkthrough `body.editor-mode` hides the sidebar on mobile** — `body.editor-mode .wt-sidebar, body.editor-mode .wt-resizer { display: none }`. On desktop, `showEditor()` removes `editor-mode` so the sidebar stays visible. Never set `body.editor-mode` on desktop or the sidebar disappears.
 - **All three files must use the custom Supabase URL** — always use `https://api.bluestarrealtygroup.com` in `index.html`, `walkthrough.html`, and `deal-analyzer.html`. Never revert to `qplidmfishaclysckruq.supabase.co`.
+- **Walkthrough footer must use `display: flex` on desktop** — `showEditor()` sets `mainFooter.style.display = isMobile() ? 'block' : 'flex'`. Using `'block'` kills the flex layout and breaks `margin-left: auto` right-alignment of the buttons.
+- **`renderAll()` removed from walkthrough boot** — sections are only rendered when a walkthrough is opened or created. Calling `renderAll()` on boot caused a flash of section dropdowns before the empty-state overlay appeared.
+- **Walkthrough sidebar width: 480px; Deal Analyzer sidebar width: 446px** — CSS variables `--wt-sidebar-w` and `--da-sidebar-w` are updated by the resizer drag handler to keep the sticky footer `left` offset in sync.
+- **Empty state overlays** — `#wtEmptyState` (walkthrough, inside `#editorView`) and `#daEmptyState` (deal analyzer, inside `.inputs-panel`) are shown when no walkthrough/deal is open on desktop. Controlled by `_editorActive` / `_daEditorActive` flags. DA also hides `.results-panel` via `visibility: hidden` (not `display: none`, to preserve `position: sticky`).
+- **Deal Analyzer desktop footer** — `.da-footer` is a fixed bottom bar (`left: var(--da-sidebar-w); right: 0`) containing Expected Profit (left) and Save Deal + Export PDF buttons (right). On desktop, `header .btn-save` and `header .btn-pdf` are hidden with `display: none !important` — scoped to `header` to avoid hiding the footer buttons.
+- **Deal Analyzer `+ New` button** — lives in the sidebar header (`.da-sidebar-hdr`) on desktop, not in the main header.
