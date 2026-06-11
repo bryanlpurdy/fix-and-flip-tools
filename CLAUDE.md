@@ -113,15 +113,18 @@ There is no CI, no build step, no package.json. Push and it's live.
 
 ### Custom Domains
 
+DNS is managed through **Cloudflare** (nameservers: `isaac.ns.cloudflare.com`, `nucum.ns.cloudflare.com`). GoDaddy remains the domain registrar but no longer handles DNS. All records live in Cloudflare.
+
 **Frontend:** `tools.bluestarrealtygroup.com` (GitHub Pages)
-- GoDaddy CNAME → `bryanlpurdy.github.io`
+- Cloudflare CNAME → `bryanlpurdy.github.io` — **DNS only (gray cloud)**
 - `CNAME` file in repo root
 - HTTPS enforced via GitHub Pages + Let's Encrypt
 
 **Supabase API:** `api.bluestarrealtygroup.com` (Supabase Custom Domain add-on)
-- GoDaddy CNAME → `qplidmfishaclysckruq.supabase.co`
-- TXT record `_acme-challenge.api` verified for SSL
+- Cloudflare CNAME → `qplidmfishaclysckruq.supabase.co` — **DNS only (gray cloud), never proxy**
+- TXT record `_acme-challenge.api → K-fIshpAu1tvR_UWXZ0H1vC8AsCVcZLRQXIz7ljSxRM` for Supabase SSL
 - Configured in Supabase Settings → Custom Domains
+- **Do not switch `api` to Proxied (orange cloud)** — Cloudflare would terminate SSL instead of Supabase, breaking the custom domain cert
 
 **Standalone product domain** (e.g. `flipstacktools.com`) remains an option if the tools are ever monetized as a SaaS product outside the Blue Star brand.
 
