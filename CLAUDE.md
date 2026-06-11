@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A web app suite for fix-and-flip real estate investors. Three files:
+A web app suite for fix-and-flip real estate investors and Realtors. Current tools:
 - **`index.html`** — hub/launcher page: sign in once (or continue as guest), then choose a tool.
 - **`walkthrough.html`** — Property Walkthrough: mobile-first estimator — walk a property, toggle repair items, adjust costs, attach photos, save to cloud.
 - **`deal-analyzer.html`** — Deal Analyzer: desktop-primary deal analysis tool with a full responsive mobile view.
@@ -10,6 +10,39 @@ A web app suite for fix-and-flip real estate investors. Three files:
 Long-term vision: expand the suite for investors and Realtors, with potential to monetize as a SaaS product beyond Bryan's own business.
 
 Owner/user: Bryan Purdy (bryan.lee.purdy@gmail.com)
+
+---
+
+## Planned Tools
+
+All three planned tools are **Realtor-focused**. Build order: Net Sheet → Make Ready List → Bookkeeping.
+
+### Seller Net Sheet (`net-sheet.html`)
+A calculator agents use during listing appointments to show sellers their estimated proceeds.
+
+**Inputs:** Sale price, mortgage payoff, commission rates (adjustable — splits vary by market), title/escrow fees, transfer taxes, seller concessions, property taxes (prorated from Jan 1 to closing date using annual tax amount + estimated closing date), and other closing cost line items.
+
+**Variable costs:** Some line items (title insurance, escrow fees) vary by title company. Pre-populate with typical market values and show a hint range (e.g. "typically $1,200–$2,000") so agents can override per transaction.
+
+**Output:**
+- Live calculated seller net proceeds
+- **Share link** — clean read-only report, text-able to seller client
+- **Print/PDF output** — styled for print, professional enough to hand to a seller
+
+**Branding (v1):** Placeholder agent name/contact block on the PDF output.
+**Branding (v2):** Agent profile system — `profiles` table in Supabase with name, brokerage, phone, email, license number, logo (Supabase Storage). White-labeled PDF pulls from profile. Agents can upload a logo. This is a meaningful architectural addition — defer to v2.
+
+### Make Ready List (`make-ready.html`)
+A seller prep checklist agents walk through with sellers before listing. Categories: Exterior, Interior, Kitchen, Bathrooms, Systems, Staging. Items are checkable with priority levels (Must Do / Should Do / Nice to Have) and notes. Shareable link and print/PDF output. Reuses Walkthrough architecture patterns.
+
+### Realtor Bookkeeping (`bookkeeping.html`)
+Lightweight **property-centric** expense tracking. Each property tracks individual expenses:
+- **Fields:** Date, category, amount, description, receipt photo
+- **Categories:** Photography/Video, Marketing/Advertising, Make Ready, Mileage, Staging, Signage, Closing Gift, Misc
+- **Mileage entries:** Input miles → auto-calculate dollars at current IRS standard rate
+- **Receipt photos:** Reuse Supabase Storage pattern from Walkthrough
+- **Reports:** Total expenses per property, breakdown by category
+- Scope is intentionally narrow — not general bookkeeping, just per-property deal costs
 
 ---
 
