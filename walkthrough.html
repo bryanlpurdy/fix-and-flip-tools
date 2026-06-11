@@ -1661,7 +1661,7 @@
     currentView = 'editor';
     document.getElementById('listView').style.display  = 'none';
     document.getElementById('wtLayout').style.display  = isMobile() ? 'block' : 'flex';
-    document.getElementById('mainFooter').style.display = 'block';
+    document.getElementById('mainFooter').style.display = isMobile() ? 'block' : 'flex';
     document.body.classList.remove('list-mode');
     if (isMobile()) {
       document.getElementById('editorNav').style.display = 'flex';
