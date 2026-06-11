@@ -577,7 +577,25 @@
   function saveSession(data) {
     sbAccessToken = data.access_token;
     currentUser = data.user;
-    localStorage.setItem('sb_session', JSON.stringify({ access_token: data.access_token, user: data.user }));
+    localStorage.setItem('sb_session', JSON.stringify({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      user: data.user
+    }));
+  }
+
+  async function refreshSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sb_session'));
+      if (!s?.refresh_token) return false;
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ refresh_token: s.refresh_token })
+      }).then(r => r.json()).catch(() => ({}));
+      if (res.access_token) { saveSession(res); return true; }
+    } catch(e) {}
+    return false;
   }
 
   function clearSession() {
@@ -714,8 +732,13 @@
         currentUser = await r.json();
         renderHubUI();
       } else {
-        clearSession();
-        showSignin();
+        const refreshed = await refreshSession();
+        if (refreshed) {
+          renderHubUI();
+        } else {
+          clearSession();
+          showSignin();
+        }
       }
     } else {
       showSignin();
@@ -723,6 +746,7 @@
   }
 
   initAuth();
+  setInterval(() => { if (currentUser) refreshSession(); }, 45 * 60 * 1000);
 </script>
 
 </body>

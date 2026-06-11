@@ -1558,7 +1558,25 @@
   function saveSession(data) {
     sbAccessToken = data.access_token;
     currentUser = data.user;
-    localStorage.setItem('sb_session', JSON.stringify({ access_token: data.access_token, user: data.user }));
+    localStorage.setItem('sb_session', JSON.stringify({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      user: data.user
+    }));
+  }
+
+  async function refreshSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sb_session'));
+      if (!s?.refresh_token) return false;
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ refresh_token: s.refresh_token })
+      }).then(r => r.json()).catch(() => ({}));
+      if (res.access_token) { saveSession(res); return true; }
+    } catch(e) {}
+    return false;
   }
 
   function loadSession() {
@@ -1600,13 +1618,20 @@
           showGuestBanner(false);
           await loadDealsFromSupabase();
         } else {
-          // Token expired — clear and show guest state
-          localStorage.removeItem('sb_session');
-          sbAccessToken = null;
-          currentUser = null;
-          updateAuthUI();
-          showGuestBanner(true);
-          renderSidebar();
+          // Token expired — try refresh before giving up
+          const refreshed = await refreshSession();
+          if (refreshed) {
+            updateAuthUI();
+            showGuestBanner(false);
+            await loadDealsFromSupabase();
+          } else {
+            localStorage.removeItem('sb_session');
+            sbAccessToken = null;
+            currentUser = null;
+            updateAuthUI();
+            showGuestBanner(true);
+            renderSidebar();
+          }
         }
       } catch(e) {
         localStorage.removeItem('sb_session');
@@ -2297,6 +2322,7 @@
   if (isMobile()) showMobileList(); // correct initial view before async auth verify
   else updateDaEmptyState(); // desktop: show empty state until a deal is opened
   initAuth(); // async: verifies token, calls showMobileList() again at end
+  setInterval(() => { if (currentUser) refreshSession(); }, 45 * 60 * 1000);
 </script>
 
 </body>

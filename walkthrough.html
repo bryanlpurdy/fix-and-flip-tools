@@ -2233,6 +2233,29 @@
     return false;
   }
 
+  async function refreshSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sb_session'));
+      if (!s?.refresh_token) return false;
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ refresh_token: s.refresh_token })
+      }).then(r => r.json()).catch(() => ({}));
+      if (res.access_token) {
+        sbToken = res.access_token;
+        currentUser = res.user;
+        localStorage.setItem('sb_session', JSON.stringify({
+          access_token: res.access_token,
+          refresh_token: res.refresh_token,
+          user: res.user
+        }));
+        return true;
+      }
+    } catch(e) {}
+    return false;
+  }
+
   function updateAuthUI() {
     const el = document.getElementById('authStatus');
     el.innerHTML = currentUser
@@ -2295,7 +2318,11 @@
       if (res.access_token) {
         sbToken = res.access_token;
         currentUser = res.user;
-        localStorage.setItem('sb_session', JSON.stringify({ access_token: res.access_token, user: res.user }));
+        localStorage.setItem('sb_session', JSON.stringify({
+          access_token: res.access_token,
+          refresh_token: res.refresh_token,
+          user: res.user
+        }));
         closeAuthModal();
         updateAuthUI();
         showToast('✓ Signed in', 'success');
@@ -2441,6 +2468,21 @@
     loadSession();
     updateAuthUI();
     showList();
+    if (currentUser) {
+      (async () => {
+        const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: sbH() }).catch(() => null);
+        if (r && !r.ok) {
+          const refreshed = await refreshSession();
+          if (!refreshed) {
+            sbToken = null; currentUser = null;
+            localStorage.removeItem('sb_session');
+            updateAuthUI();
+            showList();
+          }
+        }
+      })();
+    }
+    setInterval(() => { if (currentUser) refreshSession(); }, 45 * 60 * 1000);
   }
 </script>
 </body>
