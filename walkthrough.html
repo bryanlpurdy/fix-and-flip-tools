@@ -833,9 +833,17 @@
     }
   }
 
-  /* Desktop footer: offset to match sidebar, not extend under it */
+  /* Desktop footer: offset to match sidebar + compact single-row layout */
   :root { --wt-sidebar-w: 480px; }
-  body:not(.editor-mode) .footer { left: var(--wt-sidebar-w); }
+  body:not(.editor-mode) .footer {
+    left: var(--wt-sidebar-w);
+    display: flex; align-items: center;
+    padding: 10px 24px; gap: 20px;
+  }
+  body:not(.editor-mode) .footer-rows { display: flex; gap: 20px; margin-bottom: 0; }
+  body:not(.editor-mode) .footer-total { margin-top: 0; }
+  body:not(.editor-mode) .footer-btns { margin-left: auto; }
+  body:not(.editor-mode) .btn { flex: none; padding: 9px 22px; font-size: 0.88rem; }
 
   /* Mobile editor: hide sidebar (list view handles navigation instead) */
   body.editor-mode .wt-sidebar,
@@ -1323,8 +1331,8 @@
       id: 'bathroom', label: 'Bathrooms',
       items: [
         { id: 'vanity',       label: 'Vanity',                type: 'count', cost: 300,  unit: 'vanity' },
-        { id: 'shower_basic', label: 'Shower — Basic rehab',  type: 'count', cost: 1500, unit: 'shower' },
-        { id: 'shower_full',  label: 'Shower — Full replace', type: 'count', cost: 4000, unit: 'shower' },
+        { id: 'shower_basic', label: 'Shower — Basic rehab',  type: 'count', cost: 1500, unit: 'shower', step: 500 },
+        { id: 'shower_full',  label: 'Shower — Full replace', type: 'count', cost: 4000, unit: 'shower', step: 500 },
         { id: 'tile_floor',   label: 'Tile Floors',           type: 'count', cost: 500,  unit: 'bath' },
         { id: 'plumbing_fix', label: 'Plumbing Fixtures',     type: 'count', cost: 200,  unit: 'bath' },
       ]

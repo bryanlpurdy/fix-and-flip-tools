@@ -198,14 +198,49 @@
     padding: 20px 0;
   }
 
+  .da-sidebar-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 8px;
+  }
   .sidebar-title {
     font-family: 'Bebas Neue', sans-serif;
     font-size: 1rem;
     letter-spacing: 3px;
     color: var(--muted);
-    padding: 0 16px 12px;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 8px;
+  }
+  .da-sidebar-new {
+    background: var(--accent); color: #111; border: none;
+    border-radius: 6px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.75rem; font-weight: 700;
+    padding: 5px 11px; transition: opacity 0.15s;
+  }
+  .da-sidebar-new:hover { opacity: 0.85; }
+
+  /* Desktop sticky footer + hide header action buttons */
+  :root { --da-sidebar-w: 446px; }
+  .da-footer { display: none; }
+  @media (min-width: 1025px) {
+    header .btn-new, header .btn-save, header .btn-pdf { display: none !important; }
+    .da-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      position: fixed; bottom: 0;
+      left: var(--da-sidebar-w); right: 0;
+      background: var(--surface); border-top: 2px solid var(--border);
+      padding: 10px 24px; gap: 20px; z-index: 100;
+    }
+    .da-footer-profit { display: flex; align-items: baseline; gap: 10px; }
+    .da-footer-profit-label {
+      font-size: 0.72rem; color: var(--muted);
+      letter-spacing: 1.5px; text-transform: uppercase;
+    }
+    .da-footer-profit-val {
+      font-family: 'DM Mono', monospace; font-size: 1.3rem; color: var(--accent2);
+    }
+    .da-footer-btns { display: flex; gap: 10px; }
+    .inputs-panel { padding-bottom: 80px; }
   }
 
   .deal-item {
@@ -1052,7 +1087,10 @@
 <div class="layout">
   <!-- SAVED DEALS SIDEBAR -->
   <div class="deals-sidebar" id="dealsSidebar">
-    <div class="sidebar-title">Saved Deals</div>
+    <div class="da-sidebar-hdr">
+      <span class="sidebar-title">Saved Deals</span>
+      <button class="da-sidebar-new" onclick="newDeal()">+ New</button>
+    </div>
     <div id="sidebarAuthBanner" class="sidebar-auth-banner" style="display:none">
       <a onclick="openAuthModal('signin')">Sign in</a> to sync your deals across any device.
     </div>
@@ -1370,6 +1408,17 @@
       </div>
     </div>
 
+  </div>
+</div>
+
+<div class="da-footer" id="daFooter">
+  <div class="da-footer-profit">
+    <div class="da-footer-profit-label">Expected Profit</div>
+    <div class="da-footer-profit-val" id="daFooterProfit">$0</div>
+  </div>
+  <div class="da-footer-btns">
+    <button class="btn btn-pdf" onclick="exportPDF()">⬇ Export PDF</button>
+    <button class="btn btn-save" onclick="openSaveModal()">Save Deal</button>
   </div>
 </div>
 
@@ -2201,11 +2250,11 @@
       verdict.className = 'verdict bad'; verdictText.textContent = `✗ Deal loses money at this purchase price`;
     }
 
+    const profitColor = profit >= desiredProfit ? 'var(--accent2)' : profit > 0 ? 'var(--warn)' : 'var(--danger)';
     const mpbEl = document.getElementById('mpbProfit');
-    if (mpbEl) {
-      mpbEl.textContent = fmt(profit);
-      mpbEl.style.color = profit >= desiredProfit ? 'var(--accent2)' : profit > 0 ? 'var(--warn)' : 'var(--danger)';
-    }
+    if (mpbEl) { mpbEl.textContent = fmt(profit); mpbEl.style.color = profitColor; }
+    const daFpEl = document.getElementById('daFooterProfit');
+    if (daFpEl) { daFpEl.textContent = fmt(profit); daFpEl.style.color = profitColor; }
   }
 
   // ── Sidebar resizer ──────────────────────────────────────────
@@ -2221,7 +2270,10 @@
     });
     document.addEventListener('mousemove', e => {
       if (!dragging) return;
-      sidebar.style.width = Math.min(600, Math.max(120, startW + (e.clientX - startX))) + 'px';
+      const newW = Math.min(600, Math.max(120, startW + (e.clientX - startX)));
+      sidebar.style.width = newW + 'px';
+      // 6px resizer width
+      document.documentElement.style.setProperty('--da-sidebar-w', (newW + 6) + 'px');
     });
     document.addEventListener('mouseup', () => {
       if (!dragging) return;
