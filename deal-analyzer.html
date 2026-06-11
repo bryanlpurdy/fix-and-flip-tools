@@ -1856,7 +1856,13 @@
   function updateDaEmptyState() {
     const el = document.getElementById('daEmptyState');
     if (!el) return;
-    el.classList.toggle('visible', !isMobile() && !_daEditorActive);
+    const hide = !isMobile() && !_daEditorActive;
+    el.classList.toggle('visible', hide);
+    // Also blank out results panel and footer profit when nothing is loaded
+    const results = document.querySelector('.results-panel');
+    if (results) results.style.visibility = hide ? 'hidden' : '';
+    const fp = document.getElementById('daFooterProfit');
+    if (fp && hide) { fp.textContent = '—'; fp.style.color = ''; }
   }
 
   // ── Sidebar ──────────────────────────────────────────────────
