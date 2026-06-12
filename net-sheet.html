@@ -1,0 +1,1835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seller Net Sheet — Fix &amp; Flip Tools</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #151918;
+    --surface2: #1c2220;
+    --border: #2a3330;
+    --accent: #c8f564;
+    --accent2: #4dffa0;
+    --danger: #ff5c5c;
+    --warn: #ffb347;
+    --text: #e8ede8;
+    --muted: #6b7d74;
+    --label: #9ab09e;
+    --ns-sidebar-w: 400px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1000; opacity: 0.6;
+  }
+
+  /* ── Header ───────────────────────────────────────── */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 40px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--surface);
+  }
+  .header-left { display: flex; align-items: baseline; gap: 16px; }
+  .hub-back {
+    font-size: 0.72rem; color: var(--muted); text-decoration: none;
+    letter-spacing: 0.5px; white-space: nowrap; transition: color 0.15s; align-self: center;
+  }
+  .hub-back:hover { color: var(--accent); }
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem;
+    letter-spacing: 3px; color: var(--accent); line-height: 1;
+  }
+  header span { color: var(--muted); font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; font-weight: 500; }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+
+  /* ── Buttons ──────────────────────────────────────── */
+  .btn {
+    padding: 9px 18px; border-radius: 6px; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 0.8rem; font-weight: 600;
+    letter-spacing: 0.5px; cursor: pointer; transition: all 0.18s;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .btn-save { background: var(--accent); color: #0d0f0e; }
+  .btn-save:hover { background: #d8ff7a; }
+  .btn-print { background: transparent; color: var(--label); border: 1px solid var(--border); }
+  .btn-print:hover { border-color: var(--label); color: var(--text); }
+  .btn-ghost { background: transparent; color: var(--label); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--label); color: var(--text); }
+
+  /* ── Auth status ──────────────────────────────────── */
+  .user-email { font-size: 0.8rem; color: var(--muted); }
+  .sign-out-btn {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; cursor: pointer;
+  }
+  .sign-out-btn:hover { border-color: var(--danger); color: var(--danger); }
+  #authStatus { display: flex; align-items: center; gap: 10px; }
+
+  /* ── Layout ───────────────────────────────────────── */
+  .ns-layout {
+    display: flex;
+    height: calc(100vh - 69px);
+  }
+
+  /* ── Sidebar ──────────────────────────────────────── */
+  .ns-sidebar {
+    width: var(--ns-sidebar-w);
+    min-width: 140px; max-width: 600px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .ns-sidebar-hdr {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px 12px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .ns-sidebar-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1rem;
+    letter-spacing: 2px; color: var(--label);
+  }
+  .ns-sidebar-new {
+    background: var(--accent); color: #111; border: none; border-radius: 6px;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.75rem;
+    font-weight: 700; padding: 5px 11px; transition: opacity 0.15s;
+  }
+  .ns-sidebar-new:hover { opacity: 0.85; }
+  .ns-sidebar-list { flex: 1; overflow-y: auto; padding: 8px 0; }
+
+  /* Sidebar cards */
+  .ns-sidebar-item {
+    padding: 12px 16px; cursor: pointer;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+  }
+  .ns-sidebar-item:hover { background: var(--surface2); }
+  .ns-sidebar-item.active { background: var(--surface2); border-left: 3px solid var(--accent); padding-left: 13px; }
+  .ns-si-top { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+  .ns-si-name {
+    flex: 1; font-size: 0.92rem; font-weight: 500; color: var(--text);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .ns-si-rename {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 1.05rem; padding: 0 3px; flex-shrink: 0; line-height: 1;
+  }
+  .ns-si-rename:hover { color: var(--accent); }
+  .ns-si-del {
+    background: none; border: 1px solid var(--danger); border-radius: 4px;
+    color: var(--danger); font-size: 0.72rem; padding: 3px 9px; cursor: pointer; flex-shrink: 0;
+  }
+  .ns-si-del:hover { background: var(--danger); color: var(--bg); }
+  .ns-si-addr { font-size: 0.78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 8px; }
+  .ns-si-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .ns-si-proceeds { font-family: 'DM Mono', monospace; font-size: 0.9rem; }
+  .ns-si-proceeds.positive { color: var(--accent2); }
+  .ns-si-proceeds.negative { color: var(--danger); }
+  .ns-si-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+  .ns-si-date { font-size: 0.72rem; color: var(--muted); }
+  .ns-si-share {
+    background: none; border: 1px solid var(--accent); border-radius: 4px;
+    color: var(--accent); font-size: 0.72rem; padding: 3px 9px; cursor: pointer;
+  }
+  .ns-si-share.active { border-color: var(--accent2); color: var(--accent2); }
+  .ns-si-share:hover { opacity: 0.8; }
+
+  /* Sidebar auth prompt */
+  #nsSidebarAuth {
+    padding: 20px 16px; text-align: center; color: var(--muted); font-size: 0.82rem; line-height: 1.6;
+  }
+  #nsSidebarAuth a { color: var(--accent); cursor: pointer; text-decoration: none; }
+  #nsSidebarAuth a:hover { text-decoration: underline; }
+
+  /* ── Resizer ──────────────────────────────────────── */
+  .ns-resizer {
+    width: 6px; background: var(--border); cursor: col-resize;
+    flex-shrink: 0; transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ns-resizer:hover, .ns-resizer.dragging { background: var(--accent); }
+  .ns-resizer::after {
+    content: ''; width: 2px; height: 32px; border-radius: 2px;
+    background: currentColor; opacity: 0.4;
+  }
+
+  /* ── Editor ───────────────────────────────────────── */
+  #nsEditorView {
+    flex: 1; min-width: 0;
+    overflow-y: auto;
+    height: calc(100vh - 69px);
+    padding: 36px 48px 100px;
+    position: relative;
+  }
+
+  /* ── Empty state ──────────────────────────────────── */
+  #nsEmptyState {
+    display: none; position: absolute; inset: 0;
+    background: var(--bg);
+    align-items: center; justify-content: center; flex-direction: column;
+    text-align: center; padding: 40px; z-index: 1; color: var(--muted);
+  }
+  #nsEmptyState.visible { display: flex; }
+  .ns-empty-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem;
+    letter-spacing: 2px; color: var(--text); margin-bottom: 8px;
+  }
+  .ns-empty-text { font-size: 0.85rem; line-height: 1.6; }
+
+  /* ── Form sections ────────────────────────────────── */
+  .ns-section { margin-bottom: 8px; }
+  .ns-section-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem;
+    letter-spacing: 2px; color: var(--accent); padding-bottom: 10px;
+    border-bottom: 2px solid var(--border); margin-bottom: 4px; margin-top: 36px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ns-section-title:first-child, .ns-section-title.first { margin-top: 0; }
+
+  /* Detail rows (top section) */
+  .detail-row {
+    display: flex; align-items: center;
+    padding: 11px 0; border-bottom: 1px solid var(--border); gap: 16px;
+  }
+  .detail-row label {
+    font-size: 0.85rem; color: var(--label);
+    width: 180px; flex-shrink: 0;
+  }
+  .detail-row input, .detail-row select {
+    flex: 1; background: transparent; border: none;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    padding: 3px 6px; border-bottom: 1px solid transparent;
+    transition: border-color 0.15s;
+  }
+  .detail-row input:focus, .detail-row select:focus {
+    outline: none; border-bottom-color: var(--accent);
+  }
+  .detail-row select option { background: var(--surface); }
+  .detail-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+
+  /* Cost rows */
+  .cost-row {
+    display: flex; align-items: center;
+    padding: 11px 0; border-bottom: 1px solid var(--border); gap: 12px;
+  }
+  .cost-row-label { font-size: 0.88rem; color: var(--label); flex: 1; }
+  .cost-row-hint { font-size: 0.75rem; color: var(--muted); margin-left: 8px; }
+  .cost-val {
+    width: 130px; text-align: right; background: transparent; border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 0.9rem; padding: 4px 6px;
+    transition: border-color 0.15s;
+  }
+  .cost-val:focus { outline: none; border-bottom-color: var(--accent); }
+  .cost-val.calculated { color: var(--label); cursor: default; }
+
+  /* Prorated tax row */
+  .prorated-row {
+    display: flex; align-items: center;
+    padding: 11px 0; border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap;
+  }
+  .prorated-label { font-size: 0.88rem; color: var(--label); flex: 1; min-width: 140px; }
+  .prorated-city {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+    padding: 5px 8px; cursor: pointer; min-width: 160px;
+  }
+  .prorated-city:focus { outline: none; border-color: var(--accent); }
+  .prorated-city option { background: var(--surface); }
+  .prorated-amount {
+    width: 120px; text-align: right; background: transparent; border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--label);
+    font-family: 'DM Mono', monospace; font-size: 0.9rem; padding: 4px 6px;
+  }
+
+  /* Agent fee rows */
+  .agent-row {
+    display: flex; align-items: flex-start;
+    padding: 12px 0; border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap;
+  }
+  .agent-row-label { font-size: 0.88rem; color: var(--label); width: 140px; flex-shrink: 0; padding-top: 6px; }
+  .agent-row-controls { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .agent-controls-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .agent-select {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+    padding: 5px 8px; cursor: pointer;
+  }
+  .agent-select:focus { outline: none; border-color: var(--accent); }
+  .agent-select option { background: var(--surface); }
+  .agent-val-input {
+    width: 90px; text-align: right; background: transparent;
+    border: none; border-bottom: 1px solid rgba(255,255,255,0.08);
+    color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.9rem; padding: 4px 6px;
+    transition: border-color 0.15s;
+  }
+  .agent-val-input:focus { outline: none; border-bottom-color: var(--accent); }
+  .agent-suffix { font-size: 0.8rem; color: var(--muted); }
+  .agent-calc { font-family: 'DM Mono', monospace; font-size: 0.88rem; color: var(--label); white-space: nowrap; margin-left: auto; }
+  .agent-split-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .agent-split-label { font-size: 0.8rem; color: var(--muted); }
+  .agent-split-note { font-size: 0.78rem; color: var(--muted); font-style: italic; }
+
+  /* Misc items */
+  .misc-add-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: 1px dashed var(--border); border-radius: 6px;
+    color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+    padding: 8px 14px; cursor: pointer; width: 100%; justify-content: center;
+    margin-top: 10px; transition: all 0.15s;
+  }
+  .misc-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .misc-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-bottom: 1px solid var(--border);
+  }
+  .misc-item-label {
+    flex: 1; background: transparent; border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; padding: 3px 6px;
+  }
+  .misc-item-label:focus { outline: none; border-bottom-color: var(--accent); }
+  .misc-item-amount {
+    width: 110px; text-align: right; background: transparent; border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--text);
+    font-family: 'DM Mono', monospace; font-size: 0.88rem; padding: 3px 6px;
+  }
+  .misc-item-amount:focus { outline: none; border-bottom-color: var(--accent); }
+  .misc-item-del {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 1.1rem; padding: 0 4px; line-height: 1; flex-shrink: 0;
+  }
+  .misc-item-del:hover { color: var(--danger); }
+
+  /* ── Results section ──────────────────────────────── */
+  .ns-results {
+    margin-top: 40px; border-top: 2px solid var(--border); padding-top: 24px;
+    margin-bottom: 20px;
+  }
+  .ns-results-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem;
+    letter-spacing: 2px; color: var(--accent); margin-bottom: 16px;
+  }
+  .ns-results-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+    font-size: 0.88rem;
+  }
+  .ns-results-row.subtotal { border-bottom: 2px solid var(--border); margin-top: 4px; }
+  .ns-results-row-label { color: var(--label); }
+  .ns-results-row-val { font-family: 'DM Mono', monospace; color: var(--text); }
+  .ns-results-row-val.deduct { color: var(--danger); }
+  .ns-net-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 14px 0 8px; margin-top: 4px;
+  }
+  .ns-net-label {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.15rem;
+    letter-spacing: 2px; color: var(--text);
+  }
+  .ns-net-val {
+    font-family: 'DM Mono', monospace; font-size: 1.5rem; font-weight: 500;
+  }
+  .ns-net-val.positive { color: var(--accent2); }
+  .ns-net-val.negative { color: var(--danger); }
+  .ns-results-disclaimer {
+    font-size: 0.75rem; color: var(--muted); margin-top: 16px;
+    line-height: 1.6; font-style: italic;
+  }
+
+  /* ── Sticky footer ────────────────────────────────── */
+  .ns-footer {
+    display: none;
+  }
+  @media (min-width: 1025px) {
+    header .btn-save, header .btn-print { display: none !important; }
+    .ns-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      position: fixed; bottom: 0;
+      left: var(--ns-sidebar-w); right: 0;
+      background: var(--surface); border-top: 2px solid var(--border);
+      padding: 10px 24px; gap: 20px; z-index: 100;
+    }
+    .ns-footer-proceeds { display: flex; align-items: baseline; gap: 10px; }
+    .ns-footer-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; }
+    .ns-footer-val { font-family: 'DM Mono', monospace; font-size: 1.3rem; }
+    .ns-footer-val.positive { color: var(--accent2); }
+    .ns-footer-val.negative { color: var(--danger); }
+    .ns-footer-btns { display: flex; gap: 10px; }
+    .ns-footer-btns .btn { padding: 11px 28px; font-size: 0.88rem; }
+    #nsEditorView { padding-bottom: 80px; }
+  }
+
+  /* ── Share view ───────────────────────────────────── */
+  #shareView { display: none; max-width: 680px; margin: 0 auto; padding: 40px 24px 60px; }
+  .sv-header { text-align: center; margin-bottom: 36px; padding-bottom: 24px; border-bottom: 2px solid var(--border); }
+  .sv-agent-brand {
+    font-size: 0.8rem; color: var(--muted); letter-spacing: 1px;
+    text-transform: uppercase; margin-bottom: 12px;
+  }
+  .sv-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 2rem;
+    letter-spacing: 4px; color: var(--accent); margin-bottom: 4px;
+  }
+  .sv-subtitle { font-size: 0.8rem; color: var(--muted); }
+  .sv-property { margin-bottom: 24px; }
+  .sv-property-name { font-size: 1.1rem; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .sv-property-detail { font-size: 0.85rem; color: var(--muted); margin-bottom: 2px; }
+  .sv-section-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 0.95rem;
+    letter-spacing: 2px; color: var(--label); margin-bottom: 10px;
+    padding-bottom: 6px; border-bottom: 1px solid var(--border); margin-top: 24px;
+  }
+  .sv-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 7px 0; border-bottom: 1px solid rgba(42,51,48,0.5); font-size: 0.88rem;
+  }
+  .sv-row-label { color: var(--label); }
+  .sv-row-val { font-family: 'DM Mono', monospace; color: var(--text); }
+  .sv-row-val.deduct { color: var(--danger); }
+  .sv-net {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 16px 0 8px; border-top: 2px solid var(--border); margin-top: 8px;
+  }
+  .sv-net-label {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.2rem;
+    letter-spacing: 2px; color: var(--text);
+  }
+  .sv-net-val { font-family: 'DM Mono', monospace; font-size: 1.5rem; }
+  .sv-net-val.positive { color: var(--accent2); }
+  .sv-net-val.negative { color: var(--danger); }
+  .sv-disclaimer { font-size: 0.75rem; color: var(--muted); margin-top: 20px; line-height: 1.6; font-style: italic; }
+  .sv-prepared { font-size: 0.75rem; color: var(--muted); margin-top: 12px; text-align: center; }
+
+  /* ── Mobile views ─────────────────────────────────── */
+  #mobileSigninView { display: none; }
+  #mobileListView { display: none; }
+
+  body.mobile-signin header { display: none; }
+  body.mobile-list header { display: none; }
+
+  .mobile-list-nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .mlv-hub { font-size: 0.72rem; color: var(--muted); text-decoration: none; letter-spacing: 0.5px; }
+  .mlv-hub:hover { color: var(--accent); }
+  .mlv-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem;
+    letter-spacing: 2px; color: var(--accent);
+  }
+  .mlv-new {
+    background: var(--accent); color: #111; border: none; border-radius: 6px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.75rem; font-weight: 700;
+    padding: 5px 11px; cursor: pointer;
+  }
+  #mlvAuthRow {
+    display: none; align-items: center; justify-content: space-between;
+    padding: 10px 16px; border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+  }
+  #mlvEmail { font-size: 0.78rem; color: var(--muted); }
+  .mlv-signout {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    padding: 3px 9px; border-radius: 4px; font-size: 0.72rem; cursor: pointer;
+  }
+  .mlv-signout:hover { border-color: var(--danger); color: var(--danger); }
+  #mobileListContent { padding: 12px; }
+  .mobile-ns-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; margin-bottom: 10px; cursor: pointer;
+  }
+  .mobile-ns-card:active { background: var(--surface2); }
+  .mobile-ns-name { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
+  .mobile-ns-addr { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; }
+  .mobile-ns-proceeds { font-family: 'DM Mono', monospace; font-size: 1rem; }
+  .mobile-ns-proceeds.positive { color: var(--accent2); }
+  .mobile-ns-proceeds.negative { color: var(--danger); }
+
+  /* Mobile sign-in */
+  .msv-wrap {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    min-height: 100vh; padding: 40px 24px; text-align: center;
+  }
+  .msv-hub-back {
+    position: absolute; top: 20px; left: 20px;
+    font-size: 0.72rem; color: var(--muted); text-decoration: none; letter-spacing: 0.5px;
+  }
+  .msv-icon {
+    font-size: 3rem; margin-bottom: 16px;
+  }
+  .msv-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 2rem;
+    letter-spacing: 3px; color: var(--accent); margin-bottom: 6px;
+  }
+  .msv-sub { font-size: 0.85rem; color: var(--muted); margin-bottom: 32px; line-height: 1.5; }
+  .msv-signin-btn {
+    width: 100%; max-width: 280px; padding: 14px; border-radius: 8px;
+    background: var(--accent); color: #0d0f0e; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; margin-bottom: 12px;
+  }
+  .msv-guest-btn {
+    width: 100%; max-width: 280px; padding: 14px; border-radius: 8px;
+    background: transparent; color: var(--muted); border: 1px solid var(--border);
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; cursor: pointer;
+  }
+
+  /* Mobile editor nav */
+  #mobileEditorNav {
+    display: none; align-items: center; justify-content: space-between;
+    padding: 12px 16px; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .men-back {
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 0.82rem; display: flex; align-items: center; gap: 4px;
+  }
+  .men-back:hover { color: var(--accent); }
+  .men-new {
+    background: none; border: 1px solid var(--border); color: var(--text);
+    border-radius: 5px; padding: 5px 10px; font-size: 0.78rem; cursor: pointer;
+  }
+
+  @media (max-width: 1024px) {
+    .ns-layout { display: none; }
+    .ns-footer { display: none !important; }
+    #mobileEditorNav.visible { display: flex; }
+    body.mobile-editor .ns-layout { display: block; }
+    body.mobile-editor .ns-sidebar, body.mobile-editor .ns-resizer { display: none; }
+    body.mobile-editor #nsEditorView { height: auto; padding: 20px 20px 120px; }
+    body.mobile-editor header { display: flex; }
+    body.mobile-editor .ns-layout { height: auto; min-height: calc(100vh - 69px); }
+
+    /* Mobile footer */
+    body.mobile-editor .ns-mobile-footer {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--surface); border-top: 2px solid var(--border);
+      padding: 12px 16px; z-index: 100;
+    }
+    .ns-mobile-footer { display: none; }
+    body.mobile-editor .ns-mobile-footer { display: block; }
+    .ns-mob-proceeds {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+    }
+    .ns-mob-proceeds-label { font-size: 0.78rem; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
+    .ns-mob-proceeds-val { font-family: 'DM Mono', monospace; font-size: 1.1rem; }
+    .ns-mob-proceeds-val.positive { color: var(--accent2); }
+    .ns-mob-proceeds-val.negative { color: var(--danger); }
+    .ns-mob-btns { display: flex; gap: 10px; }
+    .ns-mob-btns .btn { flex: 1; justify-content: center; padding: 12px; font-size: 0.9rem; }
+
+    header { padding: 14px 20px; }
+    header h1 { font-size: 1.8rem; }
+  }
+
+  /* ── Modals ───────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7); z-index: 500;
+    align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 28px 32px; width: 90%; max-width: 400px;
+  }
+  .modal-title {
+    font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem;
+    letter-spacing: 2px; color: var(--accent); margin-bottom: 6px;
+  }
+  .modal-sub { font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; }
+  .modal input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; padding: 10px 12px; margin-bottom: 16px;
+  }
+  .modal input:focus { outline: none; border-color: var(--accent); }
+  .modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+  .modal-cancel {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 6px; padding: 9px 18px; font-size: 0.85rem; cursor: pointer;
+  }
+  .modal-cancel:hover { border-color: var(--text); color: var(--text); }
+  .modal-confirm {
+    background: var(--accent); color: #0d0f0e; border: none;
+    border-radius: 6px; padding: 9px 18px; font-size: 0.85rem;
+    font-weight: 700; cursor: pointer;
+  }
+  .modal-confirm:hover { background: #d8ff7a; }
+
+  /* Auth modal */
+  .auth-modal { max-width: 360px; }
+  .auth-field { margin-bottom: 12px; }
+  .auth-field label { display: block; font-size: 0.78rem; color: var(--muted); margin-bottom: 5px; letter-spacing: 0.5px; }
+  .auth-field input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; padding: 10px 12px; margin-bottom: 0;
+  }
+  .auth-field input:focus { outline: none; border-color: var(--accent); }
+  .auth-pw-wrap { position: relative; }
+  .auth-pw-wrap input { padding-right: 56px; }
+  .auth-pw-toggle {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: var(--muted); cursor: pointer;
+    font-size: 0.7rem; letter-spacing: 0.5px;
+  }
+  .auth-error { color: var(--danger); font-size: 0.82rem; margin-bottom: 12px; min-height: 18px; }
+  .auth-toggle { font-size: 0.8rem; color: var(--muted); margin-top: 14px; text-align: center; }
+  .auth-toggle a { color: var(--accent); cursor: pointer; }
+  .auth-submit {
+    width: 100%; padding: 11px; border-radius: 6px; background: var(--accent);
+    color: #0d0f0e; border: none; font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem; font-weight: 700; cursor: pointer; margin-top: 4px;
+  }
+  .auth-submit:hover { background: #d8ff7a; }
+  .auth-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+  .auth-submit.loading { opacity: 0.6; }
+
+  /* ── Toast ────────────────────────────────────────── */
+  #toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 10px 20px; font-size: 0.85rem; color: var(--text);
+    opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 600;
+    white-space: nowrap;
+  }
+  #toast.show { opacity: 1; }
+  #toast.success { border-color: var(--accent2); color: var(--accent2); }
+  #toast.error { border-color: var(--danger); color: var(--danger); }
+
+  /* ── Print styles ─────────────────────────────────── */
+  @media print {
+    body::before { display: none; }
+    header, .ns-sidebar, .ns-resizer, .ns-footer, .ns-mobile-footer,
+    #mobileEditorNav, #nsEmptyState, .ns-section-title .btn,
+    .misc-add-btn, .misc-item-del, .agent-select, #toast { display: none !important; }
+
+    body { background: #fff; color: #111; }
+    .ns-layout { display: block; height: auto; }
+    #nsEditorView { padding: 0; height: auto; overflow: visible; }
+
+    .print-header {
+      display: block !important;
+      text-align: center;
+      border-bottom: 2px solid #ccc;
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .print-brand {
+      font-size: 11px; color: #888; letter-spacing: 1px;
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .print-sheet-title {
+      font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem;
+      letter-spacing: 4px; color: #111; margin-bottom: 4px;
+    }
+    .print-date { font-size: 11px; color: #888; }
+
+    .detail-row, .cost-row, .prorated-row, .agent-row { border-bottom: 1px solid #eee; }
+    .detail-row label, .cost-row-label, .prorated-label, .agent-row-label { color: #555; }
+    .detail-row input, .detail-row select, .cost-val, .prorated-amount { color: #111; }
+    .ns-section-title { color: #333; border-bottom-color: #ccc; }
+    .ns-results { border-top-color: #ccc; }
+    .ns-results-row { border-bottom-color: #eee; }
+    .ns-results-row-label { color: #555; }
+    .ns-results-row-val { color: #111; }
+    .ns-results-row-val.deduct { color: #c00; }
+    .ns-net-val.positive { color: #1a7a1a; }
+    .ns-net-val.negative { color: #c00; }
+    .ns-results-disclaimer { color: #888; }
+    .agent-val-input, .agent-calc { color: #111; }
+    .agent-controls-row { flex-wrap: nowrap; }
+    .misc-item-label, .misc-item-amount { color: #111; }
+  }
+  .print-header { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <a href="index.html" class="hub-back">← All Tools</a>
+    <h1>Net Sheet</h1>
+    <span>Seller Estimated Proceeds</span>
+  </div>
+  <div class="header-actions">
+    <div id="authStatus"></div>
+    <button class="btn btn-print" onclick="printSheet()">⬇ Print / PDF</button>
+    <button class="btn btn-save" onclick="openSaveModal()">Save</button>
+  </div>
+</header>
+
+<!-- Mobile: Sign-in view -->
+<div id="mobileSigninView">
+  <div class="msv-wrap">
+    <a href="index.html" class="msv-hub-back">← Fix &amp; Flip Tools</a>
+    <div class="msv-icon">📋</div>
+    <div class="msv-title">Seller Net Sheet</div>
+    <div class="msv-sub">Sign in to save and share net sheets with your seller clients.</div>
+    <button class="msv-signin-btn" onclick="openAuthModal()">Sign In</button>
+    <button class="msv-guest-btn" onclick="continueAsGuest()">Continue as Guest</button>
+  </div>
+</div>
+
+<!-- Mobile: List view -->
+<div id="mobileListView">
+  <div class="mobile-list-nav">
+    <a href="index.html" class="mlv-hub">← All Tools</a>
+    <span class="mlv-title">Net Sheet</span>
+    <button class="mlv-new" onclick="newNetSheet()">+ New</button>
+  </div>
+  <div id="mlvAuthRow">
+    <span id="mlvEmail"></span>
+    <button class="mlv-signout" onclick="signOut()">Sign Out</button>
+  </div>
+  <div id="mobileListContent"></div>
+</div>
+
+<!-- Mobile: Editor nav -->
+<div id="mobileEditorNav">
+  <button class="men-back" onclick="showMobileList()">← Net Sheets</button>
+  <button class="men-new" onclick="newNetSheet()">+ New</button>
+</div>
+
+<!-- Desktop layout -->
+<div class="ns-layout" id="nsLayout">
+
+  <!-- Sidebar -->
+  <div class="ns-sidebar" id="nsSidebar">
+    <div class="ns-sidebar-hdr">
+      <span class="ns-sidebar-title">Saved Sheets</span>
+      <button class="ns-sidebar-new" onclick="newNetSheet()">+ New</button>
+    </div>
+    <div class="ns-sidebar-list" id="nsSidebarList"></div>
+    <div id="nsSidebarAuth" style="display:none">
+      <p>Sign in to save and reload net sheets.</p>
+      <p style="margin-top:8px"><a onclick="openAuthModal()">Sign in</a></p>
+    </div>
+  </div>
+
+  <!-- Resizer -->
+  <div class="ns-resizer" id="nsResizer"></div>
+
+  <!-- Editor -->
+  <div id="nsEditorView">
+
+    <!-- Empty state -->
+    <div id="nsEmptyState">
+      <div class="ns-empty-title">No Sheet Selected</div>
+      <div class="ns-empty-text">Select a net sheet from the sidebar<br>or click <strong>+ New</strong> to start.</div>
+    </div>
+
+    <!-- Print header (visible only in print) -->
+    <div class="print-header">
+      <div class="print-brand">Fix &amp; Flip Tools — by Blue Star Realty Group</div>
+      <div class="print-sheet-title">Estimated Seller Net Sheet</div>
+      <div class="print-date" id="printDateEl"></div>
+    </div>
+
+    <!-- Section 1: Transaction Details -->
+    <div class="ns-section">
+      <div class="ns-section-title first">Transaction Details</div>
+
+      <div class="detail-row">
+        <label>Seller Name</label>
+        <input type="text" id="sellerName" placeholder="e.g. John &amp; Jane Smith" oninput="calculate()">
+      </div>
+      <div class="detail-row">
+        <label>Property Address</label>
+        <input type="text" id="propertyAddress" placeholder="e.g. 123 Main St, Anytown, GA 30000" oninput="calculate()">
+      </div>
+      <div class="detail-row">
+        <label>Sale Price</label>
+        <input type="text" id="salePrice" placeholder="$0" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+      <div class="detail-row">
+        <label>Estimated Loan Payoff</label>
+        <input type="text" id="loanPayoff" placeholder="$0" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+      <div class="detail-row">
+        <label>Anticipated Closing Date</label>
+        <input type="date" id="closingDate" onchange="calculate()">
+      </div>
+      <div class="detail-row">
+        <label>Buyer's Financing</label>
+        <select id="financing" onchange="calculate()">
+          <option>Conventional</option>
+          <option>FHA</option>
+          <option>VA</option>
+          <option>USDA</option>
+          <option>Conventional Second</option>
+          <option>Cash</option>
+          <option>Owner Financed</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Section 2: Estimated Costs -->
+    <div class="ns-section">
+      <div class="ns-section-title">Estimated Closing Costs</div>
+
+      <div class="cost-row">
+        <span class="cost-row-label">Attorney Fee</span>
+        <input type="text" class="cost-val" id="costAttorney" value="$250" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+      <div class="cost-row">
+        <span class="cost-row-label">Doc Prep</span>
+        <input type="text" class="cost-val" id="costDocPrep" value="$250" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+      <div class="cost-row">
+        <span class="cost-row-label">Escrow Fee</span>
+        <input type="text" class="cost-val" id="costEscrow" value="$750" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+      <div class="cost-row">
+        <span class="cost-row-label">Tax Certificate</span>
+        <input type="text" class="cost-val" id="costTaxCert" value="$100" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+      <div class="cost-row">
+        <span class="cost-row-label">E-Recording Fee</span>
+        <input type="text" class="cost-val" id="costERecording" value="$25" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+
+      <!-- Prorated Taxes -->
+      <div class="prorated-row">
+        <span class="prorated-label">Prorated Taxes</span>
+        <select class="prorated-city" id="proratedCity" onchange="calculate()">
+          <option value="">— Select City —</option>
+          <!-- TODO: Populate with actual cities and rates -->
+          <option value="placeholder_1.25">Sample City (1.25%)</option>
+          <option value="placeholder_0.90">Sample City B (0.90%)</option>
+        </select>
+        <input type="text" class="prorated-amount" id="proratedAmount" placeholder="$0" readonly title="Calculated from city rate × sale price × days elapsed">
+      </div>
+
+      <!-- Owner's Title Policy -->
+      <div class="cost-row">
+        <span class="cost-row-label">
+          Owner's Title Policy
+          <span class="cost-row-hint">(formula coming — enter manually)</span>
+        </span>
+        <input type="text" class="cost-val" id="costTitlePolicy" value="$0" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+
+      <!-- Buyer Agent Fee -->
+      <div class="agent-row">
+        <span class="agent-row-label">Buyer Agent Fee</span>
+        <div class="agent-row-controls">
+          <div class="agent-controls-row">
+            <select class="agent-select" id="buyerAgentPaidBy" onchange="onBuyerAgentPaidByChange()">
+              <option value="Seller">Seller Pays</option>
+              <option value="Buyer">Buyer Pays</option>
+              <option value="Split">Split</option>
+            </select>
+            <div id="buyerAgentFullRow" style="display:flex;align-items:center;gap:8px">
+              <select class="agent-select" id="buyerAgentType" onchange="calculate()">
+                <option value="pct">%</option>
+                <option value="fixed">$</option>
+              </select>
+              <input type="text" class="agent-val-input" id="buyerAgentValue" value="3" oninput="calculate()">
+              <span class="agent-suffix" id="buyerAgentSuffix">% of sale price</span>
+            </div>
+            <span class="agent-calc" id="buyerAgentCalc">$0</span>
+          </div>
+          <div class="agent-split-row" id="buyerAgentSplitRow" style="display:none">
+            <span class="agent-split-label">Seller pays</span>
+            <input type="text" class="agent-val-input" id="buyerSplitSeller" value="1.5" oninput="calculate()" style="width:60px">
+            <span class="agent-suffix">%</span>
+            <span class="agent-split-label" style="margin-left:10px">Buyer pays</span>
+            <input type="text" class="agent-val-input" id="buyerSplitBuyer" value="1.5" oninput="calculate()" style="width:60px">
+            <span class="agent-suffix">%</span>
+          </div>
+          <div id="buyerAgentBuyerNote" style="display:none">
+            <span class="agent-split-note">Buyer is responsible for their own agent fee — $0 from seller proceeds.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Seller Agent Fee -->
+      <div class="agent-row">
+        <span class="agent-row-label">Seller Agent Fee</span>
+        <div class="agent-row-controls">
+          <div class="agent-controls-row">
+            <select class="agent-select" id="sellerAgentType" onchange="calculate()">
+              <option value="pct">%</option>
+              <option value="fixed">$</option>
+            </select>
+            <input type="text" class="agent-val-input" id="sellerAgentValue" value="3" oninput="calculate()">
+            <span class="agent-suffix" id="sellerAgentSuffix">% of sale price</span>
+            <span class="agent-calc" id="sellerAgentCalc">$0</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Misc Items -->
+      <div style="margin-top: 12px;">
+        <div style="font-size:0.8rem;color:var(--muted);margin-bottom:6px;letter-spacing:0.5px">ADDITIONAL FEES</div>
+        <div id="miscItemsList"></div>
+        <button class="misc-add-btn" onclick="addMiscItem()">+ Add Fee</button>
+      </div>
+    </div>
+
+    <!-- Section 3: Estimated Net Proceeds -->
+    <div class="ns-results" id="nsResults">
+      <div class="ns-results-title">Estimated Net Proceeds</div>
+
+      <div class="ns-results-row">
+        <span class="ns-results-row-label">Sale Price</span>
+        <span class="ns-results-row-val" id="rSalePrice">$0</span>
+      </div>
+      <div class="ns-results-row">
+        <span class="ns-results-row-label">Less: Estimated Loan Payoff</span>
+        <span class="ns-results-row-val deduct" id="rLoanPayoff">—</span>
+      </div>
+      <div class="ns-results-row subtotal" id="costsBreakdownHeader">
+        <span class="ns-results-row-label">Less: Total Estimated Costs</span>
+        <span class="ns-results-row-val deduct" id="rTotalCosts">—</span>
+      </div>
+      <div id="costsBreakdown" style="padding-left:16px"></div>
+
+      <div class="ns-net-row">
+        <span class="ns-net-label">Estimated Net Proceeds</span>
+        <span class="ns-net-val positive" id="rNetProceeds">—</span>
+      </div>
+      <p class="ns-results-disclaimer">
+        This is an estimate only. Actual proceeds may vary based on final closing costs, lender requirements,
+        outstanding liens, HOA fees, and other transaction-specific factors. Consult your closing attorney for final figures.
+      </p>
+    </div>
+
+  </div><!-- #nsEditorView -->
+</div><!-- .ns-layout -->
+
+<!-- Share view -->
+<div id="shareView"></div>
+
+<!-- Mobile footer -->
+<div class="ns-mobile-footer">
+  <div class="ns-mob-proceeds">
+    <span class="ns-mob-proceeds-label">Est. Net Proceeds</span>
+    <span class="ns-mob-proceeds-val positive" id="mobNetProceeds">—</span>
+  </div>
+  <div class="ns-mob-btns">
+    <button class="btn btn-ghost" onclick="printSheet()">Print</button>
+    <button class="btn btn-save" onclick="openSaveModal()">Save</button>
+  </div>
+</div>
+
+<!-- Desktop footer -->
+<div class="ns-footer" id="nsFooter">
+  <div class="ns-footer-proceeds">
+    <div class="ns-footer-label">Est. Net Proceeds</div>
+    <div class="ns-footer-val positive" id="footerNetProceeds">—</div>
+  </div>
+  <div class="ns-footer-btns">
+    <button class="btn btn-print" onclick="printSheet()">⬇ Print / PDF</button>
+    <button class="btn btn-save" onclick="openSaveModal()">Save Sheet</button>
+  </div>
+</div>
+
+<!-- Save modal -->
+<div class="modal-overlay" id="saveModal">
+  <div class="modal">
+    <div class="modal-title" id="saveModalTitle">Save Net Sheet</div>
+    <div class="modal-sub" id="saveModalSub">Give this net sheet a name to save it.</div>
+    <input type="text" id="nsNameInput" placeholder="e.g. Smith — 123 Main St" onkeydown="if(event.key==='Enter')confirmSave()">
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeSaveModal()">Cancel</button>
+      <button class="modal-confirm" id="saveModalBtn" onclick="confirmSave()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Auth modal -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal auth-modal">
+    <div class="modal-title" id="authTitle">Sign In</div>
+    <div class="auth-field">
+      <label>Email</label>
+      <input type="email" id="authEmail" autocomplete="email" oninput="clearAuthErr()" onkeydown="if(event.key==='Enter')submitAuth()">
+    </div>
+    <div class="auth-field">
+      <label>Password</label>
+      <div class="auth-pw-wrap">
+        <input type="password" id="authPassword" autocomplete="current-password" oninput="clearAuthErr()" onkeydown="if(event.key==='Enter')submitAuth()">
+        <button class="auth-pw-toggle" id="togglePwBtn" onclick="togglePw()">SHOW</button>
+      </div>
+    </div>
+    <div class="auth-error" id="authError"></div>
+    <button class="auth-submit" id="authSubmitBtn" onclick="submitAuth()">Sign In</button>
+    <div class="auth-toggle" id="authToggle">
+      Don't have an account? <a onclick="toggleAuthMode()">Create one</a>
+    </div>
+    <div style="text-align:center;margin-top:12px">
+      <button class="modal-cancel" onclick="closeAuthModal()" style="font-size:0.78rem">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+  const SUPABASE_URL = 'https://api.bluestarrealtygroup.com';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbGlkbWZpc2hhY2x5c2NrcnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc2ODMsImV4cCI6MjA4OTc2MzY4M30.YEhxwrw-HxofmV4N3KRpbgDcT_a_OyqIkx49Wu7CjR0';
+
+  // ── Tax cities (populate with real cities/rates) ─────────────
+  // Format: { name, rate } where rate is annual % of sale price
+  const TAX_CITIES = [
+    // TODO: Replace with actual city list and rates
+    { name: 'placeholder_1.25', rate: 1.25 },
+    { name: 'placeholder_0.90', rate: 0.90 },
+  ];
+
+  // ── State ────────────────────────────────────────────────────
+  let sbAccessToken = null;
+  let currentUser = null;
+  let authMode = 'signin';
+  let activeId = null;
+  let _editorActive = false;
+  let _cachedSheets = [];
+  let renameMode = false;
+  let renameTargetId = null;
+  let miscItems = [];
+  let _miscCounter = 0;
+
+  // ── Formatters ───────────────────────────────────────────────
+  function fmt(n) {
+    if (n === null || n === undefined || isNaN(n)) return '—';
+    return '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  function fmtSigned(n) {
+    if (n === null || isNaN(n)) return '—';
+    return (n < 0 ? '-' : '') + '$' + Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  function parseCurrency(val) {
+    if (val === null || val === undefined) return 0;
+    const n = parseFloat(String(val).replace(/[$,]/g, '')) || 0;
+    return isNaN(n) ? 0 : n;
+  }
+  function parseNum(val) {
+    const n = parseFloat(String(val).replace(/[,$]/g, '')) || 0;
+    return isNaN(n) ? 0 : n;
+  }
+  function fmtField(el) {
+    const n = parseCurrency(el.value);
+    el.value = n > 0 ? fmt(n) : '';
+  }
+  function fmtDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  }
+
+  // ── Auth ─────────────────────────────────────────────────────
+  function sbH() {
+    return { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${sbAccessToken || SUPABASE_KEY}`, 'Content-Type': 'application/json' };
+  }
+
+  function loadSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sb_session'));
+      if (s?.access_token && s?.user) { sbAccessToken = s.access_token; currentUser = s.user; return true; }
+    } catch(e) {}
+    return false;
+  }
+
+  function saveSession(data) {
+    sbAccessToken = data.access_token;
+    currentUser = data.user;
+    localStorage.setItem('sb_session', JSON.stringify({
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      user: data.user
+    }));
+  }
+
+  function clearSession() {
+    sbAccessToken = null; currentUser = null;
+    localStorage.removeItem('sb_session');
+  }
+
+  async function refreshSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sb_session'));
+      if (!s?.refresh_token) return false;
+      const res = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ refresh_token: s.refresh_token })
+      }).then(r => r.json()).catch(() => ({}));
+      if (res.access_token) { saveSession(res); return true; }
+    } catch(e) {}
+    return false;
+  }
+
+  async function initAuth() {
+    const hasSession = loadSession();
+    if (hasSession) {
+      try {
+        const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: sbH() });
+        if (r.ok) {
+          currentUser = await r.json();
+          updateAuthUI();
+          await loadNetSheets();
+        } else {
+          const refreshed = await refreshSession();
+          if (refreshed) {
+            updateAuthUI();
+            await loadNetSheets();
+          } else {
+            clearSession();
+            updateAuthUI();
+            renderSidebar([]);
+          }
+        }
+      } catch(e) {
+        clearSession(); updateAuthUI(); renderSidebar([]);
+      }
+    } else {
+      updateAuthUI();
+      renderSidebar([]);
+    }
+    if (isMobile()) showMobileList();
+    else updateEmptyState();
+  }
+
+  function updateAuthUI() {
+    const el = document.getElementById('authStatus');
+    if (currentUser) {
+      el.innerHTML = `<span class="user-email">${currentUser.email}</span>
+        <button class="sign-out-btn" onclick="signOut()">Sign Out</button>`;
+    } else {
+      el.innerHTML = `<button class="btn btn-ghost" onclick="openAuthModal()" style="font-size:0.78rem;padding:6px 14px">Sign In</button>`;
+    }
+  }
+
+  function signOut() {
+    fetch(`${SUPABASE_URL}/auth/v1/logout`, { method: 'POST', headers: sbH() }).catch(() => {});
+    clearSession();
+    updateAuthUI();
+    if (isMobile()) showMobileList(); else { renderSidebar([]); updateEmptyState(); }
+  }
+
+  // Auth modal
+  function openAuthModal() {
+    authMode = 'signin'; syncAuthModal();
+    document.getElementById('authModal').classList.add('open');
+    setTimeout(() => document.getElementById('authEmail').focus(), 80);
+  }
+  function closeAuthModal() { document.getElementById('authModal').classList.remove('open'); }
+  function clearAuthErr() { document.getElementById('authError').textContent = ''; }
+  function syncAuthModal() {
+    const si = authMode === 'signin';
+    document.getElementById('authTitle').textContent = si ? 'Sign In' : 'Create Account';
+    document.getElementById('authSubmitBtn').textContent = si ? 'Sign In' : 'Create Account';
+    document.getElementById('authPassword').autocomplete = si ? 'current-password' : 'new-password';
+    document.getElementById('authToggle').innerHTML = si
+      ? `Don't have an account? <a onclick="toggleAuthMode()">Create one</a>`
+      : `Already have an account? <a onclick="toggleAuthMode()">Sign in</a>`;
+  }
+  function toggleAuthMode() { authMode = authMode === 'signin' ? 'signup' : 'signin'; syncAuthModal(); }
+  function togglePw() {
+    const inp = document.getElementById('authPassword');
+    const btn = document.getElementById('togglePwBtn');
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.textContent = show ? 'HIDE' : 'SHOW';
+  }
+
+  async function submitAuth() {
+    const email = document.getElementById('authEmail').value.trim();
+    const pass  = document.getElementById('authPassword').value;
+    if (!email || !pass) return;
+    const btn   = document.getElementById('authSubmitBtn');
+    const errEl = document.getElementById('authError');
+    btn.disabled = true; btn.classList.add('loading');
+    errEl.textContent = '';
+    try {
+      const url = authMode === 'signup'
+        ? `${SUPABASE_URL}/auth/v1/signup`
+        : `${SUPABASE_URL}/auth/v1/token?grant_type=password`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ email, password: pass })
+      }).then(r => r.json()).catch(() => ({}));
+      if (res.access_token) {
+        saveSession(res);
+        closeAuthModal();
+        updateAuthUI();
+        showToast('✓ Signed in', 'success');
+        await loadNetSheets();
+        if (isMobile()) showMobileList();
+      } else {
+        errEl.textContent = res.error_description || res.message || 'Invalid email or password';
+      }
+    } catch { errEl.textContent = 'Unable to reach server — try again shortly'; }
+    btn.disabled = false; btn.classList.remove('loading');
+    syncAuthModal();
+  }
+
+  function continueAsGuest() {
+    document.getElementById('mobileSigninView').style.display = 'none';
+    document.body.classList.remove('mobile-signin');
+    showMobileList();
+  }
+
+  // ── Calculation ───────────────────────────────────────────────
+  function calcProratedTax(salePrice, closingDate, cityVal) {
+    if (!cityVal || !closingDate || !salePrice) return 0;
+    const city = TAX_CITIES.find(c => c.name === cityVal);
+    if (!city || !city.rate) return 0;
+    const closing = new Date(closingDate + 'T12:00:00');
+    const yearStart = new Date(closing.getFullYear(), 0, 1);
+    const daysElapsed = Math.round((closing - yearStart) / (1000 * 60 * 60 * 24));
+    const isLeap = (y => y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0))(closing.getFullYear());
+    return (city.rate / 100) * salePrice * (daysElapsed / (isLeap ? 366 : 365));
+  }
+
+  function calcBuyerAgentSellerPortion(salePrice) {
+    const paidBy = document.getElementById('buyerAgentPaidBy').value;
+    if (paidBy === 'Buyer') return 0;
+    if (paidBy === 'Split') {
+      return salePrice * (parseNum(document.getElementById('buyerSplitSeller').value) / 100);
+    }
+    const type = document.getElementById('buyerAgentType').value;
+    const val  = parseNum(document.getElementById('buyerAgentValue').value);
+    return type === 'pct' ? salePrice * (val / 100) : val;
+  }
+
+  function calcSellerAgentFee(salePrice) {
+    const type = document.getElementById('sellerAgentType').value;
+    const val  = parseNum(document.getElementById('sellerAgentValue').value);
+    return type === 'pct' ? salePrice * (val / 100) : val;
+  }
+
+  function calculate() {
+    const sp = parseCurrency(document.getElementById('salePrice').value);
+    const lp = parseCurrency(document.getElementById('loanPayoff').value);
+
+    // Prorated taxes
+    const cityVal = document.getElementById('proratedCity').value;
+    const closingDate = document.getElementById('closingDate').value;
+    const proratedTax = calcProratedTax(sp, closingDate, cityVal);
+    document.getElementById('proratedAmount').value = proratedTax > 0 ? fmt(proratedTax) : '';
+
+    // Fixed costs
+    const attorney    = parseCurrency(document.getElementById('costAttorney').value);
+    const docPrep     = parseCurrency(document.getElementById('costDocPrep').value);
+    const escrow      = parseCurrency(document.getElementById('costEscrow').value);
+    const taxCert     = parseCurrency(document.getElementById('costTaxCert').value);
+    const eRec        = parseCurrency(document.getElementById('costERecording').value);
+    const titlePolicy = parseCurrency(document.getElementById('costTitlePolicy').value);
+
+    // Agent fees
+    const buyerAgentFee  = calcBuyerAgentSellerPortion(sp);
+    const sellerAgentFee = calcSellerAgentFee(sp);
+
+    // Agent calc display
+    document.getElementById('buyerAgentCalc').textContent = fmt(buyerAgentFee);
+    document.getElementById('sellerAgentCalc').textContent = fmt(sellerAgentFee);
+
+    // Agent suffix labels
+    const baType = document.getElementById('buyerAgentType').value;
+    document.getElementById('buyerAgentSuffix').textContent = baType === 'pct' ? '% of sale price' : '(fixed $)';
+    const saType = document.getElementById('sellerAgentType').value;
+    document.getElementById('sellerAgentSuffix').textContent = saType === 'pct' ? '% of sale price' : '(fixed $)';
+
+    // Misc
+    const miscTotal = miscItems.reduce((s, i) => s + parseCurrency(i.amount), 0);
+
+    // Totals
+    const totalCosts = attorney + docPrep + escrow + taxCert + eRec + proratedTax + titlePolicy + buyerAgentFee + sellerAgentFee + miscTotal;
+    const netProceeds = sp - lp - totalCosts;
+
+    // Update results section
+    document.getElementById('rSalePrice').textContent = sp > 0 ? fmt(sp) : '—';
+    document.getElementById('rLoanPayoff').textContent = lp > 0 ? `(${fmt(lp)})` : '—';
+    document.getElementById('rTotalCosts').textContent = totalCosts > 0 ? `(${fmt(totalCosts)})` : '—';
+
+    // Costs breakdown
+    const bd = document.getElementById('costsBreakdown');
+    const costLines = [
+      ['Attorney Fee', attorney],
+      ['Doc Prep', docPrep],
+      ['Escrow Fee', escrow],
+      ['Tax Certificate', taxCert],
+      ['E-Recording Fee', eRec],
+      ['Prorated Taxes', proratedTax],
+      ["Owner's Title Policy", titlePolicy],
+      ['Buyer Agent Fee', buyerAgentFee],
+      ['Seller Agent Fee', sellerAgentFee],
+      ...miscItems.map(i => [i.label || 'Misc Fee', parseCurrency(i.amount)])
+    ].filter(([,v]) => v > 0);
+    bd.innerHTML = costLines.map(([label, val]) =>
+      `<div class="ns-results-row" style="font-size:0.82rem">
+        <span class="ns-results-row-label" style="color:var(--muted)">${label}</span>
+        <span class="ns-results-row-val deduct">(${fmt(val)})</span>
+      </div>`
+    ).join('');
+
+    // Net proceeds
+    const netEl = document.getElementById('rNetProceeds');
+    const footerEl = document.getElementById('footerNetProceeds');
+    const mobEl = document.getElementById('mobNetProceeds');
+    if (sp > 0) {
+      const display = netProceeds >= 0 ? fmt(netProceeds) : `(${fmt(Math.abs(netProceeds))})`;
+      const cls = netProceeds >= 0 ? 'positive' : 'negative';
+      [netEl, footerEl, mobEl].forEach(el => {
+        if (!el) return;
+        el.textContent = display;
+        el.className = el.className.replace(/positive|negative/g, '').trim() + ' ' + cls;
+      });
+    } else {
+      [netEl, footerEl, mobEl].forEach(el => { if (el) { el.textContent = '—'; el.className = el.className.replace(/positive|negative/g, '').trim(); } });
+    }
+
+    return { sp, lp, totalCosts, netProceeds };
+  }
+
+  // ── Agent fee UI ─────────────────────────────────────────────
+  function onBuyerAgentPaidByChange() {
+    const paidBy = document.getElementById('buyerAgentPaidBy').value;
+    document.getElementById('buyerAgentFullRow').style.display   = paidBy === 'Buyer' ? 'none' : 'flex';
+    document.getElementById('buyerAgentSplitRow').style.display  = paidBy === 'Split' ? 'flex' : 'none';
+    document.getElementById('buyerAgentBuyerNote').style.display = paidBy === 'Buyer' ? 'block' : 'none';
+    calculate();
+  }
+
+  // ── Misc items ───────────────────────────────────────────────
+  function addMiscItem() {
+    const id = 'misc_' + (++_miscCounter);
+    miscItems.push({ id, label: '', amount: '' });
+    renderMiscItems();
+    const newInput = document.querySelector(`#misc_label_${id}`);
+    if (newInput) newInput.focus();
+  }
+
+  function updateMiscItem(id, field, value) {
+    const item = miscItems.find(i => i.id === id);
+    if (item) { item[field] = value; calculate(); }
+  }
+
+  function removeMiscItem(id) {
+    miscItems = miscItems.filter(i => i.id !== id);
+    renderMiscItems();
+    calculate();
+  }
+
+  function renderMiscItems() {
+    const el = document.getElementById('miscItemsList');
+    el.innerHTML = miscItems.map(item => `
+      <div class="misc-item">
+        <input type="text" class="misc-item-label" id="misc_label_${item.id}"
+          value="${item.label}" placeholder="Description"
+          oninput="updateMiscItem('${item.id}','label',this.value)">
+        <input type="text" class="misc-item-amount" id="misc_amt_${item.id}"
+          value="${item.amount}" placeholder="$0"
+          oninput="updateMiscItem('${item.id}','amount',this.value)"
+          onblur="this.value=this.value?fmt(parseCurrency(this.value)):''">
+        <button class="misc-item-del" onclick="removeMiscItem('${item.id}')">×</button>
+      </div>`).join('');
+  }
+
+  // ── Save / Load ───────────────────────────────────────────────
+  function collectState() {
+    return {
+      sellerName:       document.getElementById('sellerName').value,
+      propertyAddress:  document.getElementById('propertyAddress').value,
+      salePrice:        document.getElementById('salePrice').value,
+      loanPayoff:       document.getElementById('loanPayoff').value,
+      closingDate:      document.getElementById('closingDate').value,
+      financing:        document.getElementById('financing').value,
+      costAttorney:     document.getElementById('costAttorney').value,
+      costDocPrep:      document.getElementById('costDocPrep').value,
+      costEscrow:       document.getElementById('costEscrow').value,
+      costTaxCert:      document.getElementById('costTaxCert').value,
+      costERecording:   document.getElementById('costERecording').value,
+      proratedCity:     document.getElementById('proratedCity').value,
+      costTitlePolicy:  document.getElementById('costTitlePolicy').value,
+      buyerAgentPaidBy: document.getElementById('buyerAgentPaidBy').value,
+      buyerAgentType:   document.getElementById('buyerAgentType').value,
+      buyerAgentValue:  document.getElementById('buyerAgentValue').value,
+      buyerSplitSeller: document.getElementById('buyerSplitSeller').value,
+      buyerSplitBuyer:  document.getElementById('buyerSplitBuyer').value,
+      sellerAgentType:  document.getElementById('sellerAgentType').value,
+      sellerAgentValue: document.getElementById('sellerAgentValue').value,
+      miscItems:        miscItems
+    };
+  }
+
+  function populateForm(data) {
+    if (!data) return;
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val ?? ''; };
+    set('sellerName',       data.sellerName);
+    set('propertyAddress',  data.propertyAddress);
+    set('salePrice',        data.salePrice);
+    set('loanPayoff',       data.loanPayoff);
+    set('closingDate',      data.closingDate);
+    set('financing',        data.financing || 'Conventional');
+    set('costAttorney',     data.costAttorney ?? '$250');
+    set('costDocPrep',      data.costDocPrep ?? '$250');
+    set('costEscrow',       data.costEscrow ?? '$750');
+    set('costTaxCert',      data.costTaxCert ?? '$100');
+    set('costERecording',   data.costERecording ?? '$25');
+    set('proratedCity',     data.proratedCity ?? '');
+    set('costTitlePolicy',  data.costTitlePolicy ?? '$0');
+    set('buyerAgentPaidBy', data.buyerAgentPaidBy ?? 'Seller');
+    set('buyerAgentType',   data.buyerAgentType ?? 'pct');
+    set('buyerAgentValue',  data.buyerAgentValue ?? '3');
+    set('buyerSplitSeller', data.buyerSplitSeller ?? '1.5');
+    set('buyerSplitBuyer',  data.buyerSplitBuyer ?? '1.5');
+    set('sellerAgentType',  data.sellerAgentType ?? 'pct');
+    set('sellerAgentValue', data.sellerAgentValue ?? '3');
+    miscItems = (data.miscItems || []).map(i => ({ ...i, id: 'misc_' + (++_miscCounter) }));
+    renderMiscItems();
+    onBuyerAgentPaidByChange();
+    calculate();
+  }
+
+  function resetForm() {
+    populateForm({
+      costAttorney: '$250', costDocPrep: '$250', costEscrow: '$750',
+      costTaxCert: '$100', costERecording: '$25', costTitlePolicy: '$0',
+      buyerAgentType: 'pct', buyerAgentValue: '3',
+      sellerAgentType: 'pct', sellerAgentValue: '3',
+      buyerAgentPaidBy: 'Seller', buyerSplitSeller: '1.5', buyerSplitBuyer: '1.5',
+      financing: 'Conventional'
+    });
+    miscItems = [];
+    renderMiscItems();
+    calculate();
+  }
+
+  async function loadNetSheets() {
+    if (!currentUser) { renderSidebar([]); renderMobileList([]); return; }
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/net_sheets?user_id=eq.${currentUser.id}&order=updated_at.desc`,
+      { headers: sbH() }
+    ).then(r => r.json()).catch(() => []);
+    const sheets = Array.isArray(res) ? res : [];
+    _cachedSheets = sheets;
+    renderSidebar(sheets);
+    renderMobileList(sheets);
+    updateEmptyState();
+  }
+
+  function renderSidebar(sheets) {
+    const list = document.getElementById('nsSidebarList');
+    const authPrompt = document.getElementById('nsSidebarAuth');
+    if (!currentUser) {
+      list.innerHTML = '';
+      authPrompt.style.display = 'block';
+      updateEmptyState();
+      return;
+    }
+    authPrompt.style.display = 'none';
+    if (!sheets.length) {
+      list.innerHTML = '<div style="padding:20px 16px;font-size:0.82rem;color:var(--muted);text-align:center">No saved net sheets yet.<br>Click <strong>+ New</strong> to create one.</div>';
+      updateEmptyState();
+      return;
+    }
+    list.innerHTML = sheets.map(s => {
+      const data = s.data || {};
+      const addr = data.propertyAddress || '—';
+      const net  = s.net_proceeds ?? 0;
+      const cls  = net >= 0 ? 'positive' : 'negative';
+      const display = net >= 0 ? fmt(net) : `(${fmt(Math.abs(net))})`;
+      const active   = s.id === activeId ? ' active' : '';
+      const safeName = (s.name || '').replace(/'/g, "\\'");
+      const shareBtn = s.shared
+        ? `<button class="ns-si-share active" onclick="event.stopPropagation();disableShare('${s.id}')">🔗 Shared</button>`
+        : `<button class="ns-si-share" onclick="event.stopPropagation();enableShare('${s.id}')">Share</button>`;
+      return `<div class="ns-sidebar-item${active}" onclick="openNetSheet('${s.id}')">
+        <div class="ns-si-top">
+          <div class="ns-si-name">${s.name}</div>
+          <button class="ns-si-rename" onclick="editName(event,'${s.id}','${safeName}')">✎</button>
+          <button class="ns-si-del" onclick="event.stopPropagation();promptDelete('${s.id}','${safeName}')">Delete</button>
+        </div>
+        <div class="ns-si-addr">${addr}</div>
+        <div class="ns-si-bottom">
+          <span class="ns-si-proceeds ${cls}">${display}</span>
+          <div class="ns-si-meta">
+            ${shareBtn}
+            <span class="ns-si-date">${fmtDate(s.updated_at)}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+    updateEmptyState();
+  }
+
+  function renderMobileList(sheets) {
+    const el = document.getElementById('mobileListContent');
+    if (!currentUser) { el.innerHTML = ''; return; }
+    if (!sheets.length) {
+      el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:0.85rem">No saved net sheets yet.<br>Tap <strong>+ New</strong> to create one.</div>';
+      return;
+    }
+    el.innerHTML = sheets.map(s => {
+      const net = s.net_proceeds ?? 0;
+      const cls = net >= 0 ? 'positive' : 'negative';
+      const display = net >= 0 ? fmt(net) : `(${fmt(Math.abs(net))})`;
+      const addr = (s.data || {}).propertyAddress || '—';
+      return `<div class="mobile-ns-card" onclick="openNetSheet('${s.id}');showMobileEditor()">
+        <div class="mobile-ns-name">${s.name}</div>
+        <div class="mobile-ns-addr">${addr}</div>
+        <span class="mobile-ns-proceeds ${cls}">${display}</span>
+      </div>`;
+    }).join('');
+  }
+
+  function updateEmptyState() {
+    const el = document.getElementById('nsEmptyState');
+    if (!el) return;
+    el.classList.toggle('visible', !isMobile() && !_editorActive);
+  }
+
+  function newNetSheet() {
+    activeId = null;
+    _editorActive = true;
+    resetForm();
+    _cachedSheets.forEach(s => {
+      const el = document.querySelector(`.ns-sidebar-item[onclick*="${s.id}"]`);
+      if (el) el.classList.remove('active');
+    });
+    updateEmptyState();
+    if (isMobile()) showMobileEditor();
+    document.getElementById('sellerName').focus();
+  }
+
+  async function openNetSheet(id) {
+    const sheet = _cachedSheets.find(s => s.id === id);
+    if (!sheet) return;
+    activeId = id;
+    _editorActive = true;
+    populateForm(sheet.data || {});
+    renderSidebar(_cachedSheets);
+    updateEmptyState();
+  }
+
+  // Save modal
+  function openSaveModal() {
+    renameMode = false; renameTargetId = null;
+    document.getElementById('saveModalTitle').textContent = 'Save Net Sheet';
+    document.getElementById('saveModalSub').textContent = 'Give this net sheet a name.';
+    document.getElementById('saveModalBtn').textContent = 'Save';
+    const inp = document.getElementById('nsNameInput');
+    const cur = _cachedSheets.find(s => s.id === activeId);
+    inp.value = cur ? cur.name : (document.getElementById('propertyAddress').value || '');
+    document.getElementById('saveModal').classList.add('open');
+    setTimeout(() => { inp.focus(); inp.select(); }, 50);
+  }
+
+  function closeSaveModal() {
+    document.getElementById('saveModal').classList.remove('open');
+    renameMode = false; renameTargetId = null;
+  }
+
+  async function confirmSave() {
+    const name = document.getElementById('nsNameInput').value.trim();
+    if (!name) { document.getElementById('nsNameInput').focus(); return; }
+    const wasRename = renameMode; const renameId = renameTargetId;
+    closeSaveModal();
+    if (wasRename && renameId) {
+      showToast('Renaming...');
+      await fetch(`${SUPABASE_URL}/rest/v1/net_sheets?id=eq.${renameId}`, {
+        method: 'PATCH',
+        headers: { ...sbH(), 'Prefer': 'return=representation' },
+        body: JSON.stringify({ name, updated_at: new Date().toISOString() })
+      }).then(r => r.json()).catch(() => ({}));
+      await loadNetSheets();
+      showToast('✓ Renamed', 'success');
+      return;
+    }
+    await doSave(name);
+  }
+
+  async function doSave(name) {
+    if (!currentUser) { showToast('Sign in to save net sheets', 'error'); return; }
+    showToast('Saving...');
+    const { netProceeds } = calculate();
+    const data = collectState();
+    const payload = {
+      user_id: currentUser.id,
+      name,
+      data,
+      net_proceeds: Math.round(netProceeds) || 0,
+      updated_at: new Date().toISOString()
+    };
+    if (activeId) {
+      await fetch(`${SUPABASE_URL}/rest/v1/net_sheets?id=eq.${activeId}`, {
+        method: 'PATCH',
+        headers: { ...sbH(), 'Prefer': 'return=representation' },
+        body: JSON.stringify(payload)
+      }).then(r => r.json()).catch(() => ({}));
+    } else {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/net_sheets`, {
+        method: 'POST',
+        headers: { ...sbH(), 'Prefer': 'return=representation' },
+        body: JSON.stringify(payload)
+      }).then(r => r.json()).catch(() => []);
+      if (Array.isArray(res) && res[0]?.id) activeId = res[0].id;
+    }
+    await loadNetSheets();
+    showToast('✓ Saved', 'success');
+  }
+
+  function editName(e, id, name) {
+    e.stopPropagation();
+    renameMode = true; renameTargetId = id;
+    document.getElementById('saveModalTitle').textContent = 'Rename Net Sheet';
+    document.getElementById('saveModalSub').textContent = 'Enter a new name for this net sheet.';
+    document.getElementById('saveModalBtn').textContent = 'Rename';
+    const inp = document.getElementById('nsNameInput');
+    inp.value = name;
+    document.getElementById('saveModal').classList.add('open');
+    setTimeout(() => { inp.focus(); inp.select(); }, 50);
+  }
+
+  function promptDelete(id, name) {
+    if (!confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    deleteNetSheet(id);
+  }
+
+  async function deleteNetSheet(id) {
+    showToast('Deleting...');
+    await fetch(`${SUPABASE_URL}/rest/v1/net_sheets?id=eq.${id}`, {
+      method: 'DELETE', headers: sbH()
+    }).catch(() => {});
+    if (activeId === id) { activeId = null; _editorActive = false; resetForm(); }
+    await loadNetSheets();
+    showToast('Deleted', 'success');
+  }
+
+  // ── Sharing ───────────────────────────────────────────────────
+  async function enableShare(id) {
+    await fetch(`${SUPABASE_URL}/rest/v1/net_sheets?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...sbH(), 'Prefer': 'return=representation' },
+      body: JSON.stringify({ shared: true })
+    }).then(r => r.json()).catch(() => ({}));
+    const url = `${location.origin}${location.pathname}?share=${id}`;
+    try { await navigator.clipboard.writeText(url); showToast('✓ Share link copied', 'success'); }
+    catch { showToast('✓ Shared — copy URL: ' + url, 'success'); }
+    await loadNetSheets();
+  }
+
+  async function disableShare(id) {
+    await fetch(`${SUPABASE_URL}/rest/v1/net_sheets?id=eq.${id}`, {
+      method: 'PATCH',
+      headers: { ...sbH(), 'Prefer': 'return=representation' },
+      body: JSON.stringify({ shared: false })
+    }).then(r => r.json()).catch(() => ({}));
+    await loadNetSheets();
+    showToast('Sharing disabled');
+  }
+
+  async function loadSharedView(id) {
+    document.getElementById('nsLayout').style.display = 'none';
+    document.getElementById('nsFooter').style.display = 'none';
+    document.querySelector('header .header-actions').style.display = 'none';
+    const el = document.getElementById('shareView');
+    el.style.display = 'block';
+    el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">Loading...</div>';
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/net_sheets?id=eq.${id}&shared=eq.true`,
+      { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }
+    ).then(r => r.json()).catch(() => []);
+    const sheet = Array.isArray(res) ? res[0] : null;
+    if (!sheet) { el.innerHTML = '<div style="text-align:center;padding:60px;color:var(--muted)">This net sheet is no longer available.</div>'; return; }
+    renderShareReport(sheet);
+  }
+
+  function renderShareReport(sheet) {
+    const d = sheet.data || {};
+    const sp  = parseCurrency(d.salePrice);
+    const lp  = parseCurrency(d.loanPayoff);
+    const attorney    = parseCurrency(d.costAttorney);
+    const docPrep     = parseCurrency(d.costDocPrep);
+    const escrow      = parseCurrency(d.costEscrow);
+    const taxCert     = parseCurrency(d.costTaxCert);
+    const eRec        = parseCurrency(d.costERecording);
+    const titlePolicy = parseCurrency(d.costTitlePolicy);
+    const proratedTax = sheet.net_proceeds !== undefined
+      ? 0  // recalculate from data
+      : 0;
+    // Recalculate agent fees from stored data
+    let buyerFee = 0, sellerFee = 0;
+    if (d.buyerAgentPaidBy === 'Buyer') { buyerFee = 0; }
+    else if (d.buyerAgentPaidBy === 'Split') { buyerFee = sp * (parseNum(d.buyerSplitSeller) / 100); }
+    else { buyerFee = d.buyerAgentType === 'pct' ? sp * (parseNum(d.buyerAgentValue) / 100) : parseNum(d.buyerAgentValue); }
+    sellerFee = d.sellerAgentType === 'pct' ? sp * (parseNum(d.sellerAgentValue) / 100) : parseNum(d.sellerAgentValue);
+    const miscTotal = (d.miscItems || []).reduce((s, i) => s + parseCurrency(i.amount), 0);
+
+    // Prorated tax from stored data
+    const pt = (() => {
+      if (!d.proratedCity || !d.closingDate || !sp) return 0;
+      const city = TAX_CITIES.find(c => c.name === d.proratedCity);
+      if (!city) return 0;
+      const closing = new Date(d.closingDate + 'T12:00:00');
+      const yearStart = new Date(closing.getFullYear(), 0, 1);
+      const days = Math.round((closing - yearStart) / 86400000);
+      const isLeap = (y => y%4===0&&(y%100!==0||y%400===0))(closing.getFullYear());
+      return (city.rate / 100) * sp * (days / (isLeap ? 366 : 365));
+    })();
+
+    const totalCosts = attorney + docPrep + escrow + taxCert + eRec + pt + titlePolicy + buyerFee + sellerFee + miscTotal;
+    const netProceeds = sp - lp - totalCosts;
+    const cls = netProceeds >= 0 ? 'positive' : 'negative';
+    const display = netProceeds >= 0 ? fmt(netProceeds) : `(${fmt(Math.abs(netProceeds))})`;
+
+    const costRows = [
+      ['Attorney Fee', attorney],
+      ['Doc Prep', docPrep],
+      ['Escrow Fee', escrow],
+      ['Tax Certificate', taxCert],
+      ['E-Recording Fee', eRec],
+      ['Prorated Taxes', pt],
+      ["Owner's Title Policy", titlePolicy],
+      ['Buyer Agent Fee', buyerFee],
+      ['Seller Agent Fee', sellerFee],
+      ...(d.miscItems || []).map(i => [i.label || 'Misc Fee', parseCurrency(i.amount)])
+    ].filter(([,v]) => v > 0);
+
+    document.getElementById('shareView').innerHTML = `
+      <div class="sv-header">
+        <div class="sv-agent-brand">Fix &amp; Flip Tools — by Blue Star Realty Group</div>
+        <div class="sv-title">Seller Net Sheet</div>
+        <div class="sv-subtitle">Estimated Proceeds Summary</div>
+      </div>
+      <div class="sv-property">
+        ${d.sellerName ? `<div class="sv-property-name">${d.sellerName}</div>` : ''}
+        ${d.propertyAddress ? `<div class="sv-property-detail">${d.propertyAddress}</div>` : ''}
+        ${d.closingDate ? `<div class="sv-property-detail">Est. Closing: ${new Date(d.closingDate + 'T12:00:00').toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}</div>` : ''}
+        ${d.financing ? `<div class="sv-property-detail">Financing: ${d.financing}</div>` : ''}
+      </div>
+      <div class="sv-section-title">Transaction Summary</div>
+      <div class="sv-row"><span class="sv-row-label">Sale Price</span><span class="sv-row-val">${fmt(sp)}</span></div>
+      <div class="sv-row"><span class="sv-row-label">Estimated Loan Payoff</span><span class="sv-row-val deduct">(${fmt(lp)})</span></div>
+      <div class="sv-section-title">Estimated Closing Costs</div>
+      ${costRows.map(([label, val]) => `<div class="sv-row"><span class="sv-row-label">${label}</span><span class="sv-row-val deduct">(${fmt(val)})</span></div>`).join('')}
+      <div class="sv-row"><span class="sv-row-label" style="font-weight:600">Total Estimated Costs</span><span class="sv-row-val deduct">(${fmt(totalCosts)})</span></div>
+      <div class="sv-net">
+        <span class="sv-net-label">Estimated Net Proceeds</span>
+        <span class="sv-net-val ${cls}">${display}</span>
+      </div>
+      <p class="sv-disclaimer">This is an estimate only. Actual proceeds may vary based on final closing costs, lender requirements, outstanding liens, HOA fees, and other transaction-specific factors.</p>
+      <p class="sv-prepared">Prepared ${new Date().toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' })}</p>`;
+  }
+
+  // ── Print ─────────────────────────────────────────────────────
+  function printSheet() {
+    document.getElementById('printDateEl').textContent =
+      'Prepared ' + new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    window.print();
+  }
+
+  // ── Mobile views ─────────────────────────────────────────────
+  function isMobile() { return window.innerWidth <= 1024; }
+
+  function showMobileList() {
+    const signedIn = !!currentUser;
+    document.getElementById('mobileSigninView').style.display = signedIn ? 'none' : 'block';
+    document.getElementById('mobileListView').style.display   = signedIn ? 'block' : 'none';
+    document.getElementById('mobileEditorNav').style.display  = 'none';
+    document.getElementById('nsLayout').style.display         = 'none';
+    document.body.classList.remove('mobile-editor');
+    if (signedIn) {
+      document.body.classList.remove('mobile-signin');
+      document.body.classList.add('mobile-list');
+      const authRow = document.getElementById('mlvAuthRow');
+      authRow.style.display = 'flex';
+      document.getElementById('mlvEmail').textContent = currentUser.email || '';
+    } else {
+      document.body.classList.add('mobile-signin');
+      document.body.classList.remove('mobile-list');
+    }
+  }
+
+  function showMobileEditor() {
+    document.getElementById('mobileSigninView').style.display = 'none';
+    document.getElementById('mobileListView').style.display   = 'none';
+    document.getElementById('nsLayout').style.display         = 'block';
+    document.getElementById('mobileEditorNav').classList.add('visible');
+    document.getElementById('mobileEditorNav').style.display  = 'flex';
+    document.body.classList.remove('mobile-signin');
+    document.body.classList.remove('mobile-list');
+    document.body.classList.add('mobile-editor');
+    window.scrollTo(0, 0);
+  }
+
+  // ── Toast ─────────────────────────────────────────────────────
+  let _toastTimer;
+  function showToast(msg, type = '') {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.className = 'show' + (type ? ' ' + type : '');
+    clearTimeout(_toastTimer);
+    _toastTimer = setTimeout(() => { el.className = ''; }, 2800);
+  }
+
+  // ── Resizer ───────────────────────────────────────────────────
+  (() => {
+    const sidebar = document.getElementById('nsSidebar');
+    const resizer = document.getElementById('nsResizer');
+    let dragging = false, startX = 0, startW = 0;
+    resizer.addEventListener('mousedown', e => {
+      dragging = true; startX = e.clientX; startW = sidebar.offsetWidth;
+      resizer.classList.add('dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    });
+    document.addEventListener('mousemove', e => {
+      if (!dragging) return;
+      const newW = Math.min(600, Math.max(140, startW + (e.clientX - startX)));
+      sidebar.style.width = newW + 'px';
+      document.documentElement.style.setProperty('--ns-sidebar-w', newW + 'px');
+    });
+    document.addEventListener('mouseup', () => {
+      if (!dragging) return;
+      dragging = false;
+      resizer.classList.remove('dragging');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  })();
+
+  // ── Boot ──────────────────────────────────────────────────────
+  const _shareId = new URLSearchParams(location.search).get('share');
+  if (_shareId) {
+    loadSharedView(_shareId);
+  } else {
+    resetForm();
+    loadSession();
+    updateAuthUI();
+    if (isMobile()) showMobileList();
+    else updateEmptyState();
+    initAuth();
+    setInterval(() => { if (currentUser) refreshSession(); }, 45 * 60 * 1000);
+  }
+</script>
+</body>
+</html>
