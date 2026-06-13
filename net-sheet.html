@@ -249,9 +249,10 @@
   .info-bubble {
     display: inline-flex; align-items: center; justify-content: center;
     width: 15px; height: 15px; border-radius: 50%;
-    background: rgba(200, 245, 100, 0.1); color: var(--accent);
-    font-size: 0.65rem; cursor: help; position: relative;
-    flex-shrink: 0; vertical-align: middle;
+    border: 1.5px solid var(--accent); color: var(--accent);
+    background: rgba(200, 245, 100, 0.08);
+    font-size: 0.72rem; font-weight: 700; font-style: italic; line-height: 1;
+    cursor: help; position: relative; flex-shrink: 0; vertical-align: middle;
   }
   .info-bubble::after {
     content: attr(data-tip);
@@ -867,7 +868,7 @@
       <div class="cost-row">
         <span class="cost-row-label" style="display:flex;align-items:center;gap:6px">
           Annual Property Taxes
-          <span class="info-bubble" data-tip="Enter the last known annual property tax amount. We'll calculate the seller's prorated share from January 1 through the closing date. You can override the prorated amount below if needed for your specific transaction.">ⓘ</span>
+          <span class="info-bubble" data-tip="Enter the last known annual property tax amount. We'll calculate the seller's prorated share from January 1 through the closing date. You can override the prorated amount below if needed for your specific transaction.">i</span>
         </span>
         <input type="text" class="cost-val" id="annualTax" placeholder="$0" onblur="fmtField(this)" oninput="calculate()">
       </div>
@@ -883,7 +884,7 @@
       <div class="cost-row">
         <span class="cost-row-label" style="display:flex;align-items:center;gap:6px">
           Owner's Title Policy
-          <span class="info-bubble" data-tip="Calculated per Texas TDI promulgated rates (effective Sept 1, 2019) based on sale price. Click ✎ to override if your title company quotes a different amount.">ⓘ</span>
+          <span class="info-bubble" data-tip="Calculated per Texas TDI promulgated rates (effective Sept 1, 2019) based on sale price. Click ✎ to override if your title company quotes a different amount.">i</span>
         </span>
         <div class="calc-field-wrap">
           <input type="text" class="cost-val calculated" id="costTitlePolicy" placeholder="$0" readonly oninput="calculate()">
