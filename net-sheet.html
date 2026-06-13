@@ -370,11 +370,11 @@
   }
 
   /* ── Sticky footer ────────────────────────────────── */
+  header .btn-save, header .btn-print { display: none !important; }
   .ns-footer {
     display: none;
   }
   @media (min-width: 1025px) {
-    header .btn-save, header .btn-print { display: none !important; }
     .ns-footer {
       display: flex; align-items: center; justify-content: space-between;
       position: fixed; bottom: 0;
@@ -985,7 +985,6 @@
     <span class="ns-mob-proceeds-val positive" id="mobNetProceeds">—</span>
   </div>
   <div class="ns-mob-btns">
-    <button class="btn btn-ghost" onclick="printSheet()">Print</button>
     <button class="btn btn-save" onclick="openSaveModal()">Save</button>
   </div>
 </div>
