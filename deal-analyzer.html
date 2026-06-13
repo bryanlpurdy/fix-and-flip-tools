@@ -969,8 +969,12 @@
     .mdc-profit.pos { color: var(--accent2); }
     .mdc-profit.neg { color: var(--danger); }
     .mdc-profit.warn { color: var(--warn); }
-    .mdc-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1rem; padding: 8px; flex-shrink: 0; }
-    .mdc-del:active { color: var(--danger); }
+    .mdc-del {
+      background: none; border: 1px solid var(--danger); border-radius: 4px;
+      color: var(--danger); font-size: 0.72rem; padding: 3px 9px;
+      cursor: pointer; flex-shrink: 0; font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px;
+    }
+    .mdc-del:active { background: var(--danger); color: var(--bg); }
     .no-mobile-deals { padding: 32px 0; text-align: center; font-size: 0.85rem; color: var(--muted); line-height: 1.7; }
 
     /* Mobile profit bar */
@@ -1874,7 +1878,7 @@
           <div class="mdc-arv">ARV ${fmt(arv)}</div>
           <div class="mdc-profit ${profitClass}">${sign}${profitFmt} profit</div>
         </div>
-        <button class="mdc-del" onclick="event.stopPropagation();deleteCloudDeal(event,'${d.id}','${d.name.replace(/'/g,"\\'")}')">✕</button>
+        <button class="mdc-del" onclick="event.stopPropagation();deleteCloudDeal(event,'${d.id}','${d.name.replace(/'/g,"\\'")}')">Delete</button>
       </div>`;
     }).join('');
   }

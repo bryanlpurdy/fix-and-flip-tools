@@ -30,6 +30,7 @@
     color: var(--text);
     font-family: 'DM Sans', sans-serif;
     min-height: 100vh;
+    overflow-x: hidden;
   }
 
   body::before {
@@ -223,6 +224,7 @@
     outline: none; border-bottom-color: var(--accent);
   }
   .detail-row select option { background: var(--surface); }
+  .detail-row input[type="date"] { text-align: left; }
   .detail-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
 
   /* Cost rows */
@@ -255,7 +257,7 @@
     position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
     background: var(--surface2); border: 1px solid var(--border);
     color: var(--text); font-size: 0.78rem; line-height: 1.55;
-    padding: 9px 13px; border-radius: 6px; width: 270px;
+    padding: 9px 13px; border-radius: 6px; width: min(270px, calc(100vw - 48px));
     opacity: 0; pointer-events: none; transition: opacity 0.15s;
     z-index: 50; white-space: normal; font-family: 'DM Sans', sans-serif;
   }
@@ -469,13 +471,29 @@
   .mobile-ns-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
     padding: 14px; margin-bottom: 10px; cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
   .mobile-ns-card:active { background: var(--surface2); }
-  .mobile-ns-name { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
-  .mobile-ns-addr { font-size: 0.78rem; color: var(--muted); margin-bottom: 8px; }
+  .mobile-ns-card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 3px; }
+  .mobile-ns-name { font-size: 0.95rem; font-weight: 600; color: var(--text); flex: 1; padding-right: 8px; }
+  .mobile-ns-addr { font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+  .mobile-ns-card-bottom { display: flex; justify-content: space-between; align-items: center; }
   .mobile-ns-proceeds { font-family: 'DM Mono', monospace; font-size: 1rem; }
   .mobile-ns-proceeds.positive { color: var(--accent2); }
   .mobile-ns-proceeds.negative { color: var(--danger); }
+  .mobile-ns-card-del {
+    background: none; border: 1px solid var(--danger); border-radius: 4px;
+    color: var(--danger); font-size: 0.72rem; padding: 3px 9px;
+    cursor: pointer; flex-shrink: 0; font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px;
+  }
+  .mobile-ns-card-del:active { background: var(--danger); color: var(--bg); }
+  .mobile-ns-card-share {
+    background: none; border: 1px solid var(--accent); border-radius: 4px;
+    color: var(--accent); font-size: 0.72rem; padding: 3px 9px;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px;
+  }
+  .mobile-ns-card-share.active { border-color: var(--accent2); color: var(--accent2); }
+  .mobile-ns-card-share:active { opacity: 0.7; }
 
   /* Mobile sign-in */
   .msv-wrap {
@@ -1624,10 +1642,20 @@
       const cls = net >= 0 ? 'positive' : 'negative';
       const display = net >= 0 ? fmt(net) : `(${fmt(Math.abs(net))})`;
       const addr = (s.data || {}).propertyAddress || '—';
+      const safeName = (s.name || '').replace(/'/g, "\\'");
+      const shareBtn = s.shared
+        ? `<button class="mobile-ns-card-share active" onclick="event.stopPropagation();disableShare('${s.id}')">🔗 Shared</button>`
+        : `<button class="mobile-ns-card-share" onclick="event.stopPropagation();enableShare('${s.id}')">Share</button>`;
       return `<div class="mobile-ns-card" onclick="openNetSheet('${s.id}');showMobileEditor()">
-        <div class="mobile-ns-name">${s.name}</div>
+        <div class="mobile-ns-card-top">
+          <div class="mobile-ns-name">${s.name}</div>
+          <button class="mobile-ns-card-del" onclick="event.stopPropagation();promptDelete('${s.id}','${safeName}')">Delete</button>
+        </div>
         <div class="mobile-ns-addr">${addr}</div>
-        <span class="mobile-ns-proceeds ${cls}">${display}</span>
+        <div class="mobile-ns-card-bottom">
+          <span class="mobile-ns-proceeds ${cls}">${display}</span>
+          ${shareBtn}
+        </div>
       </div>`;
     }).join('');
   }
