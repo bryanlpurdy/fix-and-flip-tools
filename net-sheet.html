@@ -225,7 +225,8 @@
   }
   .detail-row select option { background: var(--surface); }
   .detail-row input[type="date"] { text-align: left !important; }
-  .detail-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8) sepia(0.5) saturate(2) hue-rotate(45deg); cursor: pointer; }
+  .detail-row input[type="date"]::-webkit-date-and-time-value { text-align: left; }
+  .detail-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6) sepia(0.5) saturate(3) hue-rotate(35deg); cursor: pointer; }
 
   /* Cost rows */
   .cost-row {
@@ -576,6 +577,9 @@
     header h1 { font-size: 1.8rem; }
     header span { display: none; }
     #buyerAgentSuffix, #sellerAgentSuffix { display: none; }
+    .detail-row { flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 0; }
+    .detail-row label { width: auto; font-size: 0.78rem; }
+    .detail-row input, .detail-row select { width: 100%; box-sizing: border-box; padding: 5px 0; }
   }
 
   /* ── Modals ───────────────────────────────────────── */
