@@ -239,7 +239,7 @@
     transition: border-color 0.15s;
   }
   .cost-val:focus { outline: none; border-bottom-color: var(--accent); }
-  .cost-val.calculated { color: var(--label); cursor: default; }
+  .cost-val.calculated { color: var(--text); cursor: default; }
   .cost-val.overridden { color: var(--warn) !important; border-bottom-color: var(--warn) !important; }
 
   /* Info bubble tooltip */
@@ -271,12 +271,6 @@
   .override-btn:hover { border-color: var(--accent); color: var(--accent); }
   .override-btn.active { border-color: var(--warn); color: var(--warn); }
 
-  /* Annual tax sub-row */
-  .tax-row-wrap {
-    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  }
-  .tax-annual-label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
-  .tax-arrow { font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
 
   /* Agent fee rows */
   .agent-row {
@@ -301,7 +295,7 @@
   }
   .agent-val-input:focus { outline: none; border-bottom-color: var(--accent); }
   .agent-suffix { font-size: 0.8rem; color: var(--muted); }
-  .agent-calc { font-family: 'DM Mono', monospace; font-size: 0.88rem; color: var(--label); white-space: nowrap; margin-left: auto; }
+  .agent-calc { font-family: 'DM Mono', monospace; font-size: 0.88rem; color: var(--text); white-space: nowrap; margin-left: auto; }
   .agent-split-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
   .agent-split-label { font-size: 0.8rem; color: var(--muted); }
   .agent-split-note { font-size: 0.78rem; color: var(--muted); font-style: italic; }
@@ -637,6 +631,9 @@
   #toast.success { border-color: var(--accent2); color: var(--accent2); }
   #toast.error { border-color: var(--danger); color: var(--danger); }
 
+  /* Mobile footer hidden by default; only shown inside body.mobile-editor at ≤1024px */
+  .ns-mobile-footer { display: none; }
+
   /* ── Print styles ─────────────────────────────────── */
   @media print {
     body::before { display: none; }
@@ -840,19 +837,18 @@
       </div>
 
       <!-- Prorated Taxes -->
-      <div class="cost-row" style="flex-wrap:wrap;row-gap:8px">
-        <span class="cost-row-label" style="display:flex;align-items:center;gap:6px;flex:none;width:100%">
-          Prorated Property Taxes
-          <span class="info-bubble" data-tip="Enter the last known annual property tax amount. We'll calculate the seller's prorated share from January 1 through the closing date. You can override the calculated amount if needed for your specific transaction.">ⓘ</span>
+      <div class="cost-row">
+        <span class="cost-row-label" style="display:flex;align-items:center;gap:6px">
+          Annual Property Taxes
+          <span class="info-bubble" data-tip="Enter the last known annual property tax amount. We'll calculate the seller's prorated share from January 1 through the closing date. You can override the prorated amount below if needed for your specific transaction.">ⓘ</span>
         </span>
-        <div class="tax-row-wrap" style="width:100%;padding-left:0">
-          <span class="tax-annual-label">Annual taxes:</span>
-          <input type="text" class="cost-val" id="annualTax" placeholder="$0" style="width:120px" onblur="fmtField(this)" oninput="calculate()">
-          <span class="tax-arrow">→  Prorated:</span>
-          <div class="calc-field-wrap">
-            <input type="text" class="cost-val calculated" id="proratedAmount" placeholder="$0" readonly style="width:120px" oninput="calculate()">
-            <button class="override-btn" id="proratedOverrideBtn" onclick="toggleProratedOverride()" title="Override calculated value">✎</button>
-          </div>
+        <input type="text" class="cost-val" id="annualTax" placeholder="$0" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+      <div class="cost-row">
+        <span class="cost-row-label" style="color:var(--muted);font-size:0.82rem;padding-left:14px">↳ Prorated through closing</span>
+        <div class="calc-field-wrap">
+          <input type="text" class="cost-val calculated" id="proratedAmount" placeholder="$0" readonly oninput="calculate()">
+          <button class="override-btn" id="proratedOverrideBtn" onclick="toggleProratedOverride()" title="Override calculated value">✎</button>
         </div>
       </div>
 
@@ -1063,8 +1059,8 @@
     return isNaN(n) ? 0 : n;
   }
   function fmtField(el) {
-    const n = parseCurrency(el.value);
-    el.value = n > 0 ? fmt(n) : '';
+    if (el.value.trim() === '') return;
+    el.value = fmt(parseCurrency(el.value));
   }
   function fmtDate(iso) {
     if (!iso) return '';
@@ -1361,9 +1357,9 @@
     document.getElementById('rLoanPayoff').textContent = lp > 0 ? `(${fmt(lp)})` : '—';
     document.getElementById('rTotalCosts').textContent = totalCosts > 0 ? `(${fmt(totalCosts)})` : '—';
 
-    // Costs breakdown
+    // Costs breakdown — fixed items always shown; misc only if > 0
     const bd = document.getElementById('costsBreakdown');
-    const costLines = [
+    const fixedLines = [
       ['Attorney Fee', attorney],
       ['Doc Prep', docPrep],
       ['Escrow Fee', escrow],
@@ -1375,8 +1371,11 @@
       ["Owner's Title Policy", titlePolicy],
       ['Buyer Agent Fee', buyerAgentFee],
       ['Seller Agent Fee', sellerAgentFee],
-      ...miscItems.map(i => [i.label || 'Misc Fee', parseCurrency(i.amount)])
-    ].filter(([,v]) => v > 0);
+    ];
+    const miscLines = miscItems
+      .filter(i => parseCurrency(i.amount) > 0)
+      .map(i => [i.label || 'Misc Fee', parseCurrency(i.amount)]);
+    const costLines = [...fixedLines, ...miscLines];
     bd.innerHTML = costLines.map(([label, val]) =>
       `<div class="ns-results-row" style="font-size:0.82rem">
         <span class="ns-results-row-label" style="color:var(--muted)">${label}</span>
@@ -1827,7 +1826,7 @@
     const cls = netProceeds >= 0 ? 'positive' : 'negative';
     const display = netProceeds >= 0 ? fmt(netProceeds) : `(${fmt(Math.abs(netProceeds))})`;
 
-    const costRows = [
+    const fixedRows = [
       ['Attorney Fee', attorney],
       ['Doc Prep', docPrep],
       ['Escrow Fee', escrow],
@@ -1839,8 +1838,11 @@
       ["Owner's Title Policy", titlePolicy],
       ['Buyer Agent Fee', buyerFee],
       ['Seller Agent Fee', sellerFee],
-      ...(d.miscItems || []).map(i => [i.label || 'Misc Fee', parseCurrency(i.amount)])
-    ].filter(([,v]) => v > 0);
+    ];
+    const miscRows = (d.miscItems || [])
+      .filter(i => parseCurrency(i.amount) > 0)
+      .map(i => [i.label || 'Misc Fee', parseCurrency(i.amount)]);
+    const costRows = [...fixedRows, ...miscRows];
 
     document.getElementById('shareView').innerHTML = `
       <div class="sv-header">
