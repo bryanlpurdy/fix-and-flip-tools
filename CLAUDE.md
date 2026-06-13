@@ -19,7 +19,74 @@ Owner/user: Bryan Purdy (bryan.lee.purdy@gmail.com)
 All planned tools are **Realtor-focused**. Remaining build order: Make Ready List → Bookkeeping.
 
 ### Make Ready List (`make-ready.html`)
-A seller prep checklist agents walk through with sellers before listing. Categories: Exterior, Interior, Kitchen, Bathrooms, Systems, Staging. Items are checkable with priority levels (Must Do / Should Do / Nice to Have) and notes. Shareable link and print/PDF output. Reuses Walkthrough architecture patterns.
+A seller prep checklist agents walk through with sellers before listing. Agent fills it out on-site during the walkthrough conversation; share link sends a clean report to the seller.
+
+**Core interaction model:** Agent toggles items on/off, sets priority, adjusts cost ranges, marks "I Got It" for seller-handled items → shares with seller → seller reviews two grouped lists.
+
+**Priority levels:** Must Do / Should Do / Nice to Have
+
+**Cost model:** Each item has a `cost_low` and `cost_high` pre-populated with Texas market defaults (editable by agent on the fly). Share view shows ranges with disclaimer: *"Cost ranges are estimates for planning purposes only. Actual costs vary by scope, materials, and contractor. Consult licensed professionals for accurate quotes."*
+
+**"I Got It" toggle:** Agent marks items the seller has agreed to handle themselves (paint touch-up, mowing, cleaning, fixture swaps, etc.). Toggle is set by the agent during the walkthrough — share view is read-only, no seller login required.
+
+**Photos:** Single general photo section for the property — not per-item. Agent attaches overall condition photos during walkthrough. Reuses Supabase Storage pattern from Walkthrough.
+
+**Notes:** Single comments/notes field for the whole list (e.g., "focus on curb appeal first, seller is highly motivated"). Not per-item.
+
+**Share view structure:**
+1. Header — property address, agent name, date, disclaimer
+2. **Seller Is Handling** — "I Got It" items with ranges; subtotal showing value of seller's contribution
+3. **Needs Contractor Bids** — remaining items grouped by priority (Must Do first); subtotal
+4. Total Estimated Investment (combined range)
+
+**Data model per item:** `{ category, label, priority, cost_low, cost_high, enabled, seller_handling }`
+
+**Categories and default ranges (Texas market):**
+
+| Category | Item | Low | High |
+|---|---|---|---|
+| Curb Appeal | Pressure wash driveway/exterior | $150 | $350 |
+| Curb Appeal | Paint/refresh front door | $100 | $300 |
+| Curb Appeal | Landscaping cleanup (mow, edge, mulch) | $200 | $600 |
+| Curb Appeal | Clean gutters | $100 | $250 |
+| Curb Appeal | Exterior paint touch-up | $200 | $800 |
+| Curb Appeal | Full exterior repaint | $2,500 | $6,000 |
+| Curb Appeal | Replace exterior light fixtures | $150 | $500 |
+| Curb Appeal | Deck clean and stain | $300 | $800 |
+| Curb Appeal | Fence repair | $200 | $600 |
+| Interior | Professional deep clean | $200 | $500 |
+| Interior | Interior paint — full house | $2,000 | $5,000 |
+| Interior | Paint touch-up | $100 | $400 |
+| Interior | Patch nail holes / drywall cracks | $100 | $300 |
+| Interior | Replace light fixtures (each) | $150 | $500 |
+| Interior | Professional carpet cleaning | $150 | $400 |
+| Interior | Replace carpet | $1,500 | $4,000 |
+| Interior | Refinish hardwood floors | $1,500 | $4,000 |
+| Kitchen | Deep clean appliances | $100 | $250 |
+| Kitchen | Paint or reface cabinets | $500 | $3,000 |
+| Kitchen | Replace cabinet hardware | $100 | $300 |
+| Kitchen | Re-caulk / regrout sink area | $100 | $250 |
+| Kitchen | Replace kitchen faucet | $150 | $400 |
+| Kitchen | Update countertops | $1,500 | $5,000 |
+| Kitchen | Add / refresh backsplash | $500 | $2,000 |
+| Bathrooms | Re-caulk tub/shower | $100 | $250 |
+| Bathrooms | Regrout tile | $200 | $600 |
+| Bathrooms | Replace toilet seat | $50 | $150 |
+| Bathrooms | Replace faucet and fixtures | $150 | $400 |
+| Bathrooms | Replace vanity mirror | $100 | $300 |
+| Bathrooms | Replace toilet | $300 | $600 |
+| Systems | HVAC service / filter replacement | $75 | $200 |
+| Systems | Fix leaky faucets | $100 | $300 |
+| Systems | Fix running toilet | $75 | $200 |
+| Systems | Replace smoke / CO detectors | $50 | $200 |
+| Staging | Professional staging consultation | $200 | $500 |
+| Staging | Staging furniture rental (per month) | $1,500 | $4,000 |
+| Staging | Storage pod (per month) | $150 | $300 |
+
+**Pending feedback before build:**
+- Priority vs. category grouping in the "Needs Contractor Bids" section of the share view
+- How granular the item list should be (confirmed after agent feedback)
+- Typical number of items per real walkthrough (affects condensed vs. expanded view)
 
 ### Realtor Bookkeeping (`bookkeeping.html`)
 Lightweight **property-centric** expense tracking. Each property tracks individual expenses:
@@ -476,9 +543,9 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **Net Sheet calculated fields use `✎` / `↺ Reset` override pattern** — `_proratedOverride` and `_titlePolicyOverride` booleans gate whether `calculate()` writes to those fields. Override state is serialized into `data` jsonb and restored by `populateForm()`. Never set those fields to `readonly` without also clearing the override flag, or the saved state and display will diverge.
 - **Net Sheet `fmtField()` — empty vs. zero** — the function only returns early if `el.value.trim() === ''`. A value of `0` formats to `$0` and is kept. Do not change the condition to `n <= 0` or explicitly-zeroed cost fields will blank themselves on blur.
 - **Net Sheet header buttons hidden at top-level CSS** — `header .btn-save, header .btn-print { display: none !important }` lives outside any media query so it applies on all screen sizes. The desktop sticky footer provides Save Sheet + Print/PDF; the mobile footer provides Save only. Print is intentionally absent from mobile (not useful on phone).
-- **Net Sheet info bubble accent color** — `.info-bubble` uses `color: var(--accent)` with `background: rgba(200, 245, 100, 0.1)`. Do not revert to muted grey — the yellow signals "this is a calculated/informational field."
+- **Net Sheet info bubble** — CSS-drawn circle (`border: 1.5px solid var(--accent); border-radius: 50%; width: 15px; height: 15px`) containing the plain letter `i` in `font-family: 'DM Mono'`. Do NOT use the `ⓘ` Unicode character — it renders as a blurry bitmap at small sizes. Do not use `font-style: italic` — the slant shifts the glyph off visual center inside the circle.
 - **Net Sheet calendar picker icon** — `.detail-row input[type="date"]::-webkit-calendar-picker-indicator` uses `filter: invert(0.6) sepia(0.5) saturate(3) hue-rotate(35deg)` for a yellow-tinted icon. A heavier invert (0.8+) washes the icon out to near-white and makes it invisible on the dark background — keep invert ≤ 0.7.
-- **Net Sheet "↳ Prorated through closing" label** — uses `color: var(--accent)` (inline style on the `cost-row-label` span) to visually link it to the Annual Property Taxes input above as a calculated companion row.
+- **Net Sheet "└── Prorated through closing" label** — uses `color: var(--accent)` (inline style on the `cost-row-label` span) and the `└──` box-drawing prefix to visually link it to the Annual Property Taxes input above. Do not use `↳` — it's a single small glyph that reads as noise at small sizes.
 - **Net Sheet detail-rows stack on mobile** — inside `@media (max-width: 1024px)`, `.detail-row` switches to `flex-direction: column; align-items: flex-start` so the label sits above the input and inputs get full width. The 180px fixed label width only works on desktop; do not remove this override or the date input and other fields will be cramped on phones.
 - **Net Sheet agent fee suffix hidden on mobile** — `#buyerAgentSuffix, #sellerAgentSuffix { display: none }` inside the mobile media query hides the "% of sale price" / "Fixed $" label text. The type dropdown (`%` or `$`) already communicates mode; the long suffix just clutters the row on small screens. The `%` signs inside the split row are unaffected (different elements).
 - **Net Sheet share view section titles** — `.sv-section-title` uses `color: var(--text)` (bright white). Do not revert to `var(--label)` (muted grey) — the section headers ("Transaction Summary", "Estimated Closing Costs") need to be clearly readable against the dark background.
