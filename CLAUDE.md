@@ -386,12 +386,12 @@ Inputs → `calculate()` → results panel updates live. Save → `openSaveModal
 ## App Architecture — `net-sheet.html`
 
 ### Layout
-Desktop (>1024px): two-column — resizable saved net sheets sidebar (`#nsSidebar`, CSS variable `--ns-sidebar-w: 400px`) | editor (`#nsEditorView`, scrollable). Both inside `.ns-layout` (flex). Sticky footer bar (`#nsFooter`) is `position: fixed; left: var(--ns-sidebar-w); right: 0` and updates via the resizer. Header `btn-save` and `btn-print` are hidden on desktop via `@media (min-width: 1025px)` — footer buttons are used instead.
+Desktop (>1024px): two-column — resizable saved net sheets sidebar (`#nsSidebar`, CSS variable `--ns-sidebar-w: 400px`) | editor (`#nsEditorView`, scrollable). Both inside `.ns-layout` (flex). Sticky footer bar (`#nsFooter`) is `position: fixed; left: var(--ns-sidebar-w); right: 0` and updates via the resizer. Header `btn-save` and `btn-print` are hidden at top-level CSS (`header .btn-save, header .btn-print { display: none !important }`) — applies on all screen sizes; desktop uses footer buttons, mobile uses the mobile-footer Save button.
 
 Mobile (≤1024px): three-view JS-controlled pattern matching Deal Analyzer:
 - **Sign-in view** (`#mobileSigninView`) — full-screen landing with Sign In / Continue as Guest.
 - **List view** (`#mobileListView`) — nav bar (`.mobile-list-nav`: `← All Tools` | `Net Sheet` | `+ New`) + auth row + net sheet cards. Header hidden via `body.mobile-list`. Cards include a red-bordered **Delete** button and a **Share / Shared** toggle button matching the Walkthrough card pattern.
-- **Editor view** (`.ns-layout`) — single-column form + `#mobileEditorNav` (← Net Sheets | + New) + fixed mobile footer with net proceeds + Save/Print. The editor nav uses `background: var(--surface2)`, `← Net Sheets` is `color: var(--muted)` (no border), and `+ New` is `color: var(--accent)` (no border) — matching the Walkthrough mobile nav style exactly.
+- **Editor view** (`.ns-layout`) — single-column form + `#mobileEditorNav` (← Net Sheets | + New) + fixed mobile footer with net proceeds + **Save only** (no Print on mobile). The editor nav uses `background: var(--surface2)`, `← Net Sheets` is `color: var(--muted)` (no border), and `+ New` is `color: var(--accent)` (no border) — matching the Walkthrough mobile nav style exactly.
 - **Header subtitle hidden on mobile** — `header span { display: none }` inside `@media (max-width: 1024px)`. This keeps the header compact on small screens. The subtitle "Seller Estimated Proceeds" is only shown on desktop.
 
 ### Mobile View Switching
@@ -417,7 +417,7 @@ Attorney $250 · Doc Prep $250 · Escrow $750 · Survey $650 · Residential Serv
   - $1M–$5M: `(sp - 1000000) × 0.00433 + 5575`
   - Higher brackets follow same pattern (see `calcTitlePolicy()` in `net-sheet.html`)
   - Same `✎` / `↺ Reset` override pattern as prorated tax. If rates change, update `calcTitlePolicy()`.
-- **Buyer agent fee:** three modes — `Seller Pays` (full fee from seller), `Buyer Pays` ($0 from seller), `Split` (seller pays their stated % of sale price directly). Type toggle: `%` of sale price or fixed `$`.
+- **Buyer agent fee:** three modes — `Seller Pays` (full fee from seller), `Buyer Pays` ($0 from seller), `Split` (seller pays their stated % of sale price directly). Type toggle: `%` of sale price or fixed `$`. Layout: paid-by dropdown (`#buyerAgentPaidBy`) is its own `.agent-controls-row`; type/value/calc (`#buyerAgentFullRow`) is a second `.agent-controls-row` below it — keeps mobile uncluttered. `onBuyerAgentPaidByChange()` hides/shows `#buyerAgentFullRow` (and `#buyerAgentSplitRow` / `#buyerAgentBuyerNote`) by setting `style.display`.
 - **Seller agent fee:** `%` of sale price or fixed `$`.
 
 **Results breakdown:** All fixed cost line items are always shown in the Estimated Net Proceeds breakdown, even if $0. Only user-added misc fee items are filtered out when $0. This ensures full transparency when a cost is intentionally zeroed out.
@@ -475,3 +475,7 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **Net Sheet sidebar CSS variable `--ns-sidebar-w`** — updated by the resizer drag handler to keep the sticky footer `left` offset in sync. Default: 400px.
 - **Net Sheet calculated fields use `✎` / `↺ Reset` override pattern** — `_proratedOverride` and `_titlePolicyOverride` booleans gate whether `calculate()` writes to those fields. Override state is serialized into `data` jsonb and restored by `populateForm()`. Never set those fields to `readonly` without also clearing the override flag, or the saved state and display will diverge.
 - **Net Sheet `fmtField()` — empty vs. zero** — the function only returns early if `el.value.trim() === ''`. A value of `0` formats to `$0` and is kept. Do not change the condition to `n <= 0` or explicitly-zeroed cost fields will blank themselves on blur.
+- **Net Sheet header buttons hidden at top-level CSS** — `header .btn-save, header .btn-print { display: none !important }` lives outside any media query so it applies on all screen sizes. The desktop sticky footer provides Save Sheet + Print/PDF; the mobile footer provides Save only. Print is intentionally absent from mobile (not useful on phone).
+- **Net Sheet info bubble accent color** — `.info-bubble` uses `color: var(--accent)` with `background: rgba(200, 245, 100, 0.1)`. Do not revert to muted grey — the yellow signals "this is a calculated/informational field."
+- **Net Sheet calendar picker icon** — `.detail-row input[type="date"]::-webkit-calendar-picker-indicator` uses `filter: invert(0.8) sepia(0.5) saturate(2) hue-rotate(45deg)` for a yellow-tinted icon matching the accent theme.
+- **Net Sheet "↳ Prorated through closing" label** — uses `color: var(--accent)` (inline style on the `cost-row-label` span) to visually link it to the Annual Property Taxes input above as a calculated companion row.
