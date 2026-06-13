@@ -406,10 +406,22 @@ Misc fee items (`miscItems[]`) are stored in memory as `{ id, label, amount }` a
 ### Costs & Calculation
 `calculate()` reads all inputs, computes prorated tax, agent fees, and misc, then updates the results section, footer, and mobile footer. Returns `{ sp, lp, totalCosts, netProceeds }`.
 
-- **Prorated tax:** `(city.rate / 100) × salePrice × (daysFromJan1 / daysInYear)` — city dropdown references `TAX_CITIES[]` array. **Cities and rates are stubbed — populate with real values before use.**
-- **Owner's Title Policy:** manual input only — formula stub pending rate table from user.
+**Fixed closing cost fields** (all editable, defaults pre-populated):
+Attorney $250 · Doc Prep $250 · Escrow $750 · Survey $650 · Residential Service Contract $600 · Tax Certificate $100 · E-Recording $25
+
+- **Prorated tax:** User enters last known Annual Property Taxes amount. Calculated as: `annualTax × ((daysFromJan1ToClosing + 1) / daysInYear)`. Rendered as two rows — "Annual Property Taxes" (input) and "↳ Prorated through closing" (calculated, read-only). `✎` override button unlocks the prorated field for manual entry; `↺ Reset` restores the calculated value. Both override state and the overridden value are saved in `data` jsonb and restored on load.
+- **Owner's Title Policy:** Calculated per **Texas TDI promulgated rates (effective Sept 1, 2019)**. Formula brackets:
+  - $25K–$100K: `(sp - 25000) × 0.00672 + 328`
+  - $100K–$1M: `(sp - 100000) × 0.00527 + 832`
+  - $1M–$5M: `(sp - 1000000) × 0.00433 + 5575`
+  - Higher brackets follow same pattern (see `calcTitlePolicy()` in `net-sheet.html`)
+  - Same `✎` / `↺ Reset` override pattern as prorated tax. If rates change, update `calcTitlePolicy()`.
 - **Buyer agent fee:** three modes — `Seller Pays` (full fee from seller), `Buyer Pays` ($0 from seller), `Split` (seller pays their stated % of sale price directly). Type toggle: `%` of sale price or fixed `$`.
 - **Seller agent fee:** `%` of sale price or fixed `$`.
+
+**Results breakdown:** All fixed cost line items are always shown in the Estimated Net Proceeds breakdown, even if $0. Only user-added misc fee items are filtered out when $0. This ensures full transparency when a cost is intentionally zeroed out.
+
+**`fmtField(el)`:** Formats currency inputs on blur. If the field is empty it stays empty. If the user enters `0`, it formats to `$0` and stays — never blanks a field that had a value of zero.
 
 ### Auth
 Same Supabase email+password pattern. Session in `sb_session`. Guest mode: shows editor but can't save. **Token refresh:** `refreshSession()` on boot if `/auth/v1/user` returns non-200, plus 45-min `setInterval`.
@@ -421,8 +433,6 @@ Same Supabase email+password pattern. Session in `sb_session`. Guest mode: shows
 - Share report recalculates all values from stored `data` jsonb (does not trust `net_proceeds` column for display, recomputes for accuracy).
 
 ### Pending wiring
-- **`TAX_CITIES` array** — replace stubs with actual city names and annual % rates. Format: `{ name: 'CityName', rate: 1.25 }`. The `<select>` option `value` must match `city.name` exactly.
-- **Owner's Title Policy formula** — user to provide rate table; replace manual input with calculated field.
 - **Agent branding (v2)** — `profiles` table in Supabase; white-labeled PDF/share report with agent name, brokerage, logo.
 
 ---
@@ -454,6 +464,8 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **Empty state overlays** — `#wtEmptyState` (walkthrough, inside `#editorView`) and `#daEmptyState` (deal analyzer, inside `.inputs-panel`) are shown when no walkthrough/deal is open on desktop. Controlled by `_editorActive` / `_daEditorActive` flags. DA also hides `.results-panel` via `visibility: hidden` (not `display: none`, to preserve `position: sticky`).
 - **Deal Analyzer desktop footer** — `.da-footer` is a fixed bottom bar (`left: var(--da-sidebar-w); right: 0`) containing Expected Profit (left) and Save Deal + Export PDF buttons (right). On desktop, `header .btn-save` and `header .btn-pdf` are hidden with `display: none !important` — scoped to `header` to avoid hiding the footer buttons.
 - **Deal Analyzer `+ New` button** — lives in the sidebar header (`.da-sidebar-hdr`) on desktop, not in the main header.
-- **Net Sheet `TAX_CITIES` and title policy are stubs** — `TAX_CITIES[]` in `net-sheet.html` contains placeholder entries. Prorated tax will calculate $0 until real city names and rates are populated. Owner's Title Policy is a manual input until the formula rate table is provided.
+- **Net Sheet mobile footer must have `display: none` at top level** — `.ns-mobile-footer { display: none }` must live outside any media query so it's hidden on desktop by default. If placed inside `@media (max-width: 1024px)`, it never fires on desktop and the footer renders as a visible block element below the editor. Prior bug — fixed.
 - **Net Sheet `showMobileEditor()` must remove `mobile-signin` and `mobile-list`** — same pattern as Deal Analyzer. Missing either removal leaves the header hidden in the editor.
 - **Net Sheet sidebar CSS variable `--ns-sidebar-w`** — updated by the resizer drag handler to keep the sticky footer `left` offset in sync. Default: 400px.
+- **Net Sheet calculated fields use `✎` / `↺ Reset` override pattern** — `_proratedOverride` and `_titlePolicyOverride` booleans gate whether `calculate()` writes to those fields. Override state is serialized into `data` jsonb and restored by `populateForm()`. Never set those fields to `readonly` without also clearing the override flag, or the saved state and display will diverge.
+- **Net Sheet `fmtField()` — empty vs. zero** — the function only returns early if `el.value.trim() === ''`. A value of `0` formats to `$0` and is kept. Do not change the condition to `n <= 0` or explicitly-zeroed cost fields will blank themselves on blur.
