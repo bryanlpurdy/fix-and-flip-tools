@@ -240,25 +240,43 @@
   }
   .cost-val:focus { outline: none; border-bottom-color: var(--accent); }
   .cost-val.calculated { color: var(--label); cursor: default; }
+  .cost-val.overridden { color: var(--warn) !important; border-bottom-color: var(--warn) !important; }
 
-  /* Prorated tax row */
-  .prorated-row {
-    display: flex; align-items: center;
-    padding: 11px 0; border-bottom: 1px solid var(--border); gap: 12px; flex-wrap: wrap;
+  /* Info bubble tooltip */
+  .info-bubble {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 15px; height: 15px; border-radius: 50%;
+    background: rgba(255,255,255,0.08); color: var(--muted);
+    font-size: 0.65rem; cursor: help; position: relative;
+    flex-shrink: 0; vertical-align: middle;
   }
-  .prorated-label { font-size: 0.88rem; color: var(--label); flex: 1; min-width: 140px; }
-  .prorated-city {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 4px;
-    color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
-    padding: 5px 8px; cursor: pointer; min-width: 160px;
+  .info-bubble::after {
+    content: attr(data-tip);
+    position: absolute; bottom: 130%; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-size: 0.78rem; line-height: 1.55;
+    padding: 9px 13px; border-radius: 6px; width: 270px;
+    opacity: 0; pointer-events: none; transition: opacity 0.15s;
+    z-index: 50; white-space: normal; font-family: 'DM Sans', sans-serif;
   }
-  .prorated-city:focus { outline: none; border-color: var(--accent); }
-  .prorated-city option { background: var(--surface); }
-  .prorated-amount {
-    width: 120px; text-align: right; background: transparent; border: none;
-    border-bottom: 1px solid rgba(255,255,255,0.08); color: var(--label);
-    font-family: 'DM Mono', monospace; font-size: 0.9rem; padding: 4px 6px;
+  .info-bubble:hover::after { opacity: 1; }
+
+  /* Calculated field with override */
+  .calc-field-wrap { display: flex; align-items: center; gap: 6px; }
+  .override-btn {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--muted); font-size: 0.72rem; padding: 3px 8px; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0; transition: all 0.15s;
   }
+  .override-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .override-btn.active { border-color: var(--warn); color: var(--warn); }
+
+  /* Annual tax sub-row */
+  .tax-row-wrap {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .tax-annual-label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; flex-shrink: 0; }
+  .tax-arrow { font-size: 0.75rem; color: var(--muted); flex-shrink: 0; }
 
   /* Agent fee rows */
   .agent-row {
@@ -647,9 +665,11 @@
     }
     .print-date { font-size: 11px; color: #888; }
 
-    .detail-row, .cost-row, .prorated-row, .agent-row { border-bottom: 1px solid #eee; }
-    .detail-row label, .cost-row-label, .prorated-label, .agent-row-label { color: #555; }
-    .detail-row input, .detail-row select, .cost-val, .prorated-amount { color: #111; }
+    .detail-row, .cost-row, .agent-row { border-bottom: 1px solid #eee; }
+    .detail-row label, .cost-row-label, .agent-row-label { color: #555; }
+    .detail-row input, .detail-row select, .cost-val { color: #111; }
+    .cost-val.overridden { color: #b36a00 !important; border-bottom-color: transparent !important; }
+    .info-bubble, .override-btn { display: none !important; }
     .ns-section-title { color: #333; border-bottom-color: #ccc; }
     .ns-results { border-top-color: #ccc; }
     .ns-results-row { border-bottom-color: #eee; }
@@ -803,6 +823,14 @@
         <input type="text" class="cost-val" id="costEscrow" value="$750" onblur="fmtField(this)" oninput="calculate()">
       </div>
       <div class="cost-row">
+        <span class="cost-row-label">Survey</span>
+        <input type="text" class="cost-val" id="costSurvey" value="$650" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+      <div class="cost-row">
+        <span class="cost-row-label">Residential Service Contract</span>
+        <input type="text" class="cost-val" id="costRSC" value="$600" onblur="fmtField(this)" oninput="calculate()">
+      </div>
+      <div class="cost-row">
         <span class="cost-row-label">Tax Certificate</span>
         <input type="text" class="cost-val" id="costTaxCert" value="$100" onblur="fmtField(this)" oninput="calculate()">
       </div>
@@ -812,24 +840,32 @@
       </div>
 
       <!-- Prorated Taxes -->
-      <div class="prorated-row">
-        <span class="prorated-label">Prorated Taxes</span>
-        <select class="prorated-city" id="proratedCity" onchange="calculate()">
-          <option value="">— Select City —</option>
-          <!-- TODO: Populate with actual cities and rates -->
-          <option value="placeholder_1.25">Sample City (1.25%)</option>
-          <option value="placeholder_0.90">Sample City B (0.90%)</option>
-        </select>
-        <input type="text" class="prorated-amount" id="proratedAmount" placeholder="$0" readonly title="Calculated from city rate × sale price × days elapsed">
+      <div class="cost-row" style="flex-wrap:wrap;row-gap:8px">
+        <span class="cost-row-label" style="display:flex;align-items:center;gap:6px;flex:none;width:100%">
+          Prorated Property Taxes
+          <span class="info-bubble" data-tip="Enter the last known annual property tax amount. We'll calculate the seller's prorated share from January 1 through the closing date. You can override the calculated amount if needed for your specific transaction.">ⓘ</span>
+        </span>
+        <div class="tax-row-wrap" style="width:100%;padding-left:0">
+          <span class="tax-annual-label">Annual taxes:</span>
+          <input type="text" class="cost-val" id="annualTax" placeholder="$0" style="width:120px" onblur="fmtField(this)" oninput="calculate()">
+          <span class="tax-arrow">→  Prorated:</span>
+          <div class="calc-field-wrap">
+            <input type="text" class="cost-val calculated" id="proratedAmount" placeholder="$0" readonly style="width:120px" oninput="calculate()">
+            <button class="override-btn" id="proratedOverrideBtn" onclick="toggleProratedOverride()" title="Override calculated value">✎</button>
+          </div>
+        </div>
       </div>
 
       <!-- Owner's Title Policy -->
       <div class="cost-row">
-        <span class="cost-row-label">
+        <span class="cost-row-label" style="display:flex;align-items:center;gap:6px">
           Owner's Title Policy
-          <span class="cost-row-hint">(formula coming — enter manually)</span>
+          <span class="info-bubble" data-tip="Calculated per Texas TDI promulgated rates (effective Sept 1, 2019) based on sale price. Click ✎ to override if your title company quotes a different amount.">ⓘ</span>
         </span>
-        <input type="text" class="cost-val" id="costTitlePolicy" value="$0" onblur="fmtField(this)" oninput="calculate()">
+        <div class="calc-field-wrap">
+          <input type="text" class="cost-val calculated" id="costTitlePolicy" placeholder="$0" readonly oninput="calculate()">
+          <button class="override-btn" id="titlePolicyOverrideBtn" onclick="toggleTitlePolicyOverride()" title="Override calculated value">✎</button>
+        </div>
       </div>
 
       <!-- Buyer Agent Fee -->
@@ -994,14 +1030,6 @@
   const SUPABASE_URL = 'https://api.bluestarrealtygroup.com';
   const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbGlkbWZpc2hhY2x5c2NrcnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc2ODMsImV4cCI6MjA4OTc2MzY4M30.YEhxwrw-HxofmV4N3KRpbgDcT_a_OyqIkx49Wu7CjR0';
 
-  // ── Tax cities (populate with real cities/rates) ─────────────
-  // Format: { name, rate } where rate is annual % of sale price
-  const TAX_CITIES = [
-    // TODO: Replace with actual city list and rates
-    { name: 'placeholder_1.25', rate: 1.25 },
-    { name: 'placeholder_0.90', rate: 0.90 },
-  ];
-
   // ── State ────────────────────────────────────────────────────
   let sbAccessToken = null;
   let currentUser = null;
@@ -1011,6 +1039,8 @@
   let _cachedSheets = [];
   let renameMode = false;
   let renameTargetId = null;
+  let _proratedOverride = false;
+  let _titlePolicyOverride = false;
   let miscItems = [];
   let _miscCounter = 0;
 
@@ -1197,15 +1227,64 @@
   }
 
   // ── Calculation ───────────────────────────────────────────────
-  function calcProratedTax(salePrice, closingDate, cityVal) {
-    if (!cityVal || !closingDate || !salePrice) return 0;
-    const city = TAX_CITIES.find(c => c.name === cityVal);
-    if (!city || !city.rate) return 0;
+
+  // Prorated tax: annual amount × (days Jan 1 through closing / days in year)
+  function calcProratedTax(annualTax, closingDate) {
+    const at = parseCurrency(annualTax);
+    if (!at || !closingDate) return 0;
     const closing = new Date(closingDate + 'T12:00:00');
     const yearStart = new Date(closing.getFullYear(), 0, 1);
-    const daysElapsed = Math.round((closing - yearStart) / (1000 * 60 * 60 * 24));
+    const daysElapsed = Math.round((closing - yearStart) / (1000 * 60 * 60 * 24)) + 1;
     const isLeap = (y => y % 4 === 0 && (y % 100 !== 0 || y % 400 === 0))(closing.getFullYear());
-    return (city.rate / 100) * salePrice * (daysElapsed / (isLeap ? 366 : 365));
+    return at * (daysElapsed / (isLeap ? 366 : 365));
+  }
+
+  // Texas TDI promulgated Owner's Title Policy rates (effective Sept 1, 2019)
+  function calcTitlePolicy(salePrice) {
+    if (!salePrice || salePrice < 25000) return 0;
+    const sp = salePrice;
+    if (sp <= 100000)    return Math.round((sp - 25000)      * 0.00672 + 328);
+    if (sp <= 1000000)   return Math.round((sp - 100000)     * 0.00527 + 832);
+    if (sp <= 5000000)   return Math.round((sp - 1000000)    * 0.00433 + 5575);
+    if (sp <= 15000000)  return Math.round((sp - 5000000)    * 0.00357 + 22895);
+    if (sp <= 25000000)  return Math.round((sp - 15000000)   * 0.00254 + 58595);
+    if (sp <= 50000000)  return Math.round((sp - 25000000)   * 0.00152 + 83995);
+    if (sp <= 100000000) return Math.round((sp - 50000000)   * 0.00138 + 121995);
+    return Math.round((sp - 100000000) * 0.00124 + 190995);
+  }
+
+  function toggleProratedOverride() {
+    _proratedOverride = !_proratedOverride;
+    const inp = document.getElementById('proratedAmount');
+    const btn = document.getElementById('proratedOverrideBtn');
+    if (_proratedOverride) {
+      inp.removeAttribute('readonly');
+      inp.classList.remove('calculated'); inp.classList.add('overridden');
+      btn.textContent = '↺ Reset'; btn.classList.add('active');
+      inp.focus();
+    } else {
+      inp.setAttribute('readonly', '');
+      inp.classList.add('calculated'); inp.classList.remove('overridden');
+      btn.textContent = '✎'; btn.classList.remove('active');
+      calculate();
+    }
+  }
+
+  function toggleTitlePolicyOverride() {
+    _titlePolicyOverride = !_titlePolicyOverride;
+    const inp = document.getElementById('costTitlePolicy');
+    const btn = document.getElementById('titlePolicyOverrideBtn');
+    if (_titlePolicyOverride) {
+      inp.removeAttribute('readonly');
+      inp.classList.remove('calculated'); inp.classList.add('overridden');
+      btn.textContent = '↺ Reset'; btn.classList.add('active');
+      inp.focus();
+    } else {
+      inp.setAttribute('readonly', '');
+      inp.classList.add('calculated'); inp.classList.remove('overridden');
+      btn.textContent = '✎'; btn.classList.remove('active');
+      calculate();
+    }
   }
 
   function calcBuyerAgentSellerPortion(salePrice) {
@@ -1230,18 +1309,31 @@
     const lp = parseCurrency(document.getElementById('loanPayoff').value);
 
     // Prorated taxes
-    const cityVal = document.getElementById('proratedCity').value;
     const closingDate = document.getElementById('closingDate').value;
-    const proratedTax = calcProratedTax(sp, closingDate, cityVal);
-    document.getElementById('proratedAmount').value = proratedTax > 0 ? fmt(proratedTax) : '';
+    const annualTaxVal = document.getElementById('annualTax').value;
+    const proratedTax = _proratedOverride
+      ? parseCurrency(document.getElementById('proratedAmount').value)
+      : calcProratedTax(annualTaxVal, closingDate);
+    if (!_proratedOverride) {
+      document.getElementById('proratedAmount').value = proratedTax > 0 ? fmt(proratedTax) : '';
+    }
+
+    // Owner's Title Policy (Texas TDI promulgated rates)
+    const titlePolicy = _titlePolicyOverride
+      ? parseCurrency(document.getElementById('costTitlePolicy').value)
+      : calcTitlePolicy(sp);
+    if (!_titlePolicyOverride) {
+      document.getElementById('costTitlePolicy').value = sp > 0 && titlePolicy > 0 ? fmt(titlePolicy) : '';
+    }
 
     // Fixed costs
     const attorney    = parseCurrency(document.getElementById('costAttorney').value);
     const docPrep     = parseCurrency(document.getElementById('costDocPrep').value);
     const escrow      = parseCurrency(document.getElementById('costEscrow').value);
+    const survey      = parseCurrency(document.getElementById('costSurvey').value);
+    const rsc         = parseCurrency(document.getElementById('costRSC').value);
     const taxCert     = parseCurrency(document.getElementById('costTaxCert').value);
     const eRec        = parseCurrency(document.getElementById('costERecording').value);
-    const titlePolicy = parseCurrency(document.getElementById('costTitlePolicy').value);
 
     // Agent fees
     const buyerAgentFee  = calcBuyerAgentSellerPortion(sp);
@@ -1261,7 +1353,7 @@
     const miscTotal = miscItems.reduce((s, i) => s + parseCurrency(i.amount), 0);
 
     // Totals
-    const totalCosts = attorney + docPrep + escrow + taxCert + eRec + proratedTax + titlePolicy + buyerAgentFee + sellerAgentFee + miscTotal;
+    const totalCosts = attorney + docPrep + escrow + survey + rsc + taxCert + eRec + proratedTax + titlePolicy + buyerAgentFee + sellerAgentFee + miscTotal;
     const netProceeds = sp - lp - totalCosts;
 
     // Update results section
@@ -1275,6 +1367,8 @@
       ['Attorney Fee', attorney],
       ['Doc Prep', docPrep],
       ['Escrow Fee', escrow],
+      ['Survey', survey],
+      ['Residential Service Contract', rsc],
       ['Tax Certificate', taxCert],
       ['E-Recording Fee', eRec],
       ['Prorated Taxes', proratedTax],
@@ -1362,13 +1456,18 @@
       loanPayoff:       document.getElementById('loanPayoff').value,
       closingDate:      document.getElementById('closingDate').value,
       financing:        document.getElementById('financing').value,
-      costAttorney:     document.getElementById('costAttorney').value,
-      costDocPrep:      document.getElementById('costDocPrep').value,
-      costEscrow:       document.getElementById('costEscrow').value,
-      costTaxCert:      document.getElementById('costTaxCert').value,
-      costERecording:   document.getElementById('costERecording').value,
-      proratedCity:     document.getElementById('proratedCity').value,
-      costTitlePolicy:  document.getElementById('costTitlePolicy').value,
+      costAttorney:       document.getElementById('costAttorney').value,
+      costDocPrep:        document.getElementById('costDocPrep').value,
+      costEscrow:         document.getElementById('costEscrow').value,
+      costSurvey:         document.getElementById('costSurvey').value,
+      costRSC:            document.getElementById('costRSC').value,
+      costTaxCert:        document.getElementById('costTaxCert').value,
+      costERecording:     document.getElementById('costERecording').value,
+      annualTax:          document.getElementById('annualTax').value,
+      proratedAmount:     document.getElementById('proratedAmount').value,
+      proratedOverride:   _proratedOverride,
+      costTitlePolicy:    document.getElementById('costTitlePolicy').value,
+      titlePolicyOverride: _titlePolicyOverride,
       buyerAgentPaidBy: document.getElementById('buyerAgentPaidBy').value,
       buyerAgentType:   document.getElementById('buyerAgentType').value,
       buyerAgentValue:  document.getElementById('buyerAgentValue').value,
@@ -1389,13 +1488,44 @@
     set('loanPayoff',       data.loanPayoff);
     set('closingDate',      data.closingDate);
     set('financing',        data.financing || 'Conventional');
-    set('costAttorney',     data.costAttorney ?? '$250');
-    set('costDocPrep',      data.costDocPrep ?? '$250');
-    set('costEscrow',       data.costEscrow ?? '$750');
-    set('costTaxCert',      data.costTaxCert ?? '$100');
-    set('costERecording',   data.costERecording ?? '$25');
-    set('proratedCity',     data.proratedCity ?? '');
-    set('costTitlePolicy',  data.costTitlePolicy ?? '$0');
+    set('costAttorney',   data.costAttorney ?? '$250');
+    set('costDocPrep',    data.costDocPrep ?? '$250');
+    set('costEscrow',     data.costEscrow ?? '$750');
+    set('costSurvey',     data.costSurvey ?? '$650');
+    set('costRSC',        data.costRSC ?? '$600');
+    set('costTaxCert',    data.costTaxCert ?? '$100');
+    set('costERecording', data.costERecording ?? '$25');
+    set('annualTax',      data.annualTax ?? '');
+
+    // Restore prorated override state
+    _proratedOverride = !!data.proratedOverride;
+    const paInp = document.getElementById('proratedAmount');
+    const paBtn = document.getElementById('proratedOverrideBtn');
+    if (_proratedOverride) {
+      set('proratedAmount', data.proratedAmount ?? '');
+      paInp.removeAttribute('readonly');
+      paInp.classList.remove('calculated'); paInp.classList.add('overridden');
+      paBtn.textContent = '↺ Reset'; paBtn.classList.add('active');
+    } else {
+      paInp.setAttribute('readonly', '');
+      paInp.classList.add('calculated'); paInp.classList.remove('overridden');
+      paBtn.textContent = '✎'; paBtn.classList.remove('active');
+    }
+
+    // Restore title policy override state
+    _titlePolicyOverride = !!data.titlePolicyOverride;
+    const tpInp = document.getElementById('costTitlePolicy');
+    const tpBtn = document.getElementById('titlePolicyOverrideBtn');
+    if (_titlePolicyOverride) {
+      set('costTitlePolicy', data.costTitlePolicy ?? '');
+      tpInp.removeAttribute('readonly');
+      tpInp.classList.remove('calculated'); tpInp.classList.add('overridden');
+      tpBtn.textContent = '↺ Reset'; tpBtn.classList.add('active');
+    } else {
+      tpInp.setAttribute('readonly', '');
+      tpInp.classList.add('calculated'); tpInp.classList.remove('overridden');
+      tpBtn.textContent = '✎'; tpBtn.classList.remove('active');
+    }
     set('buyerAgentPaidBy', data.buyerAgentPaidBy ?? 'Seller');
     set('buyerAgentType',   data.buyerAgentType ?? 'pct');
     set('buyerAgentValue',  data.buyerAgentValue ?? '3');
@@ -1412,7 +1542,9 @@
   function resetForm() {
     populateForm({
       costAttorney: '$250', costDocPrep: '$250', costEscrow: '$750',
-      costTaxCert: '$100', costERecording: '$25', costTitlePolicy: '$0',
+      costSurvey: '$650', costRSC: '$600',
+      costTaxCert: '$100', costERecording: '$25',
+      proratedOverride: false, titlePolicyOverride: false,
       buyerAgentType: 'pct', buyerAgentValue: '3',
       sellerAgentType: 'pct', sellerAgentValue: '3',
       buyerAgentPaidBy: 'Seller', buyerSplitSeller: '1.5', buyerSplitBuyer: '1.5',
@@ -1670,12 +1802,13 @@
     const attorney    = parseCurrency(d.costAttorney);
     const docPrep     = parseCurrency(d.costDocPrep);
     const escrow      = parseCurrency(d.costEscrow);
+    const survey      = parseCurrency(d.costSurvey);
+    const rsc         = parseCurrency(d.costRSC);
     const taxCert     = parseCurrency(d.costTaxCert);
     const eRec        = parseCurrency(d.costERecording);
-    const titlePolicy = parseCurrency(d.costTitlePolicy);
-    const proratedTax = sheet.net_proceeds !== undefined
-      ? 0  // recalculate from data
-      : 0;
+    const titlePolicy = d.titlePolicyOverride
+      ? parseCurrency(d.costTitlePolicy)
+      : calcTitlePolicy(sp);
     // Recalculate agent fees from stored data
     let buyerFee = 0, sellerFee = 0;
     if (d.buyerAgentPaidBy === 'Buyer') { buyerFee = 0; }
@@ -1685,18 +1818,11 @@
     const miscTotal = (d.miscItems || []).reduce((s, i) => s + parseCurrency(i.amount), 0);
 
     // Prorated tax from stored data
-    const pt = (() => {
-      if (!d.proratedCity || !d.closingDate || !sp) return 0;
-      const city = TAX_CITIES.find(c => c.name === d.proratedCity);
-      if (!city) return 0;
-      const closing = new Date(d.closingDate + 'T12:00:00');
-      const yearStart = new Date(closing.getFullYear(), 0, 1);
-      const days = Math.round((closing - yearStart) / 86400000);
-      const isLeap = (y => y%4===0&&(y%100!==0||y%400===0))(closing.getFullYear());
-      return (city.rate / 100) * sp * (days / (isLeap ? 366 : 365));
-    })();
+    const pt = d.proratedOverride
+      ? parseCurrency(d.proratedAmount)
+      : calcProratedTax(d.annualTax, d.closingDate);
 
-    const totalCosts = attorney + docPrep + escrow + taxCert + eRec + pt + titlePolicy + buyerFee + sellerFee + miscTotal;
+    const totalCosts = attorney + docPrep + escrow + survey + rsc + taxCert + eRec + pt + titlePolicy + buyerFee + sellerFee + miscTotal;
     const netProceeds = sp - lp - totalCosts;
     const cls = netProceeds >= 0 ? 'positive' : 'negative';
     const display = netProceeds >= 0 ? fmt(netProceeds) : `(${fmt(Math.abs(netProceeds))})`;
@@ -1705,6 +1831,8 @@
       ['Attorney Fee', attorney],
       ['Doc Prep', docPrep],
       ['Escrow Fee', escrow],
+      ['Survey', survey],
+      ['Residential Service Contract', rsc],
       ['Tax Certificate', taxCert],
       ['E-Recording Fee', eRec],
       ['Prorated Taxes', pt],
