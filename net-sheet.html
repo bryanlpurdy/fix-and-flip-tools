@@ -225,7 +225,7 @@
   }
   .detail-row select option { background: var(--surface); }
   .detail-row input[type="date"] { text-align: left; }
-  .detail-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+  .detail-row input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.8) sepia(0.5) saturate(2) hue-rotate(45deg); cursor: pointer; }
 
   /* Cost rows */
   .cost-row {
@@ -248,7 +248,7 @@
   .info-bubble {
     display: inline-flex; align-items: center; justify-content: center;
     width: 15px; height: 15px; border-radius: 50%;
-    background: rgba(255,255,255,0.08); color: var(--muted);
+    background: rgba(200, 245, 100, 0.1); color: var(--accent);
     font-size: 0.65rem; cursor: help; position: relative;
     flex-shrink: 0; vertical-align: middle;
   }
@@ -867,7 +867,7 @@
         <input type="text" class="cost-val" id="annualTax" placeholder="$0" onblur="fmtField(this)" oninput="calculate()">
       </div>
       <div class="cost-row">
-        <span class="cost-row-label" style="color:var(--muted);font-size:0.82rem;padding-left:14px">↳ Prorated through closing</span>
+        <span class="cost-row-label" style="color:var(--accent);font-size:0.82rem;padding-left:14px">↳ Prorated through closing</span>
         <div class="calc-field-wrap">
           <input type="text" class="cost-val calculated" id="proratedAmount" placeholder="$0" readonly oninput="calculate()">
           <button class="override-btn" id="proratedOverrideBtn" onclick="toggleProratedOverride()" title="Override calculated value">✎</button>
@@ -896,14 +896,14 @@
               <option value="Buyer">Buyer Pays</option>
               <option value="Split">Split</option>
             </select>
-            <div id="buyerAgentFullRow" style="display:flex;align-items:center;gap:8px">
-              <select class="agent-select" id="buyerAgentType" onchange="calculate()">
-                <option value="pct">%</option>
-                <option value="fixed">$</option>
-              </select>
-              <input type="text" class="agent-val-input" id="buyerAgentValue" value="3" oninput="calculate()">
-              <span class="agent-suffix" id="buyerAgentSuffix">% of sale price</span>
-            </div>
+          </div>
+          <div class="agent-controls-row" id="buyerAgentFullRow" style="display:flex">
+            <select class="agent-select" id="buyerAgentType" onchange="calculate()">
+              <option value="pct">%</option>
+              <option value="fixed">$</option>
+            </select>
+            <input type="text" class="agent-val-input" id="buyerAgentValue" value="3" oninput="calculate()">
+            <span class="agent-suffix" id="buyerAgentSuffix">% of sale price</span>
             <span class="agent-calc" id="buyerAgentCalc">$0</span>
           </div>
           <div class="agent-split-row" id="buyerAgentSplitRow" style="display:none">
