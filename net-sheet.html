@@ -75,13 +75,12 @@
   .btn-ghost:hover { border-color: var(--label); color: var(--text); }
 
   /* ── Auth status ──────────────────────────────────── */
-  .user-email { font-size: 0.8rem; color: var(--muted); }
-  .sign-out-btn {
-    background: none; border: 1px solid var(--border); color: var(--muted);
-    padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; cursor: pointer;
-  }
-  .sign-out-btn:hover { border-color: var(--danger); color: var(--danger); }
-  #authStatus { display: flex; align-items: center; gap: 10px; }
+  .auth-status { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; color: var(--muted); }
+  .auth-status .user-email { color: var(--label); font-family: 'DM Mono', monospace; font-size: 0.75rem; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn-auth { background: transparent; color: var(--label); border: 1px solid var(--border); padding: 7px 14px; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: all 0.18s; white-space: nowrap; }
+  .btn-auth:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-auth.sign-out:hover { border-color: var(--danger); color: var(--danger); }
+  .guest-badge { font-size: 0.68rem; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; }
 
   /* ── Layout ───────────────────────────────────────── */
   .ns-layout {
@@ -576,7 +575,6 @@
 
     header { padding: 14px 20px; }
     header h1 { font-size: 1.8rem; }
-    header span { display: none; }
     #buyerAgentSuffix, #sellerAgentSuffix { display: none; }
     .detail-row { flex-direction: column; align-items: flex-start; gap: 4px; padding: 10px 0; }
     .detail-row label { width: auto; font-size: 0.78rem; }
@@ -717,10 +715,9 @@
   <div class="header-left">
     <a href="index.html" class="hub-back">← All Tools</a>
     <h1>Net Sheet</h1>
-    <span>Seller Estimated Proceeds</span>
   </div>
   <div class="header-actions">
-    <div id="authStatus"></div>
+    <div class="auth-status" id="authStatus"></div>
     <button class="btn btn-print" onclick="printSheet()">⬇ Print / PDF</button>
     <button class="btn btn-save" onclick="openSaveModal()">Save</button>
   </div>
@@ -1172,9 +1169,10 @@
     const el = document.getElementById('authStatus');
     if (currentUser) {
       el.innerHTML = `<span class="user-email">${currentUser.email}</span>
-        <button class="sign-out-btn" onclick="signOut()">Sign Out</button>`;
+        <button class="btn-auth sign-out" onclick="signOut()">Sign Out</button>`;
     } else {
-      el.innerHTML = `<button class="btn btn-ghost" onclick="openAuthModal()" style="font-size:0.78rem;padding:6px 14px">Sign In</button>`;
+      el.innerHTML = `<span class="guest-badge">Guest</span>
+        <button class="btn-auth" onclick="openAuthModal()">Sign In</button>`;
     }
   }
 
