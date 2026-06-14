@@ -88,8 +88,8 @@ A seller prep checklist agents walk through with sellers before listing. Agent f
 - How granular the item list should be (confirmed after agent feedback)
 - Typical number of items per real walkthrough (affects condensed vs. expanded view)
 
-### Realtor Bookkeeping (`bookkeeping.html`)
-Lightweight **property-centric** expense tracking. Each property tracks individual expenses:
+### Bookkeeping Light (`bookkeeping.html`)
+User-facing name is **Bookkeeping Light** (internal name: Realtor Bookkeeping). Lightweight **property-centric** expense tracking. Each property tracks individual expenses:
 - **Fields:** Date, category, amount, description, receipt photo
 - **Categories:** Photography/Video, Marketing/Advertising, Make Ready, Mileage, Staging, Signage, Closing Gift, Misc
 - **Mileage entries:** Input miles → auto-calculate dollars at current IRS standard rate
@@ -246,7 +246,15 @@ The hub is the entry point for the suite. It handles auth and redirects users to
 
 ### Views
 - **Sign-in view** (default) — full-page centered card: email/password form, sign-up toggle, "Continue as Guest" button.
-- **Hub view** (after auth) — header with brand + auth status, tool card grid.
+- **Hub view** (after auth) — header with brand + auth status, two labeled tool sections.
+
+### Tool sections
+The hub grid is replaced by `.hub-sections` (flex column, `gap: 40px`) containing two `.tool-section` blocks, each with a `.tool-section-label` header and a `.tool-grid` (2-col grid):
+
+- **For Real Estate Investors** — Deal Analyzer, Property Walkthrough
+- **For Realtors** — Seller Net Sheet, Make Ready List (Coming Soon), Bookkeeping Light (Coming Soon)
+
+Coming Soon cards use `.tool-card-soon` (muted icon/name, `pointer-events: none`, no hover effect) and a `.tool-soon-badge` ("COMING SOON" label) in place of the "Open →" link. Bookkeeping Light uses `style="grid-column: 1 / -1"` to span the full grid width on desktop. On mobile the grid collapses to single column so the span has no effect.
 
 ### Auth flow
 ```js
