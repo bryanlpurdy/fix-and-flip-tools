@@ -282,15 +282,33 @@ All four files use the same `localStorage` key `sb_session` (`{ access_token, re
 Deal Analyzer is fully usable as a guest. Property Walkthrough and Net Sheet require sign-in to save — a warning note is shown on the Walkthrough tool card for guest users. Net Sheet mobile sign-in view offers "Continue as Guest" which shows an empty editor (no save capability).
 
 ### Back navigation
-Both tools have a `← All Tools` / `← Fix & Flip Tools` link back to `index.html`:
+All tools have a `← All Tools` / `← ClosingDesk` link back to `index.html`:
 - Desktop: `<a href="index.html" class="hub-back">← All Tools</a>` in each tool's `<header>`
-- Deal Analyzer mobile sign-in: `<a href="index.html" class="msv-hub-back">← Fix & Flip Tools</a>` inside `#mobileSigninView` (positioned absolute top-left, since the header is hidden on mobile sign-in)
+- Deal Analyzer mobile sign-in: `<a href="index.html" class="msv-hub-back">← ClosingDesk</a>` inside `#mobileSigninView` (positioned absolute top-left, since the header is hidden on mobile sign-in)
 - Deal Analyzer mobile list: `<a href="index.html" class="mlv-hub">← All Tools</a>` inside the `.mobile-list-nav` bar at the top of `#mobileListView` (the main header is hidden in list mode via `body.mobile-list`)
 - Walkthrough mobile list: `<a href="index.html" class="wlv-hub">← All Tools</a>` inside the `.wt-list-nav` bar at the top of `#listView` (the main header is hidden in list mode via `body.list-mode`)
 - Walkthrough desktop: `<a href="index.html" class="hub-back">← All Tools</a>` in the main `<header>` (always visible on desktop)
 - Net Sheet desktop: `<a href="index.html" class="hub-back">← All Tools</a>` in the main `<header>`
-- Net Sheet mobile sign-in: `<a href="index.html" class="msv-hub-back">← Fix & Flip Tools</a>` inside `#mobileSigninView` (positioned absolute top-left, header hidden via `body.mobile-signin`)
+- Net Sheet mobile sign-in: `<a href="index.html" class="msv-hub-back">← ClosingDesk</a>` inside `#mobileSigninView` (positioned absolute top-left, header hidden via `body.mobile-signin`)
 - Net Sheet mobile list: `<a href="index.html" class="mlv-hub">← All Tools</a>` inside `.mobile-list-nav` at the top of `#mobileListView` (header hidden via `body.mobile-list`)
+
+### Header pattern (all three tools)
+All three tool headers share a consistent structure:
+```html
+<header>
+  <div class="header-left">
+    <a href="index.html" class="hub-back">← All Tools</a>
+    <h1>Tool Name</h1>
+  </div>
+  <div class="header-actions">
+    <div class="auth-status" id="authStatus"></div>
+    <!-- tool action buttons -->
+  </div>
+</header>
+```
+- `header` padding: `18px 40px` desktop → `12px–14px 16–20px` on mobile. Height is `69px`, used in `calc(100vh - 69px)` for layout panels.
+- `h1` is Bebas Neue 2.4rem, accent color — no subtitle span after it.
+- `.auth-status` / `.btn-auth` / `.user-email` / `.guest-badge` CSS is identical across all three. `updateAuthUI()` in each tool renders: email + "Sign Out" when signed in; "Sign In" button (+ "Guest" badge on Net Sheet) when not. Walkthrough shows only "Sign In" when not signed in (no guest mode).
 
 ---
 
@@ -300,6 +318,8 @@ Both tools have a `← All Tools` / `← Fix & Flip Tools` link back to `index.h
 Desktop (>1024px): two-column — resizable saved walkthroughs sidebar (`#wtSidebar`, 140–420px) | editor (`#editorView`, scrollable). Both live inside `#wtLayout` (flex). Sidebar shows walkthrough cards with active highlight, `+ New` button, and a sign-in prompt when not authenticated. Drag handle (`#wtResizer`) works identically to the Deal Analyzer resizer.
 
 Mobile (≤1024px): same two-view JS-controlled pattern as before — `#listView` (list/sign-in) and `#wtLayout` (editor only, sidebar hidden via `body.editor-mode`). `#editorNav` (← My Walkthroughs | + New) shown on mobile editor, hidden on desktop.
+
+Header uses the shared pattern (`<h1>`, `.header-actions`, `.auth-status` — see Hub architecture → Header pattern). Layout height: `calc(100vh - 69px)` (matches DA and Net Sheet).
 
 ### State
 
@@ -469,7 +489,6 @@ Mobile (≤1024px): three-view JS-controlled pattern matching Deal Analyzer:
 - **Sign-in view** (`#mobileSigninView`) — full-screen landing with Sign In / Continue as Guest.
 - **List view** (`#mobileListView`) — nav bar (`.mobile-list-nav`: `← All Tools` | `Net Sheet` | `+ New`) + auth row + net sheet cards. Header hidden via `body.mobile-list`. Cards include a red-bordered **Delete** button and a **Share / Shared** toggle button matching the Walkthrough card pattern.
 - **Editor view** (`.ns-layout`) — single-column form + `#mobileEditorNav` (← Net Sheets | + New) + fixed mobile footer with net proceeds + **Save only** (no Print on mobile). The editor nav uses `background: var(--surface2)`, `← Net Sheets` is `color: var(--muted)` (no border), and `+ New` is `color: var(--accent)` (no border) — matching the Walkthrough mobile nav style exactly.
-- **Header subtitle hidden on mobile** — `header span { display: none }` inside `@media (max-width: 1024px)`. This keeps the header compact on small screens. The subtitle "Seller Estimated Proceeds" is only shown on desktop.
 
 ### Mobile View Switching
 Same JS pattern as Deal Analyzer — `showMobileList()` and `showMobileEditor()` control `element.style.display` inline and the `mobile-signin`, `mobile-list`, `mobile-editor` body classes. `showMobileEditor()` must remove all three classes before adding `mobile-editor` or the header stays hidden.
@@ -546,7 +565,6 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **Mobile card delete/share button pattern (all tools)** — Delete: `border: 1px solid var(--danger); color: var(--danger)`, text "Delete". Share: border + text "Share"; active/shared state adds an `.active` class that fills background with accent color and text "🔗 Shared". All cards use `event.stopPropagation()` on these buttons so clicks don't open the card.
 - **Net Sheet mobile `overflow-x` and tooltip width** — `overflow-x: hidden` on `body` prevents horizontal scroll on mobile. Info bubble tooltip uses `width: min(270px, calc(100vw - 48px))` to stay within the viewport on narrow screens. Without the `min()` constraint the tooltip overflows and triggers horizontal scroll.
 - **Net Sheet date input text-align** — `text-align: left !important` on `input[type="date"]` is NOT sufficient; WebKit ignores it for date inputs. The correct fix is `::-webkit-date-and-time-value { text-align: left }` which targets the pseudo-element WebKit uses to render the date value internally. Both rules are present for belt-and-suspenders coverage across browsers.
-- **Net Sheet mobile header subtitle** — `header span { display: none }` inside `@media (max-width: 1024px)` hides the subtitle on mobile. Do not move this rule outside the media query or it hides on desktop too.
 - **Net Sheet mobile footer must have `display: none` at top level** — `.ns-mobile-footer { display: none }` must live outside any media query so it's hidden on desktop by default. If placed inside `@media (max-width: 1024px)`, it never fires on desktop and the footer renders as a visible block element below the editor. Prior bug — fixed.
 - **Net Sheet `showMobileEditor()` must remove `mobile-signin` and `mobile-list`** — same pattern as Deal Analyzer. Missing either removal leaves the header hidden in the editor.
 - **Net Sheet sidebar CSS variable `--ns-sidebar-w`** — updated by the resizer drag handler to keep the sticky footer `left` offset in sync. Default: 400px.
