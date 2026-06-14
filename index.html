@@ -227,7 +227,7 @@
 
   .hub-header {
     border-bottom: 1px solid var(--border);
-    padding: 16px 40px;
+    padding: 18px 40px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -261,46 +261,12 @@
     color: var(--muted);
   }
 
-  .hub-auth {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .hub-user-email {
-    font-size: 0.78rem;
-    color: var(--muted);
-    font-family: 'DM Mono', monospace;
-    max-width: 200px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .btn-hub {
-    padding: 7px 16px;
-    border-radius: 6px;
-    font-size: 0.82rem;
-    font-weight: 600;
-    font-family: 'DM Sans', sans-serif;
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-
-  .btn-hub-signin {
-    background: var(--accent);
-    color: #0d0f0e;
-    border: none;
-  }
-  .btn-hub-signin:hover { background: #d8ff7a; }
-
-  .btn-hub-signout {
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border);
-  }
-  .btn-hub-signout:hover { border-color: var(--danger); color: var(--danger); }
+  .auth-status { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; color: var(--muted); }
+  .auth-status .user-email { color: var(--label); font-family: 'DM Mono', monospace; font-size: 0.75rem; max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn-auth { background: transparent; color: var(--label); border: 1px solid var(--border); padding: 7px 14px; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: all 0.18s; white-space: nowrap; }
+  .btn-auth:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-auth.sign-out:hover { border-color: var(--danger); color: var(--danger); }
+  .guest-badge { font-size: 0.68rem; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; }
 
   .hub-main {
     flex: 1;
@@ -473,7 +439,7 @@
     .hub-main    { padding: 28px 16px 32px; }
     .hub-welcome { margin-bottom: 28px; }
     .hub-welcome-title { font-size: 1.5rem; }
-    .hub-user-email { display: none; }
+    .auth-status .user-email { display: none; }
     .hub-sections { max-width: 420px; }
     .tool-grid { grid-template-columns: 1fr; }
     .signin-card { padding: 28px 20px; }
@@ -534,7 +500,7 @@
         <div class="hub-brand-sub">by Blue Star Realty Group</div>
       </div>
     </div>
-    <div class="hub-auth" id="hubAuthEl"></div>
+    <div class="auth-status" id="hubAuthEl"></div>
   </header>
 
   <main class="hub-main">
@@ -732,14 +698,15 @@
 
     if (currentUser) {
       authEl.innerHTML = `
-        <span class="hub-user-email">${currentUser.email}</span>
-        <button class="btn-hub btn-hub-signout" onclick="signOut()">Sign Out</button>`;
+        <span class="user-email">${currentUser.email}</span>
+        <button class="btn-auth sign-out" onclick="signOut()">Sign Out</button>`;
       titleEl.textContent = 'Your Tools';
       subEl.textContent   = 'Choose a tool to get started';
       noteEl.style.display = 'none';
     } else {
       authEl.innerHTML = `
-        <button class="btn-hub btn-hub-signin" onclick="backToSignin()">Sign In</button>`;
+        <span class="guest-badge">Guest</span>
+        <button class="btn-auth" onclick="backToSignin()">Sign In</button>`;
       titleEl.textContent = 'Choose a Tool';
       subEl.textContent   = 'Sign in to save and sync your data across devices';
       noteEl.style.display = 'flex';
