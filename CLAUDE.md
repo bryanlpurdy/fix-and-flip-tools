@@ -1,8 +1,10 @@
-# Fix & Flip Tools — CLAUDE.md
+# ClosingDesk — CLAUDE.md
 
 ## Project Overview
 
-A web app suite for fix-and-flip real estate investors and Realtors. Current tools:
+**Brand name: ClosingDesk** (formerly "Fix & Flip Tools"). Target domain: closingdesk.com. Current hosting remains at tools.bluestarrealtygroup.com until a domain/rebrand is formalized.
+
+A web app suite for real estate investors and Realtors. Current tools:
 - **`index.html`** — hub/launcher page: sign in once (or continue as guest), then choose a tool.
 - **`walkthrough.html`** — Property Walkthrough: mobile-first estimator — walk a property, toggle repair items, adjust costs, attach photos, save to cloud.
 - **`deal-analyzer.html`** — Deal Analyzer: desktop-primary deal analysis tool with a full responsive mobile view.
