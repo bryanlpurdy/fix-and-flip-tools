@@ -1585,6 +1585,7 @@
   let financingType = 'conventional';
   let activeDealId = null;   // Supabase UUID when logged in
   let activeDealKey = null;  // localStorage key when guest
+  let activeDealName = null; // name of the currently open deal
   let currentUser = null;
   let _daEditorActive = false;
   const STORAGE_KEY = 'flipDeals';
@@ -1927,6 +1928,11 @@
 
   function openSaveModal() {
     renameMode = false; renameId = null; renameType = null;
+    if (activeDealName && (activeDealId || activeDealKey)) {
+      document.getElementById('dealNameInput').value = activeDealName;
+      confirmSave();
+      return;
+    }
     document.getElementById('saveModalTitle').textContent = 'Save Deal';
     document.getElementById('saveModalBtn').textContent = 'Save';
     const input = document.getElementById('dealNameInput');
@@ -1992,6 +1998,7 @@
       renderSidebar();
       showToast('✓ Saved locally (sign in to sync across devices)');
     }
+    activeDealName = name;
   }
 
   // ── Load deals ───────────────────────────────────────────────
@@ -2004,6 +2011,7 @@
       const deal = Array.isArray(data) ? data[0] : data;
       if (!deal) return;
       activeDealId = id;
+      activeDealName = deal.name;
       _daEditorActive = true;
       populateFields(deal.data.inputs);
       await loadDealsFromSupabase();
@@ -2020,6 +2028,7 @@
     const deal = deals[key];
     if (!deal) return;
     activeDealKey = key;
+    activeDealName = deal.name;
     _daEditorActive = true;
     populateFields(deal.inputs);
     renderSidebar();
@@ -2073,6 +2082,7 @@
   function newDeal() {
     activeDealId = null;
     activeDealKey = null;
+    activeDealName = null;
     _daEditorActive = true;
 
     // Zero out deal-specific fields
