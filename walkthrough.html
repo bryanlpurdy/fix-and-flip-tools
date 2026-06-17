@@ -1299,18 +1299,18 @@
       id: 'interior', label: 'Interior & Kitchen',
       items: [
         { id: 'demo',          label: 'Interior Demo',               type: 'toggle', cost: 1500,  step: 250 },
-        { id: 'texture',       label: 'Texture / Sheetrock',         type: 'toggle', cost: 3000,  step: 250 },
-        { id: 'int_paint',     label: 'Interior Paint',              type: 'toggle', cost: 4000,  step: 250 },
+        { id: 'texture',       label: 'Texture / Sheetrock',         type: 'toggle', cost: 3000,  step: 250, split: true, material: 750,  labor: 2250 },
+        { id: 'int_paint',     label: 'Interior Paint',              type: 'toggle', cost: 4000,  step: 250, split: true, material: 1000, labor: 3000 },
         { id: 'lvp',           label: 'LVP Flooring',                type: 'sqft',   rate: 4.50 },
-        { id: 'trim',          label: 'Trim — Floor + Door',         type: 'toggle', cost: 2500,  step: 250 },
-        { id: 'doors_int',     label: 'Doors — Interior',            type: 'count',  cost: 250,   unit: 'door' },
-        { id: 'doors_ext',     label: 'Doors — Exterior',            type: 'count',  cost: 500,   unit: 'door' },
+        { id: 'trim',          label: 'Trim — Floor + Door',         type: 'toggle', cost: 2500,  step: 250, split: true, material: 1000, labor: 1500 },
+        { id: 'doors_int',     label: 'Doors — Interior',            type: 'count',  cost: 250,   unit: 'door',    split: true, material: 100,  labor: 150 },
+        { id: 'doors_ext',     label: 'Doors — Exterior',            type: 'count',  cost: 500,   unit: 'door',    split: true, material: 250,  labor: 250 },
         { id: 'cab_replace',   label: 'Cabinets — Replace',          type: 'toggle', cost: 8000,  step: 250 },
         { id: 'cab_paint',     label: 'Cabinets — Paint + Hardware', type: 'toggle', cost: 1500,  step: 250 },
         { id: 'countertops',   label: 'Countertops',                 type: 'toggle', cost: 3500,  step: 250 },
-        { id: 'backsplash',    label: 'Kitchen Backsplash',          type: 'toggle', cost: 800,   step: 250 },
+        { id: 'backsplash',    label: 'Kitchen Backsplash',          type: 'toggle', cost: 800,   step: 250, split: true, material: 400,  labor: 400 },
         { id: 'ceiling_fan',   label: 'Ceiling Fan',                 type: 'count',  cost: 150,   unit: 'fan' },
-        { id: 'light_fixture', label: 'Light Fixture',               type: 'count',  cost: 100,   unit: 'fixture' },
+        { id: 'light_fixture', label: 'Light Fixture',               type: 'count',  cost: 100,   unit: 'fixture', split: true, material: 50,   labor: 50 },
         { id: 'carpet',        label: 'Carpet',                      type: 'sqft',   rate: 3.00 },
         { id: 'subfloor',      label: 'Subfloor repair',             type: 'toggle', cost: 1500,  step: 250 },
       ]
@@ -1319,9 +1319,9 @@
       id: 'bathroom', label: 'Bathrooms',
       items: [
         { id: 'vanity',       label: 'Vanity',                type: 'count', cost: 300,  unit: 'vanity' },
-        { id: 'shower_basic', label: 'Shower — Basic rehab',  type: 'count', cost: 1500, unit: 'shower', step: 500 },
-        { id: 'shower_full',  label: 'Shower — Full replace', type: 'count', cost: 4000, unit: 'shower', step: 500 },
-        { id: 'tile_floor',   label: 'Tile Floors',           type: 'count', cost: 500,  unit: 'bath' },
+        { id: 'shower_basic', label: 'Shower — Basic rehab',  type: 'count', cost: 1500, unit: 'shower', step: 500, split: true, material: 600,  labor: 900 },
+        { id: 'shower_full',  label: 'Shower — Full replace', type: 'count', cost: 4000, unit: 'shower', step: 500, split: true, material: 1500, labor: 2500 },
+        { id: 'tile_floor',   label: 'Tile Floors',           type: 'count', cost: 500,  unit: 'bath',             split: true, material: 250,  labor: 250 },
         { id: 'plumbing_fix', label: 'Plumbing Fixtures',     type: 'count', cost: 200,  unit: 'bath' },
       ]
     },
@@ -1342,7 +1342,7 @@
         { id: 'roof_patch',   label: 'Roof — Patch',                       type: 'toggle', cost: 1500,  step: 250 },
         { id: 'roof_replace', label: 'Roof — Replace',                     type: 'toggle', cost: 12000, step: 250 },
         { id: 'ext_siding',   label: 'Exterior Siding or Brick (repair)',   type: 'toggle', cost: 3000,  step: 250 },
-        { id: 'ext_paint',    label: 'Exterior Paint',                      type: 'toggle', cost: 4000,  step: 250 },
+        { id: 'ext_paint',    label: 'Exterior Paint',                      type: 'toggle', cost: 4000,  step: 250, split: true, material: 1000, labor: 3000 },
         { id: 'win_glass',    label: 'Windows — Glass only',                type: 'count',  cost: 150,   unit: 'window', step: 50 },
         { id: 'win_full',     label: 'Windows — Full replacement',          type: 'count',  cost: 500,   unit: 'window', step: 50 },
         { id: 'ac_service',   label: 'AC — Service',                        type: 'toggle', cost: 500,   step: 250 },
@@ -1375,7 +1375,9 @@
   const state = { propertyName: '', items: {}, misc: { expenses: [], photos: [] }, notes: '' };
 
   SECTIONS.forEach(s => s.items.forEach(def => {
-    state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
+    state.items[def.id] = def.split
+      ? { enabled: false, qty: 1, sqft: 0, material: def.material || 0, labor: def.labor || 0, photos: [] }
+      : { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
   }));
 
   // ── Helpers ──────────────────────────────────────────────────
@@ -1391,6 +1393,10 @@
 
   function itemTotal(def, s) {
     if (!s.enabled) return 0;
+    if (def.split) {
+      const unit = (s.material || 0) + (s.labor || 0);
+      return def.type === 'count' ? unit * (s.qty || 1) : unit;
+    }
     if (def.type === 'toggle')   return s.cost;
     if (def.type === 'count')    return s.cost * s.qty;
     if (def.type === 'sqft')     return def.rate * (s.sqft || 0);
@@ -1462,14 +1468,45 @@
     const s = state.items[def.id];
     const total = itemTotal(def, s);
     let badge = '';
-    if (def.type === 'toggle')   badge = fmt(s.cost);
-    if (def.type === 'count')    badge = `${fmt(s.cost)} ea`;
-    if (def.type === 'sqft')     badge = `$${def.rate}/sqft`;
+    if (def.split) {
+      const unit = (s.material || 0) + (s.labor || 0);
+      badge = def.type === 'count' ? `${fmt(unit)} ea` : fmt(unit);
+    } else if (def.type === 'toggle') {
+      badge = fmt(s.cost);
+    } else if (def.type === 'count') {
+      badge = `${fmt(s.cost)} ea`;
+    } else if (def.type === 'sqft') {
+      badge = `$${def.rate}/sqft`;
+    }
     if (s.enabled && total > 0)  badge = fmt(total);
 
     let detail = '';
     if (s.enabled) {
-      if (def.type === 'toggle') {
+      if (def.split) {
+        const mat = s.material || 0, lab = s.labor || 0;
+        if (def.type === 'count') {
+          detail = `<div class="item-detail">
+            <div class="qty-ctrl">
+              <button class="qty-btn" onclick="event.stopPropagation();adjQty('${def.id}',-1)">−</button>
+              <span class="qty-val">${s.qty}</span>
+              <button class="qty-btn" onclick="event.stopPropagation();adjQty('${def.id}',1)">+</button>
+            </div>
+            <span class="detail-label">${def.unit || 'unit'}s @ ${fmt(mat + lab)} ea</span>
+            <span class="detail-total">${fmt(total)}</span>
+          </div>`;
+        }
+        detail += `<div class="item-detail">
+          <span class="detail-label">Mat</span>
+          <input class="cost-edit" type="text" inputmode="numeric" value="${fmt(mat)}"
+            onfocus="this.value='${Math.round(mat)}';this.select()"
+            onblur="setMaterial('${def.id}',this.value)">
+          <span class="detail-label">Lab</span>
+          <input class="cost-edit" type="text" inputmode="numeric" value="${fmt(lab)}"
+            onfocus="this.value='${Math.round(lab)}';this.select()"
+            onblur="setLabor('${def.id}',this.value)">
+          ${def.type === 'toggle' ? `<span class="detail-total">${fmt(total)}</span>` : `<span class="detail-label">per ${def.unit || 'unit'}</span>`}
+        </div>`;
+      } else if (def.type === 'toggle') {
         const hasStep = def.step != null;
         detail = `<div class="item-detail">
           ${hasStep ? `<button class="adj-btn" onclick="adjCost('${def.id}',-${def.step})">−</button>` : '<span class="detail-label">Cost</span>'}
@@ -1592,6 +1629,16 @@
     refreshItem(id);
   }
 
+  function setMaterial(id, val) {
+    state.items[id].material = parseFloat(String(val).replace(/[^0-9.]/g, '')) || 0;
+    refreshItem(id);
+  }
+
+  function setLabor(id, val) {
+    state.items[id].labor = parseFloat(String(val).replace(/[^0-9.]/g, '')) || 0;
+    refreshItem(id);
+  }
+
 
   function toggleSec(id) {
     const body   = document.getElementById('body-' + id);
@@ -1668,7 +1715,9 @@
     state.misc = { expenses: [], photos: [] };
     state.notes = '';
     SECTIONS.forEach(s => s.items.forEach(def => {
-      state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
+      state.items[def.id] = def.split
+      ? { enabled: false, qty: 1, sqft: 0, material: def.material || 0, labor: def.labor || 0, photos: [] }
+      : { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
     }));
     document.getElementById('propertyName').value = '';
     renderAll();
@@ -1818,7 +1867,9 @@
       const wt = Array.isArray(res) ? res[0] : res;
       if (!wt) { showToast('⚠ Not found', 'danger'); return; }
       SECTIONS.forEach(s => s.items.forEach(def => {
-        state.items[def.id] = { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
+        state.items[def.id] = def.split
+      ? { enabled: false, qty: 1, sqft: 0, material: def.material || 0, labor: def.labor || 0, photos: [] }
+      : { enabled: false, qty: 1, sqft: 0, cost: def.cost || 0, photos: [] };
       }));
       state.misc = { expenses: [], photos: [] };
       state.notes = '';
@@ -1828,7 +1879,16 @@
       state.notes = wt.notes || '';
       if (wt.items) {
         if (wt.items._misc_) state.misc = wt.items._misc_;
-        Object.keys(wt.items).forEach(k => { if (k !== '_misc_' && state.items[k]) Object.assign(state.items[k], wt.items[k]); });
+        Object.keys(wt.items).forEach(k => {
+          if (k !== '_misc_' && state.items[k]) {
+            Object.assign(state.items[k], wt.items[k]);
+            const bkDef = itemDef(k)?.def;
+            if (bkDef?.split && wt.items[k].cost != null && wt.items[k].material == null) {
+              state.items[k].material = wt.items[k].cost;
+              state.items[k].labor = 0;
+            }
+          }
+        });
       }
       document.getElementById('propertyName').value = state.propertyName;
       renderAll();
@@ -2358,6 +2418,10 @@
       if (!enabledDefs.length) continue;
       const secTotal = enabledDefs.reduce((sum, def) => {
         const s = items[def.id];
+        if (def.split) {
+          const unit = (s.material || 0) + (s.labor || 0);
+          return sum + (def.type === 'count' ? unit * (s.qty || 1) : unit);
+        }
         if (def.type === 'toggle') return sum + (s.cost || 0);
         if (def.type === 'count')  return sum + (s.cost || 0) * (s.qty || 1);
         if (def.type === 'sqft')   return sum + def.rate * (s.sqft || 0);
@@ -2366,9 +2430,19 @@
       const itemsHtml = enabledDefs.map(def => {
         const s = items[def.id];
         let lineTotal = 0, detail = '';
-        if (def.type === 'toggle') { lineTotal = s.cost || 0; }
-        if (def.type === 'count')  { lineTotal = (s.cost || 0) * (s.qty || 1); detail = `${s.qty || 1} ${def.unit || 'unit'}${(s.qty||1) !== 1 ? 's' : ''}`; }
-        if (def.type === 'sqft')   { lineTotal = def.rate * (s.sqft || 0); detail = `${(s.sqft||0).toLocaleString()} sqft`; }
+        if (def.split) {
+          const unit = (s.material || 0) + (s.labor || 0);
+          lineTotal = def.type === 'count' ? unit * (s.qty || 1) : unit;
+          if (def.type === 'count') detail = `${s.qty || 1} ${def.unit || 'unit'}${(s.qty||1) !== 1 ? 's' : ''}`;
+        } else if (def.type === 'toggle') {
+          lineTotal = s.cost || 0;
+        } else if (def.type === 'count') {
+          lineTotal = (s.cost || 0) * (s.qty || 1);
+          detail = `${s.qty || 1} ${def.unit || 'unit'}${(s.qty||1) !== 1 ? 's' : ''}`;
+        } else if (def.type === 'sqft') {
+          lineTotal = def.rate * (s.sqft || 0);
+          detail = `${(s.sqft||0).toLocaleString()} sqft`;
+        }
         const photosHtml = (s.photos || []).length ? `
           <div class="sr-photos">${(s.photos||[]).map(p => `
             <div class="sr-photo">
