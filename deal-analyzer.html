@@ -1385,12 +1385,8 @@
         <span class="cr-label">Title + Survey + Warranty</span>
         <span class="cr-value" id="b-closing">$0</span>
       </div>
-      <div class="cost-row" id="b-conv-row" style="display:none">
-        <span class="cr-label">Conventional Interest</span>
-        <span class="cr-value" id="b-conv">$0</span>
-      </div>
       <div class="cost-row" id="b-hm-row" style="display:none">
-        <span class="cr-label">Hard Money Costs</span>
+        <span class="cr-label">Hard Money Points</span>
         <span class="cr-value" id="b-hm">$0</span>
       </div>
       <div class="cost-row">
@@ -2157,14 +2153,12 @@
     const holdMonths = val('holdMonths');
     const commissions = (arv * (val('commSeller') + val('commBuyer'))) / 100;
     const closingOther = val('title') + val('survey') + val('warranty');
-    let hmCost = 0, convInterest = 0;
+    let hmCost = 0;
     if (financingType === 'hard') {
-      hmCost = (val('loanAmount') * val('points') / 100) + (val('loanAmount') * val('rate') / 100 * holdMonths / 12);
-    } else if (financingType === 'conventional') {
-      convInterest = val('convLoanAmount') * (val('convRate') / 100) * (holdMonths / 12);
+      hmCost = val('loanAmount') * val('points') / 100;
     }
     const loanClosing = val('loanOrigination') + val('loanAppraisal') + val('loanTitle');
-    const totalCosts = purchase + repair + (holdMonthly * holdMonths) + commissions + closingOther + hmCost + convInterest + loanClosing;
+    const totalCosts = purchase + repair + (holdMonthly * holdMonths) + commissions + closingOther + hmCost + loanClosing;
     return { profit: arv - totalCosts, totalCosts };
   }
 
@@ -2176,7 +2170,6 @@
     btns[1].classList.toggle('active', type === 'hard');
     document.getElementById('convFields').style.display = type === 'conventional' ? 'grid' : 'none';
     document.getElementById('hardMoneyFields').classList.toggle('visible', type === 'hard');
-    document.getElementById('b-conv-row').style.display = type === 'conventional' ? 'flex' : 'none';
     document.getElementById('b-hm-row').style.display = type === 'hard' ? 'flex' : 'none';
     calculate();
   }
@@ -2214,26 +2207,21 @@
     const commissions = (arv * (commSeller + commBuyer)) / 100;
     const closingOther = title + survey + warranty;
 
-    let hmCost = 0, convInterest = 0;
+    let hmCost = 0;
     if (financingType === 'hard') {
       const loan = val('loanAmount');
       const points = val('points');
-      const rate = val('rate');
-      hmCost = (loan * points / 100) + (loan * (rate / 100) * (holdMonths / 12));
-    } else if (financingType === 'conventional') {
-      const loan = val('convLoanAmount');
-      const rate = val('convRate');
-      convInterest = loan * (rate / 100) * (holdMonths / 12);
+      hmCost = loan * points / 100;
     }
 
     const loanClosing = val('loanOrigination') + val('loanAppraisal') + val('loanTitle');
     document.getElementById('loanClosingDisplay').textContent = fmt(loanClosing);
 
-    const totalCosts = purchase + repair + holding + commissions + closingOther + hmCost + convInterest + loanClosing;
+    const totalCosts = purchase + repair + holding + commissions + closingOther + hmCost + loanClosing;
     const profit = arv - totalCosts;
     const roi = totalCosts > 0 ? (profit / totalCosts) * 100 : 0;
     const annualizedROI = holdMonths > 0 ? (roi / holdMonths) * 12 : 0;
-    const maxOffer = arv - repair - holding - commissions - closingOther - hmCost - convInterest - loanClosing - desiredProfit;
+    const maxOffer = arv - repair - holding - commissions - closingOther - hmCost - loanClosing - desiredProfit;
 
     document.getElementById('profitDisplay').textContent = fmt(profit);
     document.getElementById('roiDisplay').textContent = 'ROI: ' + fmtPct(roi);
@@ -2246,7 +2234,6 @@
     document.getElementById('b-holding').textContent = fmt(holding);
     document.getElementById('b-comm').textContent = fmt(commissions);
     document.getElementById('b-closing').textContent = fmt(closingOther);
-    document.getElementById('b-conv').textContent = fmt(convInterest);
     document.getElementById('b-hm').textContent = fmt(hmCost);
     document.getElementById('b-loan-closing').textContent = fmt(loanClosing);
     document.getElementById('b-total').textContent = fmt(totalCosts);
