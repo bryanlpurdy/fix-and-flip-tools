@@ -326,7 +326,7 @@ Header uses the shared pattern (`<h1>`, `.header-actions`, `.auth-status` — se
 ```js
 const state = {
   propertyName: '',
-  items: {},          // keyed by item id: { enabled, qty, sqft, cost, photos: [] }
+  items: {},          // keyed by item id: { enabled, qty, sqft, cost, photos: [] } — split items use { material, labor } instead of cost
   misc: { expenses: [], photos: [] },
   notes: ''           // property comments (free text)
 };
@@ -353,6 +353,22 @@ Section order (top to bottom in the editor):
 - `toggle` — on/off with adjustable cost
 - `count` — integer quantity with per-unit cost
 - `sqft` — square footage with per-sqft rate
+
+### Materials / Labor split (`split: true`)
+
+11 items carry `split: true` in their SECTIONS definition, along with `material` and `labor` default values. These items show two separate cost inputs (Mat / Lab) instead of a single cost field; the two values sum to the item total.
+
+**Split items:** Texture/Sheetrock, Interior Paint, Trim — Floor + Door, Doors — Interior, Doors — Exterior, Kitchen Backsplash, Light Fixture, Exterior Paint, Shower — Basic rehab, Shower — Full replace, Tile Floors.
+
+**State:** Split items initialize as `{ enabled, qty, sqft, material, labor, photos }` (no `cost` field). Non-split items still use `{ enabled, qty, sqft, cost, photos }`.
+
+**`itemTotal(def, s)`:** Checks `def.split` first — returns `(material + labor)` for toggle, `(material + labor) × qty` for count.
+
+**`setMaterial(id, val)` / `setLabor(id, val)`:** Update the respective field and call `refreshItem()`.
+
+**Backward compat:** `openWalkthrough()` detects old saves where a split item has `cost` but no `material` and migrates: `material = cost, labor = 0`.
+
+**Share report:** `secTotal` and `lineTotal` check `def.split` before falling through to the `cost`-based logic.
 
 ### Sharing
 
