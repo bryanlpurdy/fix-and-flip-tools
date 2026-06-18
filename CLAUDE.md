@@ -272,7 +272,7 @@ continueAsGuest()    // skip auth
   → showHub()        (currentUser = null, walkthrough note shown)
 
 signOut()            // clear session
-  → clearSession() → backToSignin()
+  → clearSession() → window.location.href = 'index.html'
 ```
 
 ### Shared session
@@ -306,9 +306,11 @@ All three tool headers share a consistent structure:
   </div>
 </header>
 ```
-- `header` padding: `18px 40px` desktop → `12px–14px 16–20px` on mobile. Height is `69px`, used in `calc(100vh - 69px)` for layout panels.
-- `h1` is Bebas Neue 2.4rem, accent color — no subtitle span after it.
+- `header` padding: `18px 40px` desktop → `12px 16px` on mobile. Height is `69px`, used in `calc(100vh - 69px)` for layout panels.
+- `h1` is Bebas Neue 2.4rem desktop → 1.6rem mobile, accent color — no subtitle span after it.
 - `.auth-status` / `.btn-auth` / `.user-email` / `.guest-badge` CSS is identical across all three. `updateAuthUI()` in each tool renders: email + "Sign Out" when signed in; "Sign In" button (+ "Guest" badge on Net Sheet) when not. Walkthrough shows only "Sign In" when not signed in (no guest mode).
+- **Mobile header (all three tools):** `.hub-back` and `.auth-status .user-email` are hidden via `@media (max-width: 1024px)`. Only the h1 and Sign Out button show on mobile — keeps the header uncluttered on small screens.
+- **Sign Out in all three tools** redirects to `index.html` (hub) rather than the tool's own sign-in view.
 
 ---
 
@@ -494,6 +496,10 @@ Same Supabase email+password pattern as the walkthrough. Session in `localStorag
 ### Deal Data Flow
 Inputs → `calculate()` → results panel updates live. Save → `openSaveModal()` → `confirmSave()` → Supabase. Load → `loadCloudDeal(id)` → `populateFields(inputs)` → `calculate()`.
 
+**Save without re-prompting:** `activeDealName` tracks the name of the currently open deal (set on load, cleared on new deal, updated after first save). `openSaveModal()` checks `activeDealName && (activeDealId || activeDealKey)` — if both are set it skips the modal and calls `confirmSave()` directly. Modal only appears for new/unsaved deals.
+
+**Total All-In Cost:** `holdInterest` (AUTO field in Monthly Holding Costs) already includes monthly interest. `convInterest` was a duplicate of this and has been removed. For Hard Money, `hmCost` is **points only** (`loan × points / 100`) — the interest portion is already captured in `holdMonthly × holdMonths`. The breakdown row is labelled "Hard Money Points".
+
 ---
 
 ## App Architecture — `net-sheet.html`
@@ -510,6 +516,8 @@ Mobile (≤1024px): three-view JS-controlled pattern matching Deal Analyzer:
 Same JS pattern as Deal Analyzer — `showMobileList()` and `showMobileEditor()` control `element.style.display` inline and the `mobile-signin`, `mobile-list`, `mobile-editor` body classes. `showMobileEditor()` must remove all three classes before adding `mobile-editor` or the header stays hidden.
 
 On init: `loadSession()` → `updateAuthUI()` → `if (isMobile()) showMobileList()` → `initAuth()` (async).
+
+**Save without re-prompting:** `openSaveModal()` checks `activeId && _cachedSheets.find(s => s.id === activeId)` — if an existing sheet is open it pre-fills `nsNameInput` and calls `confirmSave()` directly. Modal only appears for new/unsaved sheets. Same pattern as Deal Analyzer.
 
 ### Form State
 All form inputs are read at calculate/save time via `collectState()`. No central state object — inputs live in the DOM. `populateForm(data)` restores all fields from saved `data` jsonb. `resetForm()` calls `populateForm({})` with default cost values.
@@ -566,6 +574,8 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **No AbortController** on auth fetches — was tried, broke logins during Supabase cold start.
 - **Signed URL path prefix** — Supabase Storage sign endpoint omits `/storage/v1` from the returned path. Fixed with the conditional prepend above.
 - The `anon` key is intentionally in client-side code — it's the Supabase public anon key, not a secret. RLS policies are the security boundary.
+- **Mobile header — email hidden, h1 visible:** All three tools hide `.hub-back` and `.auth-status .user-email` on mobile via `@media (max-width: 1024px)`. The h1 is shown at 1.6rem. Deal Analyzer previously hid `header h1` in `body.mobile-editor` — that rule was removed once email was hidden, making room for the title. Do not re-add `body.mobile-editor header h1 { display: none }`.
+- **Sign Out → hub:** `signOut()` in all three tools calls `window.location.href = 'index.html'`. Do not revert to `showList()` / `showMobileList()` / `updateAuthUI()` — those kept users inside the tool's own sign-in screen instead of returning to the hub.
 - **Deal Analyzer mobile view — use JS, not CSS** — CSS `body:not(.mobile-editor)` media query selectors proved unreliable across browsers/screen sizes for show/hide. The current approach uses `element.style.display` inline styles controlled by `showMobileList()` / `showMobileEditor()`. Do not revert to a CSS-only approach.
 - **`showMobileEditor()` must hide `#mobileSigninView`, remove `body.mobile-signin`, and remove `body.mobile-list`** — missing either class removal leaves the main header hidden when entering the editor. The `mobile-signin` omission was a prior bug (guest login didn't navigate into the app); `mobile-list` must also be cleared when opening a deal from the list.
 - **Walkthrough `body.list-mode` hides the main header** — same pattern as `body.mobile-list` in the Deal Analyzer. `showEditor()` must remove it, or the header stays hidden in the editor. `showShareView()` must also remove it.
