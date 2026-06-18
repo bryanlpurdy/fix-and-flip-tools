@@ -866,7 +866,6 @@
 
     /* Editor mode */
     body.mobile-editor .mobile-back-btn { display: inline-flex; }
-    body.mobile-editor header h1 { display: none; }
     body.mobile-editor .btn-new { display: none !important; }
     body.mobile-editor .deals-sidebar,
     body.mobile-editor .resizer { display: none !important; }
@@ -1743,11 +1742,7 @@
 
   async function signOut() {
     await sbSignOut();
-    updateAuthUI();
-    showGuestBanner(true);
-    renderSidebar();
-    showToast('Signed out', 'danger');
-    if (isMobile()) showMobileList();
+    window.location.href = 'index.html';
   }
 
   // ── Supabase deal operations ─────────────────────────────────
