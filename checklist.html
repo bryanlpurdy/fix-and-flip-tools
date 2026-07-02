@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rehab Tracker — ClosingDesk</title>
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f0e;
+    --surface: #151918;
+    --surface2: #1c2220;
+    --border: #2a3330;
+    --accent: #c8f564;
+    --accent2: #4dffa0;
+    --danger: #ff5c5c;
+    --warn: #ffb347;
+    --text: #e8ede8;
+    --muted: #6b7d74;
+    --label: #9ab09e;
+    --rt-sidebar-w: 320px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.6;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Header ─────────────────────────────────────── */
+  header {
+    height: 69px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 40px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    z-index: 20;
+    flex-shrink: 0;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 18px; }
+
+  .hub-back {
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s;
+  }
+  .hub-back:hover { color: var(--accent); }
+
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    color: var(--accent);
+    letter-spacing: 3px;
+    line-height: 1;
+  }
+
+  .header-actions { display: flex; align-items: center; gap: 10px; }
+
+  .auth-status { display: flex; align-items: center; gap: 10px; font-size: 0.78rem; color: var(--muted); }
+  .auth-status .user-email { color: var(--label); font-family: 'DM Mono', monospace; font-size: 0.75rem; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .btn-auth { background: transparent; color: var(--label); border: 1px solid var(--border); padding: 7px 14px; border-radius: 6px; font-family: 'DM Sans', sans-serif; font-size: 0.78rem; font-weight: 500; cursor: pointer; transition: all 0.18s; white-space: nowrap; }
+  .btn-auth:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-auth.sign-out:hover { border-color: var(--danger); color: var(--danger); }
+
+  /* ── Main layout ─────────────────────────────────── */
+  #rtLayout {
+    display: flex;
+    height: calc(100vh - 69px);
+  }
+
+  /* ── Sidebar ─────────────────────────────────────── */
+  .rt-sidebar {
+    width: var(--rt-sidebar-w);
+    min-width: 140px;
+    max-width: 480px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .rt-sidebar-hdr {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .rt-sidebar-hdr span { font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+
+  .btn-new-project {
+    background: var(--accent);
+    color: #0d0f0e;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s;
+  }
+  .btn-new-project:hover { background: #d8ff7a; }
+
+  #rtSidebarContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .rt-sidebar-auth {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 40px 20px;
+    text-align: center;
+  }
+  .rt-sidebar-auth p { font-size: 0.85rem; color: var(--muted); line-height: 1.5; }
+  .btn-sidebar-signin {
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-sidebar-signin:hover { background: var(--accent); color: #0d0f0e; }
+
+  /* Project card */
+  .proj-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .proj-card:hover { border-color: var(--label); }
+  .proj-card.active { border-color: var(--accent); }
+
+  .proj-card-name { font-size: 0.95rem; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .proj-card-addr { font-size: 0.78rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: none; }
+  .proj-card-addr.has-addr { display: block; }
+
+  .proj-progress { display: flex; flex-direction: column; gap: 4px; }
+  .proj-progress-bar { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .proj-progress-fill { height: 100%; background: var(--accent); border-radius: 2px; transition: width 0.3s; }
+  .proj-progress-text { font-size: 0.72rem; color: var(--muted); font-family: 'DM Mono', monospace; }
+
+  .proj-card-meta { font-size: 0.7rem; color: var(--muted); }
+
+  .proj-card-actions { display: flex; gap: 6px; margin-top: 2px; }
+  .proj-card-actions button {
+    flex: 1;
+    font-size: 0.72rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    padding: 5px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+  }
+  .btn-proj-del { border: 1px solid var(--danger); color: var(--danger); }
+  .btn-proj-del:hover { background: rgba(255,92,92,0.1); }
+  .btn-proj-share { border: 1px solid var(--border); color: var(--label); }
+  .btn-proj-share:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-proj-share.active { background: var(--accent); color: #0d0f0e; border-color: var(--accent); }
+
+  /* ── Resizer ─────────────────────────────────────── */
+  .rt-resizer {
+    width: 5px;
+    cursor: col-resize;
+    background: transparent;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    z-index: 10;
+  }
+  .rt-resizer:hover, .rt-resizer.dragging { background: var(--accent); }
+
+  /* ── Editor ─────────────────────────────────────── */
+  .rt-editor {
+    flex: 1;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  #rtEmptyState {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  #rtEmptyState svg { opacity: 0.2; }
+  #rtEmptyState p { font-size: 0.9rem; }
+  #rtEmptyState button {
+    pointer-events: all;
+    background: transparent;
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    border-radius: 6px;
+    padding: 8px 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  #rtEmptyState button:hover { background: var(--accent); color: #0d0f0e; }
+
+  #rtContent { padding: 28px 36px; max-width: 860px; }
+
+  .proj-inputs-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .proj-input-group { display: flex; flex-direction: column; gap: 5px; }
+  .proj-input-label { font-size: 0.68rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--label); font-weight: 600; }
+  .proj-input {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .proj-input:focus { border-color: var(--accent); }
+  .proj-input::placeholder { color: var(--muted); }
+
+  .autosave-status { font-size: 0.72rem; color: var(--muted); margin-bottom: 16px; min-height: 18px; }
+  .autosave-status.saving { color: var(--label); }
+  .autosave-status.unsaved { color: var(--warn); }
+
+  .proj-progress-overview {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 28px;
+    padding: 14px 16px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  .proj-ov-bar-wrap { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .proj-ov-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; transition: width 0.4s ease; }
+  .proj-ov-text { font-size: 0.82rem; color: var(--label); white-space: nowrap; font-family: 'DM Mono', monospace; }
+  .proj-ov-pct { font-size: 1rem; font-weight: 700; color: var(--accent); font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+  /* ── Checklist ──────────────────────────────────── */
+  .ck-sections { display: flex; flex-direction: column; gap: 28px; padding-bottom: 40px; }
+
+  .ck-section-hdr {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  .ck-section-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--label); }
+  .ck-section-count { font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+  .ck-section-count.done { color: var(--accent); }
+
+  .ck-items { display: flex; flex-direction: column; }
+  .ck-item { border-bottom: 1px solid rgba(42,51,48,0.5); }
+  .ck-item:last-child { border-bottom: none; }
+
+  .ck-item-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 4px;
+    cursor: default;
+    user-select: none;
+  }
+  .ck-item-row:hover { background: rgba(255,255,255,0.02); border-radius: 4px; }
+
+  .ck-item-check {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    cursor: pointer;
+    accent-color: var(--accent);
+  }
+
+  .ck-item-label { flex: 1; font-size: 0.9rem; color: var(--text); line-height: 1.4; transition: color 0.15s; }
+  .ck-item.checked .ck-item-label { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--border); }
+
+  .ck-note-btn {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-family: 'DM Sans', sans-serif;
+    transition: color 0.15s;
+    opacity: 0;
+  }
+  .ck-item-row:hover .ck-note-btn { opacity: 1; }
+  .ck-note-btn:hover { color: var(--accent); }
+  .ck-note-btn.has-note { opacity: 1; color: var(--accent2); }
+
+  .ck-note-row { padding: 0 4px 10px 32px; }
+  .ck-note-input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.84rem;
+    padding: 8px 12px;
+    resize: vertical;
+    min-height: 60px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .ck-note-input:focus { border-color: var(--accent); }
+  .ck-note-input::placeholder { color: var(--muted); }
+
+  /* ── Mobile sign-in view ─────────────────────────── */
+  #mobileSigninView {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 32px 20px;
+    position: relative;
+  }
+  .msv-hub-back { position: absolute; top: 18px; left: 18px; font-size: 0.78rem; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+  .msv-hub-back:hover { color: var(--accent); }
+  .msv-icon { width: 64px; height: 64px; background: rgba(200,245,100,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: var(--accent); margin-bottom: 16px; }
+  .msv-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 3px; color: var(--accent); margin-bottom: 6px; }
+  .msv-sub { font-size: 0.87rem; color: var(--muted); margin-bottom: 28px; text-align: center; }
+
+  .msv-field { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+  .msv-field label { font-size: 0.72rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--label); font-weight: 600; }
+  .msv-field input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 12px 14px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; border-radius: 8px; outline: none; transition: border-color 0.2s; width: 100%; }
+  .msv-field input:focus { border-color: var(--accent); }
+
+  .msv-error { width: 100%; max-width: 360px; font-size: 0.84rem; color: var(--danger); min-height: 22px; margin-bottom: 4px; }
+
+  .btn-msv-signin { width: 100%; max-width: 360px; padding: 13px; background: var(--accent); border: none; border-radius: 8px; color: #0d0f0e; font-size: 0.95rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; transition: background 0.15s; }
+  .btn-msv-signin:hover { background: #d8ff7a; }
+  .btn-msv-signin:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* ── Mobile list view ─────────────────────────────── */
+  #mobileListView { display: none; }
+
+  .rt-list-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .rlv-hub { font-size: 0.78rem; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+  .rlv-hub:hover { color: var(--accent); }
+  .rt-list-nav .rt-list-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; color: var(--accent); }
+  .btn-list-new { background: transparent; border: none; color: var(--accent); font-family: 'DM Sans', sans-serif; font-size: 0.85rem; font-weight: 700; cursor: pointer; padding: 4px; }
+
+  .rlv-auth-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: 0.78rem; }
+  .rlv-email { color: var(--label); font-family: 'DM Mono', monospace; font-size: 0.72rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+  .btn-rlv-signout { background: transparent; border: 1px solid var(--border); color: var(--label); border-radius: 4px; padding: 5px 10px; font-size: 0.72rem; font-weight: 600; font-family: 'DM Sans', sans-serif; cursor: pointer; white-space: nowrap; transition: all 0.15s; }
+  .btn-rlv-signout:hover { border-color: var(--danger); color: var(--danger); }
+
+  #rlvContent { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* ── Mobile editor nav ───────────────────────────── */
+  #editorNav { display: none; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .btn-editor-back { background: transparent; border: none; color: var(--muted); font-size: 0.78rem; font-family: 'DM Sans', sans-serif; cursor: pointer; padding: 0; }
+  #editorNav .en-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px; color: var(--accent); }
+  .btn-editor-new { background: transparent; border: none; color: var(--accent); font-size: 0.85rem; font-weight: 700; font-family: 'DM Sans', sans-serif; cursor: pointer; padding: 0; }
+
+  /* body class hooks */
+  body.list-mode header { display: none; }
+  body.list-mode #rtLayout { display: none; }
+  body.list-mode #editorNav { display: none !important; }
+  body.editor-mode .rt-sidebar,
+  body.editor-mode .rt-resizer { display: none; }
+
+  /* ── Share view ──────────────────────────────────── */
+  #shareView { display: none; min-height: 100vh; }
+
+  .sv-header { padding: 24px 32px; border-bottom: 1px solid var(--border); background: var(--surface); }
+  .sv-brand { font-size: 0.68rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+  .sv-name { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 2px; color: var(--text); }
+  .sv-addr { font-size: 0.9rem; color: var(--muted); margin-top: 2px; }
+  .sv-meta { font-size: 0.78rem; color: var(--muted); margin-top: 8px; }
+
+  .sv-progress { padding: 16px 32px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 16px; background: var(--surface); }
+  .sv-prog-bar-wrap { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .sv-prog-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+  .sv-prog-text { font-size: 0.82rem; color: var(--label); font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .sv-prog-pct { font-size: 1rem; font-weight: 700; color: var(--accent); font-family: 'DM Mono', monospace; white-space: nowrap; }
+
+  .sv-body { max-width: 800px; margin: 0 auto; padding: 32px; }
+
+  .sv-section { margin-bottom: 32px; }
+  .sv-section-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text); border-bottom: 1px solid var(--border); padding-bottom: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  .sv-section-count { color: var(--muted); font-family: 'DM Mono', monospace; font-weight: 400; font-size: 0.7rem; }
+
+  .sv-item { display: flex; align-items: flex-start; gap: 10px; padding: 8px 4px; border-bottom: 1px solid rgba(42,51,48,0.4); }
+  .sv-item:last-child { border-bottom: none; }
+  .sv-item-icon { width: 16px; height: 16px; flex-shrink: 0; margin-top: 2px; }
+  .sv-item-label { font-size: 0.88rem; color: var(--text); line-height: 1.4; }
+  .sv-item.sv-checked .sv-item-label { color: var(--muted); text-decoration: line-through; }
+  .sv-item-note { font-size: 0.8rem; color: var(--label); margin-top: 3px; font-style: italic; }
+
+  /* ── Toast ───────────────────────────────────────── */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface); border: 1px solid var(--accent); color: var(--accent); padding: 10px 20px; border-radius: 6px; font-size: 0.82rem; font-weight: 500; z-index: 3000; opacity: 0; transition: all 0.3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 1024px) {
+    header { padding: 12px 16px; }
+    header h1 { font-size: 1.6rem; }
+    .hub-back { display: none; }
+    .auth-status .user-email { display: none; }
+
+    body { height: auto; overflow-x: hidden; overflow-y: auto; }
+    #rtLayout { height: auto; min-height: calc(100vh - 69px); overflow: visible; }
+    .rt-editor { overflow: visible; }
+    #rtContent { padding: 16px; max-width: 100%; }
+    .proj-inputs-row { grid-template-columns: 1fr; }
+    .ck-note-btn { opacity: 0.5; }
+    .ck-note-btn.has-note { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header id="mainHeader">
+  <div class="header-left">
+    <a href="index.html" class="hub-back">← All Tools</a>
+    <h1>Rehab Tracker</h1>
+  </div>
+  <div class="header-actions">
+    <div class="auth-status" id="authStatus"></div>
+  </div>
+</header>
+
+<!-- Mobile sign-in -->
+<div id="mobileSigninView">
+  <a href="index.html" class="msv-hub-back">← ClosingDesk</a>
+  <div class="msv-icon">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+      <rect x="9" y="3" width="6" height="4" rx="1"/>
+      <path d="M9 12l2 2 4-4"/>
+    </svg>
+  </div>
+  <div class="msv-title">Rehab Tracker</div>
+  <div class="msv-sub">Sign in to create and track your projects</div>
+  <div class="msv-field">
+    <label>Email</label>
+    <input type="email" id="msvEmail" placeholder="you@example.com" autocomplete="email" onkeydown="if(event.key==='Enter')msvSubmit()">
+  </div>
+  <div class="msv-field">
+    <label>Password</label>
+    <input type="password" id="msvPassword" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')msvSubmit()">
+  </div>
+  <div class="msv-error" id="msvError"></div>
+  <button class="btn-msv-signin" id="msvBtn" onclick="msvSubmit()">Sign In</button>
+</div>
+
+<!-- Mobile list -->
+<div id="mobileListView">
+  <div class="rt-list-nav">
+    <a href="index.html" class="rlv-hub">← All Tools</a>
+    <span class="rt-list-title">Rehab Tracker</span>
+    <button class="btn-list-new" onclick="newProject()">+ New</button>
+  </div>
+  <div class="rlv-auth-row" id="rlvAuthRow" style="display:none">
+    <span class="rlv-email" id="rlvEmail"></span>
+    <button class="btn-rlv-signout" onclick="signOut()">Sign Out</button>
+  </div>
+  <div id="rlvContent"></div>
+</div>
+
+<!-- Mobile editor nav -->
+<div id="editorNav">
+  <button class="btn-editor-back" onclick="showList()">← My Projects</button>
+  <span class="en-title">Rehab Tracker</span>
+  <button class="btn-editor-new" onclick="newProject()">+ New</button>
+</div>
+
+<!-- Desktop layout -->
+<div id="rtLayout">
+  <aside class="rt-sidebar">
+    <div class="rt-sidebar-hdr">
+      <span>Projects</span>
+      <button class="btn-new-project" onclick="newProject()">+ New</button>
+    </div>
+    <div id="rtSidebarContent"></div>
+  </aside>
+  <div class="rt-resizer" id="rtResizer"></div>
+  <div class="rt-editor" id="rtEditor">
+    <div id="rtEmptyState">
+      <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <path d="M9 12l2 2 4-4"/>
+      </svg>
+      <p>Select a project or create a new one</p>
+      <button onclick="newProject()">+ New Project</button>
+    </div>
+    <div id="rtContent" style="display:none">
+      <div class="proj-inputs-row">
+        <div class="proj-input-group">
+          <div class="proj-input-label">Project Name</div>
+          <input type="text" class="proj-input" id="projName" placeholder="My Flip Project" oninput="scheduleAutoSave()">
+        </div>
+        <div class="proj-input-group">
+          <div class="proj-input-label">Property Address</div>
+          <input type="text" class="proj-input" id="projAddress" placeholder="123 Main St, City TX" oninput="scheduleAutoSave()">
+        </div>
+      </div>
+      <div class="autosave-status" id="autosaveStatus"></div>
+      <div class="proj-progress-overview">
+        <div class="proj-ov-bar-wrap">
+          <div class="proj-ov-bar-fill" id="ovBarFill" style="width:0%"></div>
+        </div>
+        <span class="proj-ov-text" id="ovText">0 / 74 complete</span>
+        <span class="proj-ov-pct" id="ovPct">0%</span>
+      </div>
+      <div class="ck-sections" id="ckSections"></div>
+    </div>
+  </div>
+</div>
+
+<div id="shareView"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://api.bluestarrealtygroup.com';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbGlkbWZpc2hhY2x5c2NrcnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc2ODMsImV4cCI6MjA4OTc2MzY4M30.YEhxwrw-HxofmV4N3KRpbgDcT_a_OyqIkx49Wu7CjR0';
+
+const SECTIONS = [
+  { id: 'purchase', label: 'Pre-Purchase & Financing', items: [
+    { id: 'p0', label: 'Property evaluation complete' },
+    { id: 'p1', label: 'ARV analysis complete' },
+    { id: 'p2', label: 'Repair estimate complete' },
+    { id: 'p3', label: 'Financing secured / loan approved' },
+    { id: 'p4', label: 'Earnest money submitted to title' },
+    { id: 'p5', label: 'Inspection period complete' },
+    { id: 'p6', label: 'Insurance policy bound' },
+    { id: 'p7', label: 'Title commitment reviewed' },
+    { id: 'p8', label: 'Closing disclosure reviewed' },
+    { id: 'p9', label: 'Property closed / funded' },
+  ]},
+  { id: 'setup', label: 'Utilities & Site Setup', items: [
+    { id: 's0', label: 'Electric turned on' },
+    { id: 's1', label: 'Gas turned on' },
+    { id: 's2', label: 'Water turned on' },
+    { id: 's3', label: 'Locks re-keyed / lockbox installed' },
+    { id: 's4', label: 'Dumpster ordered' },
+    { id: 's5', label: 'Permit applications submitted' },
+  ]},
+  { id: 'demo', label: 'Demo', items: [
+    { id: 'd0', label: 'Interior demo complete' },
+    { id: 'd1', label: 'Walls opened / marked for changes' },
+    { id: 'd2', label: 'Debris hauled away' },
+  ]},
+  { id: 'structural', label: 'Structural / Framing', items: [
+    { id: 'fr0', label: 'Structural engineer consulted' },
+    { id: 'fr1', label: 'Load-bearing walls identified' },
+    { id: 'fr2', label: 'Wall removals complete' },
+    { id: 'fr3', label: 'New walls framed' },
+    { id: 'fr4', label: 'New door openings framed' },
+    { id: 'fr5', label: 'Subfloor repairs complete' },
+    { id: 'fr6', label: 'Roof repairs complete' },
+    { id: 'fr7', label: 'Framing inspection passed' },
+  ]},
+  { id: 'roughin', label: 'Rough-In', items: [
+    { id: 'r0', label: 'Plumbing rough-in complete' },
+    { id: 'r1', label: 'Electrical rough-in complete' },
+    { id: 'r2', label: 'HVAC rough-in complete' },
+    { id: 'r3', label: 'Rough-in inspections passed' },
+  ]},
+  { id: 'insulation', label: 'Insulation & Drywall', items: [
+    { id: 'i0', label: 'Insulation installed' },
+    { id: 'i1', label: 'Drywall hung' },
+    { id: 'i2', label: 'Taped, floated, and textured' },
+    { id: 'i3', label: 'Drywall inspection passed' },
+  ]},
+  { id: 'finishes', label: 'Interior Finishes', items: [
+    { id: 'if0', label: 'Primer coat complete' },
+    { id: 'if1', label: 'Interior paint complete' },
+    { id: 'if2', label: 'Trim installed (baseboards, casings)' },
+    { id: 'if3', label: 'Interior doors hung and hardware installed' },
+    { id: 'if4', label: 'Cabinets installed' },
+    { id: 'if5', label: 'Countertops installed' },
+    { id: 'if6', label: 'Kitchen backsplash installed' },
+    { id: 'if7', label: 'Bathroom tile complete' },
+    { id: 'if8', label: 'Vanities installed' },
+    { id: 'if9', label: 'Plumbing fixtures installed (faucets, toilets, shower heads)' },
+    { id: 'if10', label: 'Electrical fixtures installed (outlets, switches, lights)' },
+    { id: 'if11', label: 'Ceiling fans installed' },
+    { id: 'if12', label: 'LVP / hardwood flooring installed' },
+    { id: 'if13', label: 'Carpet installed' },
+    { id: 'if14', label: 'Shower glass / enclosures installed' },
+    { id: 'if15', label: 'Mirrors installed' },
+    { id: 'if16', label: 'Appliances installed' },
+  ]},
+  { id: 'exterior', label: 'Exterior', items: [
+    { id: 'e0', label: 'Exterior repairs complete' },
+    { id: 'e1', label: 'Exterior paint complete' },
+    { id: 'e2', label: 'Gutters repaired / replaced' },
+    { id: 'e3', label: 'Landscaping / curb appeal complete' },
+    { id: 'e4', label: 'Driveway repairs complete' },
+    { id: 'e5', label: 'Fence repairs complete' },
+    { id: 'e6', label: 'Garage door installed / serviced' },
+  ]},
+  { id: 'final', label: 'Final Inspections & Punch Out', items: [
+    { id: 'fi0', label: 'Final electrical inspection passed' },
+    { id: 'fi1', label: 'Final plumbing inspection passed' },
+    { id: 'fi2', label: 'Final HVAC inspection passed' },
+    { id: 'fi3', label: 'Certificate of occupancy obtained' },
+    { id: 'fi4', label: 'Punch list complete' },
+    { id: 'fi5', label: 'Deep clean complete' },
+    { id: 'fi6', label: 'Staging / photography ready' },
+  ]},
+  { id: 'listing', label: 'Listing & Sale', items: [
+    { id: 'ls0', label: 'Professional photos taken' },
+    { id: 'ls1', label: 'Property listed' },
+    { id: 'ls2', label: 'Contract accepted' },
+    { id: 'ls3', label: 'Buyer inspection complete' },
+    { id: 'ls4', label: 'Appraisal complete' },
+    { id: 'ls5', label: 'Repair requests resolved' },
+    { id: 'ls6', label: 'Final walkthrough complete' },
+    { id: 'ls7', label: 'Closed and funded' },
+  ]},
+];
+
+const TOTAL_ITEMS = SECTIONS.reduce((s, sec) => s + sec.items.length, 0);
+
+// State
+let sbAccessToken = null;
+let currentUser   = null;
+let activeId      = null;
+let activeName    = null;
+let _cachedProjects = [];
+let _saveTimeout  = null;
+let _editorActive = false;
+let projectData   = { address: '', items: {} };
+
+// ── Supabase helpers ─────────────────────────────────
+function sbHeaders(anon) {
+  return {
+    'Content-Type': 'application/json',
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${anon ? SUPABASE_KEY : (sbAccessToken || SUPABASE_KEY)}`
+  };
+}
+
+function loadSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem('sb_session'));
+    if (s?.access_token && s?.user) { sbAccessToken = s.access_token; currentUser = s.user; return true; }
+  } catch(e) {}
+  return false;
+}
+
+function saveSession(data) {
+  sbAccessToken = data.access_token;
+  currentUser   = data.user;
+  localStorage.setItem('sb_session', JSON.stringify({ access_token: data.access_token, refresh_token: data.refresh_token, user: data.user }));
+}
+
+async function refreshSession() {
+  try {
+    const s = JSON.parse(localStorage.getItem('sb_session'));
+    if (!s?.refresh_token) return false;
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ refresh_token: s.refresh_token })
+    }).then(r => r.json()).catch(() => ({}));
+    if (r.access_token) { saveSession(r); return true; }
+  } catch(e) {}
+  return false;
+}
+
+function clearSession() { sbAccessToken = null; currentUser = null; localStorage.removeItem('sb_session'); }
+
+function isMobile() { return window.innerWidth <= 1024; }
+
+// ── Auth UI ──────────────────────────────────────────
+function updateAuthUI() {
+  const el = document.getElementById('authStatus');
+  if (currentUser) {
+    el.innerHTML = `<span class="user-email">${currentUser.email}</span><button class="btn-auth sign-out" onclick="signOut()">Sign Out</button>`;
+  } else {
+    el.innerHTML = `<button class="btn-auth" onclick="handleSignInClick()">Sign In</button>`;
+  }
+}
+
+function handleSignInClick() {
+  if (isMobile()) showMobileSignin(); else window.location.href = 'index.html';
+}
+
+async function signOut() {
+  fetch(`${SUPABASE_URL}/auth/v1/logout`, { method: 'POST', headers: sbHeaders() }).catch(() => {});
+  clearSession();
+  window.location.href = 'index.html';
+}
+
+// ── View switching ───────────────────────────────────
+function showMobileSignin() {
+  document.getElementById('mobileSigninView').style.display = 'flex';
+  document.getElementById('mobileListView').style.display  = 'none';
+  document.getElementById('editorNav').style.display       = 'none';
+  document.getElementById('rtLayout').style.display        = 'none';
+  document.body.classList.add('list-mode');
+  document.body.classList.remove('editor-mode');
+}
+
+function showList() {
+  if (!isMobile()) {
+    document.getElementById('rtLayout').style.display = 'flex';
+    document.body.classList.remove('list-mode');
+    document.body.classList.remove('editor-mode');
+    loadProjects();
+    return;
+  }
+  if (!currentUser) { showMobileSignin(); return; }
+  document.getElementById('mobileSigninView').style.display = 'none';
+  document.getElementById('mobileListView').style.display  = 'block';
+  document.getElementById('editorNav').style.display       = 'none';
+  document.getElementById('rtLayout').style.display        = 'none';
+  document.body.classList.add('list-mode');
+  document.body.classList.remove('editor-mode');
+  const authRow = document.getElementById('rlvAuthRow');
+  authRow.style.display = 'flex';
+  document.getElementById('rlvEmail').textContent = currentUser.email || '';
+  loadProjects();
+}
+
+function showEditor() {
+  document.getElementById('mobileSigninView').style.display = 'none';
+  document.getElementById('mobileListView').style.display  = 'none';
+  document.getElementById('shareView').style.display       = 'none';
+  document.getElementById('rtLayout').style.display        = isMobile() ? 'block' : 'flex';
+  document.body.classList.remove('list-mode');
+  if (isMobile()) {
+    document.getElementById('editorNav').style.display = 'flex';
+    document.body.classList.add('editor-mode');
+  } else {
+    document.getElementById('editorNav').style.display = 'none';
+    document.body.classList.remove('editor-mode');
+  }
+  if (isMobile()) window.scrollTo(0, 0);
+}
+
+function showContent(show) {
+  document.getElementById('rtContent').style.display   = show ? 'block' : 'none';
+  document.getElementById('rtEmptyState').style.display = show ? 'none'  : 'flex';
+  _editorActive = show;
+}
+
+// ── Projects ─────────────────────────────────────────
+async function loadProjects() {
+  if (!currentUser) return;
+  const res = await fetch(
+    `${SUPABASE_URL}/rest/v1/projects?user_id=eq.${currentUser.id}&order=updated_at.desc`,
+    { headers: { ...sbHeaders(), 'Accept': 'application/json' } }
+  ).then(r => r.json()).catch(() => []);
+  _cachedProjects = Array.isArray(res) ? res : [];
+  renderSidebar(_cachedProjects);
+  renderMobileList(_cachedProjects);
+}
+
+function calcProg(data) {
+  if (!data?.items) return { checked: 0, total: TOTAL_ITEMS, pct: 0 };
+  let checked = 0;
+  SECTIONS.forEach(s => s.items.forEach(i => { if (data.items[i.id]?.checked) checked++; }));
+  return { checked, total: TOTAL_ITEMS, pct: Math.round(checked / TOTAL_ITEMS * 100) };
+}
+
+function projCardHTML(p, mobile) {
+  const prog = calcProg(p.data);
+  const addr = p.data?.address || '';
+  const date = new Date(p.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const isActive = !mobile && p.id === activeId;
+  const isShared = !!p.shared;
+  return `
+    <div class="proj-card${isActive ? ' active' : ''}" onclick="openProject('${p.id}')">
+      <div class="proj-card-name">${esc(p.name)}</div>
+      <div class="proj-card-addr${addr ? ' has-addr' : ''}">${esc(addr)}</div>
+      <div class="proj-progress">
+        <div class="proj-progress-bar"><div class="proj-progress-fill" style="width:${prog.pct}%"></div></div>
+        <div class="proj-progress-text">${prog.checked} / ${prog.total} complete</div>
+      </div>
+      <div class="proj-card-meta">${date}</div>
+      <div class="proj-card-actions" onclick="event.stopPropagation()">
+        <button class="btn-proj-del" onclick="deleteProject('${p.id}')">Delete</button>
+        <button class="btn-proj-share${isShared ? ' active' : ''}" onclick="toggleShare('${p.id}', ${isShared})">
+          ${isShared ? '🔗 Shared' : 'Share'}
+        </button>
+      </div>
+    </div>`;
+}
+
+function renderSidebar(projects) {
+  const el = document.getElementById('rtSidebarContent');
+  if (!currentUser) {
+    el.innerHTML = `<div class="rt-sidebar-auth"><p>Sign in to create and track your rehab projects.</p><button class="btn-sidebar-signin" onclick="window.location.href='index.html'">Sign In</button></div>`;
+    return;
+  }
+  if (!projects.length) {
+    el.innerHTML = `<div style="padding:28px 16px;text-align:center;font-size:0.84rem;color:var(--muted)">No projects yet.<br>Click <strong>+ New</strong> to start.</div>`;
+    return;
+  }
+  el.innerHTML = projects.map(p => projCardHTML(p, false)).join('');
+}
+
+function renderMobileList(projects) {
+  const el = document.getElementById('rlvContent');
+  if (!el) return;
+  if (!projects.length) {
+    el.innerHTML = `<div style="padding:32px 16px;text-align:center;font-size:0.84rem;color:var(--muted)">No projects yet.<br>Tap <strong>+ New</strong> to start.</div>`;
+    return;
+  }
+  el.innerHTML = projects.map(p => projCardHTML(p, true)).join('');
+}
+
+function newProject() {
+  activeId     = null;
+  activeName   = null;
+  projectData  = { address: '', items: {} };
+  showEditor();
+  showContent(true);
+  document.getElementById('projName').value    = '';
+  document.getElementById('projAddress').value = '';
+  document.getElementById('projName').focus();
+  renderChecklist();
+  updateProgress();
+  setAutosaveStatus('');
+  renderSidebar(_cachedProjects);
+}
+
+async function openProject(id) {
+  const proj = _cachedProjects.find(p => p.id === id);
+  if (!proj) return;
+  activeId    = id;
+  activeName  = proj.name;
+  projectData = proj.data ? JSON.parse(JSON.stringify(proj.data)) : { address: '', items: {} };
+  if (!projectData.items) projectData.items = {};
+  showEditor();
+  showContent(true);
+  document.getElementById('projName').value    = proj.name;
+  document.getElementById('projAddress').value = projectData.address || '';
+  renderChecklist();
+  updateProgress();
+  setAutosaveStatus('saved');
+  renderSidebar(_cachedProjects);
+}
+
+async function deleteProject(id) {
+  if (!confirm('Delete this project? This cannot be undone.')) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/projects?id=eq.${id}`, { method: 'DELETE', headers: sbHeaders() });
+  _cachedProjects = _cachedProjects.filter(p => p.id !== id);
+  if (activeId === id) { activeId = null; activeName = null; showContent(false); }
+  renderSidebar(_cachedProjects);
+  renderMobileList(_cachedProjects);
+}
+
+async function toggleShare(id, isShared) {
+  const newShared = !isShared;
+  await fetch(`${SUPABASE_URL}/rest/v1/projects?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+    body: JSON.stringify({ shared: newShared })
+  });
+  const proj = _cachedProjects.find(p => p.id === id);
+  if (proj) proj.shared = newShared;
+  if (newShared) {
+    const url = `${location.origin}${location.pathname}?share=${id}`;
+    try { await navigator.clipboard.writeText(url); } catch(e) {}
+    showToast('Share link copied to clipboard!');
+  } else {
+    showToast('Sharing disabled');
+  }
+  renderSidebar(_cachedProjects);
+  renderMobileList(_cachedProjects);
+}
+
+// ── Checklist render ─────────────────────────────────
+function renderChecklist() {
+  const el = document.getElementById('ckSections');
+  el.innerHTML = SECTIONS.map(sec => {
+    const items = sec.items.map(item => {
+      const st      = projectData.items[item.id] || {};
+      const checked = !!st.checked;
+      const note    = st.note || '';
+      const hasNote = note.trim().length > 0;
+      return `
+        <div class="ck-item${checked ? ' checked' : ''}" id="ck-${item.id}">
+          <div class="ck-item-row">
+            <input type="checkbox" class="ck-item-check" ${checked ? 'checked' : ''} onchange="toggleCheck('${item.id}',this.checked)">
+            <span class="ck-item-label">${esc(item.label)}</span>
+            <button class="ck-note-btn${hasNote ? ' has-note' : ''}" onclick="toggleNote('${item.id}')" title="${hasNote ? 'Edit note' : 'Add note'}">${hasNote ? '✎' : '+ Note'}</button>
+          </div>
+          <div class="ck-note-row" id="note-row-${item.id}" style="display:${hasNote ? 'block' : 'none'}">
+            <textarea class="ck-note-input" id="note-${item.id}" placeholder="Add a note…" oninput="setNote('${item.id}',this.value)">${esc(note)}</textarea>
+          </div>
+        </div>`;
+    }).join('');
+    return `
+      <div class="ck-section">
+        <div class="ck-section-hdr">
+          <span class="ck-section-title">${esc(sec.label)}</span>
+          <span class="ck-section-count" id="cnt-${sec.id}"></span>
+        </div>
+        <div class="ck-items">${items}</div>
+      </div>`;
+  }).join('');
+  updateSectionCounts();
+}
+
+function updateSectionCounts() {
+  SECTIONS.forEach(sec => {
+    let checked = 0;
+    sec.items.forEach(i => { if (projectData.items[i.id]?.checked) checked++; });
+    const el = document.getElementById(`cnt-${sec.id}`);
+    if (el) {
+      el.textContent  = `${checked} / ${sec.items.length}`;
+      el.className    = `ck-section-count${checked === sec.items.length ? ' done' : ''}`;
+    }
+  });
+}
+
+function updateProgress() {
+  let checked = 0;
+  SECTIONS.forEach(s => s.items.forEach(i => { if (projectData.items[i.id]?.checked) checked++; }));
+  const pct = Math.round(checked / TOTAL_ITEMS * 100);
+  document.getElementById('ovBarFill').style.width = `${pct}%`;
+  document.getElementById('ovText').textContent    = `${checked} / ${TOTAL_ITEMS} complete`;
+  document.getElementById('ovPct').textContent     = `${pct}%`;
+}
+
+function toggleCheck(itemId, checked) {
+  if (!projectData.items[itemId]) projectData.items[itemId] = {};
+  projectData.items[itemId].checked = checked;
+  const el = document.getElementById(`ck-${itemId}`);
+  if (el) el.classList.toggle('checked', checked);
+  updateSectionCounts();
+  updateProgress();
+  scheduleAutoSave();
+  // Update active sidebar card progress inline
+  if (activeId) {
+    const proj = _cachedProjects.find(p => p.id === activeId);
+    if (proj) proj.data = { ...projectData };
+    const fill = document.querySelector('.proj-card.active .proj-progress-fill');
+    const text = document.querySelector('.proj-card.active .proj-progress-text');
+    if (fill || text) {
+      let c = 0;
+      SECTIONS.forEach(s => s.items.forEach(i => { if (projectData.items[i.id]?.checked) c++; }));
+      const p = Math.round(c / TOTAL_ITEMS * 100);
+      if (fill) fill.style.width = `${p}%`;
+      if (text) text.textContent = `${c} / ${TOTAL_ITEMS} complete`;
+    }
+  }
+}
+
+function toggleNote(itemId) {
+  const row = document.getElementById(`note-row-${itemId}`);
+  const isHidden = row.style.display === 'none';
+  row.style.display = isHidden ? 'block' : 'none';
+  if (isHidden) {
+    const ta = document.getElementById(`note-${itemId}`);
+    if (ta) setTimeout(() => ta.focus(), 30);
+  }
+}
+
+function setNote(itemId, value) {
+  if (!projectData.items[itemId]) projectData.items[itemId] = {};
+  projectData.items[itemId].note = value;
+  const btn     = document.querySelector(`#ck-${itemId} .ck-note-btn`);
+  const hasNote = value.trim().length > 0;
+  if (btn) { btn.classList.toggle('has-note', hasNote); btn.textContent = hasNote ? '✎' : '+ Note'; }
+  scheduleAutoSave();
+}
+
+// ── Auto-save ────────────────────────────────────────
+function scheduleAutoSave() {
+  if (!currentUser) return;
+  setAutosaveStatus('unsaved');
+  clearTimeout(_saveTimeout);
+  _saveTimeout = setTimeout(doSave, 1500);
+}
+
+function setAutosaveStatus(state) {
+  const el = document.getElementById('autosaveStatus');
+  if (!el) return;
+  el.className = `autosave-status${state === 'saving' ? ' saving' : state === 'unsaved' ? ' unsaved' : ''}`;
+  el.textContent = state === 'saving' ? 'Saving…' : state === 'saved' ? 'Saved' : state === 'unsaved' ? 'Unsaved changes' : '';
+}
+
+async function doSave() {
+  const name = document.getElementById('projName')?.value.trim();
+  if (!name || !currentUser) return;
+  setAutosaveStatus('saving');
+  projectData.address = document.getElementById('projAddress')?.value.trim() || '';
+  const payload = { name, data: projectData, user_id: currentUser.id, updated_at: new Date().toISOString() };
+
+  if (activeId) {
+    await fetch(`${SUPABASE_URL}/rest/v1/projects?id=eq.${activeId}`, {
+      method: 'PATCH',
+      headers: { ...sbHeaders(), 'Prefer': 'return=minimal' },
+      body: JSON.stringify(payload)
+    });
+    const proj = _cachedProjects.find(p => p.id === activeId);
+    if (proj) { proj.name = name; proj.data = { ...projectData }; }
+    activeName = name;
+    setAutosaveStatus('saved');
+    renderSidebar(_cachedProjects);
+  } else {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/projects`, {
+      method: 'POST',
+      headers: { ...sbHeaders(), 'Prefer': 'return=representation' },
+      body: JSON.stringify(payload)
+    }).then(r => r.json()).catch(() => null);
+    const newProj = Array.isArray(res) ? res[0] : res;
+    if (newProj?.id) {
+      activeId   = newProj.id;
+      activeName = name;
+      _cachedProjects.unshift(newProj);
+      setAutosaveStatus('saved');
+      renderSidebar(_cachedProjects);
+    } else {
+      setAutosaveStatus('unsaved');
+    }
+  }
+}
+
+// ── Share view ───────────────────────────────────────
+async function loadSharedView(id) {
+  document.getElementById('mainHeader').style.display  = 'none';
+  document.getElementById('rtLayout').style.display    = 'none';
+  document.getElementById('mobileSigninView').style.display = 'none';
+  document.getElementById('mobileListView').style.display   = 'none';
+  document.getElementById('editorNav').style.display        = 'none';
+  const shareEl = document.getElementById('shareView');
+  shareEl.style.display = 'block';
+  shareEl.innerHTML = '<div style="padding:60px;text-align:center;color:var(--muted)">Loading…</div>';
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/projects?id=eq.${id}&shared=eq.true`, {
+    headers: { ...sbHeaders(true), 'Accept': 'application/json' }
+  }).then(r => r.json()).catch(() => null);
+
+  const proj = Array.isArray(res) ? res[0] : null;
+  if (!proj) { shareEl.innerHTML = '<div style="padding:60px;text-align:center;color:var(--muted)">Project not found or sharing has been disabled.</div>'; return; }
+  renderShareReport(proj);
+}
+
+function renderShareReport(proj) {
+  const data  = proj.data || {};
+  const prog  = calcProg(data);
+  const date  = new Date(proj.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const secHtml = SECTIONS.map(sec => {
+    let secChecked = 0;
+    const items = sec.items.map(item => {
+      const st      = data.items?.[item.id] || {};
+      const checked = !!st.checked;
+      const note    = st.note || '';
+      if (checked) secChecked++;
+      const icon = checked
+        ? `<svg class="sv-item-icon" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-5"/></svg>`
+        : `<svg class="sv-item-icon" viewBox="0 0 24 24" fill="none" stroke="var(--border)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>`;
+      return `<div class="sv-item${checked ? ' sv-checked' : ''}">${icon}<div><div class="sv-item-label">${esc(item.label)}</div>${note ? `<div class="sv-item-note">${esc(note)}</div>` : ''}</div></div>`;
+    }).join('');
+    return `<div class="sv-section"><div class="sv-section-title">${esc(sec.label)}<span class="sv-section-count">${secChecked} / ${sec.items.length}</span></div>${items}</div>`;
+  }).join('');
+
+  document.getElementById('shareView').innerHTML = `
+    <div class="sv-header">
+      <div class="sv-brand">ClosingDesk · Rehab Tracker</div>
+      <div class="sv-name">${esc(proj.name)}</div>
+      ${data.address ? `<div class="sv-addr">${esc(data.address)}</div>` : ''}
+      <div class="sv-meta">Updated ${date}</div>
+    </div>
+    <div class="sv-progress">
+      <div class="sv-prog-bar-wrap"><div class="sv-prog-bar-fill" style="width:${prog.pct}%"></div></div>
+      <span class="sv-prog-text">${prog.checked} / ${prog.total} complete</span>
+      <span class="sv-prog-pct">${prog.pct}%</span>
+    </div>
+    <div class="sv-body">${secHtml}</div>`;
+}
+
+// ── Mobile sign-in ───────────────────────────────────
+async function msvSubmit() {
+  const email = document.getElementById('msvEmail').value.trim();
+  const pw    = document.getElementById('msvPassword').value;
+  const errEl = document.getElementById('msvError');
+  const btn   = document.getElementById('msvBtn');
+  if (!email || !pw) { errEl.textContent = 'Please enter your email and password.'; return; }
+  btn.disabled = true; btn.textContent = 'Signing in…'; errEl.textContent = '';
+  const data = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+    body: JSON.stringify({ email, password: pw })
+  }).then(r => r.json()).catch(() => ({}));
+  btn.disabled = false; btn.textContent = 'Sign In';
+  if (data.access_token) { saveSession(data); updateAuthUI(); showList(); }
+  else { errEl.textContent = data.error_description || data.msg || data.error || 'Sign in failed.'; }
+}
+
+// ── Resizer ──────────────────────────────────────────
+function initResizer() {
+  const resizer = document.getElementById('rtResizer');
+  const sidebar = document.querySelector('.rt-sidebar');
+  if (!resizer || !sidebar) return;
+  let startX, startW;
+  resizer.addEventListener('mousedown', e => {
+    startX = e.clientX; startW = sidebar.getBoundingClientRect().width;
+    resizer.classList.add('dragging');
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+  function onMove(e) {
+    const w = Math.min(Math.max(startW + e.clientX - startX, 140), 480);
+    document.documentElement.style.setProperty('--rt-sidebar-w', `${w}px`);
+  }
+  function onUp() {
+    resizer.classList.remove('dragging');
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('mouseup', onUp);
+  }
+}
+
+// ── Utils ────────────────────────────────────────────
+function esc(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function showToast(msg, ms = 2500) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), ms);
+}
+
+// ── Boot ─────────────────────────────────────────────
+async function initAuth() {
+  const r = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: sbHeaders() }).catch(() => null);
+  if (r?.ok) {
+    currentUser = await r.json();
+    updateAuthUI();
+    if (!isMobile()) { renderSidebar(_cachedProjects); loadProjects(); }
+  } else {
+    const ok = await refreshSession();
+    if (ok) {
+      updateAuthUI();
+      if (!isMobile()) loadProjects();
+      else showList();
+    } else {
+      clearSession();
+      updateAuthUI();
+      if (!isMobile()) renderSidebar([]);
+      else showList();
+    }
+  }
+}
+
+const _shareId = new URLSearchParams(location.search).get('share');
+if (_shareId) {
+  loadSharedView(_shareId);
+} else {
+  loadSession();
+  updateAuthUI();
+  if (isMobile()) {
+    showList();
+  } else {
+    document.getElementById('rtLayout').style.display = 'flex';
+    showContent(false);
+    if (currentUser) loadProjects();
+    else renderSidebar([]);
+  }
+  initResizer();
+  initAuth();
+}
+
+setInterval(() => { if (currentUser) refreshSession(); }, 45 * 60 * 1000);
+</script>
+</body>
+</html>
