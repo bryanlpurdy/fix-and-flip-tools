@@ -9,6 +9,7 @@ A web app suite for real estate investors and Realtors. Current tools:
 - **`walkthrough.html`** — Property Walkthrough: mobile-first estimator — walk a property, toggle repair items, adjust costs, attach photos, save to cloud.
 - **`deal-analyzer.html`** — Deal Analyzer: desktop-primary deal analysis tool with a full responsive mobile view.
 - **`net-sheet.html`** — Seller Net Sheet: Realtor-focused tool to estimate seller net proceeds at closing. Save, share, and print.
+- **`checklist.html`** — Rehab Tracker: fix-and-flip project checklist — 74 items across 10 phases from financing through close. Auto-saves, per-item notes, progress bar, shareable.
 
 Long-term vision: expand the suite for investors and Realtors, with potential to monetize as a SaaS product beyond Bryan's own business.
 
@@ -108,9 +109,10 @@ User-facing name is **Bookkeeping Light** (internal name: Realtor Bookkeeping). 
 - `walkthrough.html` — Property Walkthrough app (HTML + CSS + JS in one file)
 - `deal-analyzer.html` — Deal Analyzer app (HTML + CSS + JS in one file)
 - `net-sheet.html` — Seller Net Sheet app (HTML + CSS + JS in one file)
+- `checklist.html` — Rehab Tracker app (HTML + CSS + JS in one file)
 - **Supabase** backend via direct REST API (not the JS SDK):
   - Auth: `/auth/v1/token` and `/auth/v1/signup`
-  - Database: `/rest/v1/walkthroughs`, `/rest/v1/deals`, `/rest/v1/net_sheets` (PostgREST)
+  - Database: `/rest/v1/walkthroughs`, `/rest/v1/deals`, `/rest/v1/net_sheets`, `/rest/v1/projects` (PostgREST)
   - Storage: `/storage/v1/object/walkthrough-photos/{path}`
 
 ---
@@ -124,7 +126,7 @@ Anon public key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 Plan: Pro ($25/mo) + Custom Domain add-on ($10/mo)
 ```
 
-**`SUPABASE_URL` in all four files (`index.html`, `walkthrough.html`, `deal-analyzer.html`, `net-sheet.html`) is set to `https://api.bluestarrealtygroup.com`** — do not revert to the `.supabase.co` subdomain. The custom domain was added to fix AT&T ISP DNS resolution failures with Supabase's free-tier subdomain.
+**`SUPABASE_URL` in all five files (`index.html`, `walkthrough.html`, `deal-analyzer.html`, `net-sheet.html`, `checklist.html`) is set to `https://api.bluestarrealtygroup.com`** — do not revert to the `.supabase.co` subdomain. The custom domain was added to fix AT&T ISP DNS resolution failures with Supabase's free-tier subdomain.
 
 ### Email Templates
 
@@ -197,6 +199,27 @@ create policy "Public read shared net sheets" on net_sheets
 
 The `data` column stores the full form state (all inputs). `net_proceeds` is a denormalized summary for the sidebar card display. `shared = true` enables the public read-only share view via `?share=<UUID>`.
 
+### Database — `projects` table (Rehab Tracker)
+
+```sql
+create table projects (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade,
+  name text not null,
+  data jsonb not null default '{}',
+  shared boolean not null default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table projects enable row level security;
+create policy "Users manage own projects" on projects
+  for all using (auth.uid() = user_id);
+create policy "Public read shared projects" on projects
+  for select using (shared = true);
+```
+
+The `data` column stores `{ address, items: { [itemId]: { checked, note } } }`. Progress is computed at render time from the `data.items` object — not denormalized. `shared = true` enables the public read-only share view via `?share=<UUID>`.
+
 ### Storage — `walkthrough-photos` bucket
 
 - Private bucket, accessed via signed URLs (1-year expiry = `31536000` seconds)
@@ -218,6 +241,7 @@ The `data` column stores the full form state (all inputs). `net_proceeds` is a d
 - **Walkthrough:** `https://tools.bluestarrealtygroup.com/walkthrough.html`
 - **Deal Analyzer:** `https://tools.bluestarrealtygroup.com/deal-analyzer.html`
 - **Net Sheet:** `https://tools.bluestarrealtygroup.com/net-sheet.html`
+- **Rehab Tracker:** `https://tools.bluestarrealtygroup.com/checklist.html`
 - **Fallback:** `https://bryanlpurdy.github.io/fix-and-flip-tools/`
 - **Workflow:** edit locally → `git add` → `git commit` → `git push` → GitHub Pages redeploys
 
@@ -253,10 +277,10 @@ The hub is the entry point for the suite. It handles auth and redirects users to
 ### Tool sections
 The hub grid is replaced by `.hub-sections` (flex column, `gap: 40px`) containing two `.tool-section` blocks, each with a `.tool-section-label` header and a `.tool-grid` (2-col grid):
 
-- **For Real Estate Investors** — Deal Analyzer, Property Walkthrough
+- **For Real Estate Investors** — Deal Analyzer, Property Walkthrough, Rehab Tracker
 - **For Realtors** — Seller Net Sheet, Make Ready List (Coming Soon), Bookkeeping Light (Coming Soon)
 
-Coming Soon cards use `.tool-card-soon` (muted icon/name, `pointer-events: none`, no hover effect) and a `.tool-soon-badge` ("COMING SOON" label) in place of the "Open →" link. Bookkeeping Light uses `style="grid-column: 1 / -1"` to span the full grid width on desktop. On mobile the grid collapses to single column so the span has no effect.
+Coming Soon cards use `.tool-card-soon` (muted icon/name, `pointer-events: none`, no hover effect) and a `.tool-soon-badge` ("COMING SOON" label) in place of the "Open →" link. Bookkeeping Light uses `style="grid-column: 1 / -1"` to span the full grid width on desktop. Rehab Tracker also uses `style="grid-column: 1 / -1"` (full-width card in the investor grid). On mobile the grid collapses to single column so the span has no effect.
 
 ### Auth flow
 ```js
@@ -276,10 +300,10 @@ signOut()            // clear session
 ```
 
 ### Shared session
-All four files use the same `localStorage` key `sb_session` (`{ access_token, refresh_token, user }`). Signing in on the hub means all tools open already authenticated — no second login required.
+All five files use the same `localStorage` key `sb_session` (`{ access_token, refresh_token, user }`). Signing in on the hub means all tools open already authenticated — no second login required.
 
 ### Guest mode
-Deal Analyzer is fully usable as a guest. Property Walkthrough and Net Sheet require sign-in to save — a warning note is shown on the Walkthrough tool card for guest users. Net Sheet mobile sign-in view offers "Continue as Guest" which shows an empty editor (no save capability).
+Deal Analyzer is fully usable as a guest. Property Walkthrough, Net Sheet, and Rehab Tracker require sign-in to save — a warning note is shown on the Walkthrough tool card for guest users. Net Sheet mobile sign-in view offers "Continue as Guest" which shows an empty editor (no save capability). Rehab Tracker has no guest mode — the mobile sign-in view has no guest option, and the desktop sidebar shows a sign-in prompt.
 
 ### Back navigation
 All tools have a `← All Tools` / `← ClosingDesk` link back to `index.html`:
@@ -291,9 +315,12 @@ All tools have a `← All Tools` / `← ClosingDesk` link back to `index.html`:
 - Net Sheet desktop: `<a href="index.html" class="hub-back">← All Tools</a>` in the main `<header>`
 - Net Sheet mobile sign-in: `<a href="index.html" class="msv-hub-back">← ClosingDesk</a>` inside `#mobileSigninView` (positioned absolute top-left, header hidden via `body.mobile-signin`)
 - Net Sheet mobile list: `<a href="index.html" class="mlv-hub">← All Tools</a>` inside `.mobile-list-nav` at the top of `#mobileListView` (header hidden via `body.mobile-list`)
+- Rehab Tracker desktop: `<a href="index.html" class="hub-back">← All Tools</a>` in the main `<header>`
+- Rehab Tracker mobile sign-in: `<a href="index.html" class="msv-hub-back">← ClosingDesk</a>` inside `#mobileSigninView` (positioned absolute top-left)
+- Rehab Tracker mobile list: `<a href="index.html" class="rlv-hub">← All Tools</a>` inside `.rt-list-nav` at the top of `#mobileListView` (header hidden via `body.list-mode`)
 
-### Header pattern (all three tools)
-All three tool headers share a consistent structure:
+### Header pattern (all four tools)
+All four tool headers share a consistent structure:
 ```html
 <header>
   <div class="header-left">
@@ -308,9 +335,9 @@ All three tool headers share a consistent structure:
 ```
 - `header` padding: `18px 40px` desktop → `12px 16px` on mobile. Height is `69px`, used in `calc(100vh - 69px)` for layout panels.
 - `h1` is Bebas Neue 2.4rem desktop → 1.6rem mobile, accent color — no subtitle span after it.
-- `.auth-status` / `.btn-auth` / `.user-email` / `.guest-badge` CSS is identical across all three. `updateAuthUI()` in each tool renders: email + "Sign Out" when signed in; "Sign In" button (+ "Guest" badge on Net Sheet) when not. Walkthrough shows only "Sign In" when not signed in (no guest mode).
-- **Mobile header (all three tools):** `.hub-back` and `.auth-status .user-email` are hidden via `@media (max-width: 1024px)`. Only the h1 and Sign Out button show on mobile — keeps the header uncluttered on small screens.
-- **Sign Out in all three tools** redirects to `index.html` (hub) rather than the tool's own sign-in view.
+- `.auth-status` / `.btn-auth` / `.user-email` / `.guest-badge` CSS is identical across all four. `updateAuthUI()` in each tool renders: email + "Sign Out" when signed in; "Sign In" button (+ "Guest" badge on Net Sheet) when not. Walkthrough and Rehab Tracker show only "Sign In" when not signed in (no guest mode).
+- **Mobile header (all four tools):** `.hub-back` and `.auth-status .user-email` are hidden via `@media (max-width: 1024px)`. Only the h1 and Sign Out button show on mobile — keeps the header uncluttered on small screens.
+- **Sign Out in all four tools** redirects to `index.html` (hub) rather than the tool's own sign-in view.
 
 ---
 
@@ -558,6 +585,69 @@ Same Supabase email+password pattern. Session in `sb_session`. Guest mode: shows
 
 ---
 
+## App Architecture — `checklist.html` (Rehab Tracker)
+
+### Layout
+Desktop (>1024px): two-column — resizable sidebar (`--rt-sidebar-w: 320px`, min 140px, max 480px) | editor. Both inside `#rtLayout` (flex). Sidebar shows project cards with active highlight, `+ New` button, and a sign-in prompt when not authenticated. Drag handle (`#rtResizer`) works identically to DA/Walkthrough/NS resizers.
+
+Mobile (≤1024px): three-view JS-controlled pattern matching Net Sheet:
+- **Sign-in view** (`#mobileSigninView`) — full-screen landing with sign-in form. No guest mode.
+- **List view** (`#mobileListView`) — nav bar (`.rt-list-nav`: `← All Tools` | `Rehab Tracker` | `+ New`) + auth row + project cards. Header hidden via `body.list-mode`.
+- **Editor view** (`#rtLayout`) — checklist with `#editorNav` (← My Projects | Rehab Tracker | + New) above it. Header visible.
+
+### SECTIONS config
+74 items across 10 sections, defined as a `const SECTIONS` array. Each section: `{ id, label, items: [{ id, label }] }`. Item IDs are stable short strings (`p0`–`p9`, `s0`–`s5`, `d0`–`d2`, `fr0`–`fr7`, `r0`–`r3`, `i0`–`i3`, `if0`–`if16`, `e0`–`e6`, `fi0`–`fi6`, `ls0`–`ls7`). `TOTAL_ITEMS = 74`.
+
+### Data model
+```js
+projectData = {
+  address: '123 Main St',
+  items: {
+    'p0': { checked: true,  note: 'Submitted to ABC Title' },
+    'p1': { checked: false, note: '' },
+    // ...
+  }
+}
+```
+Stored in the `data` jsonb column of the `projects` table. Progress is always computed at render time from `data.items` — never denormalized.
+
+### Auto-save
+Rehab Tracker uses **debounced auto-save** (1.5s after any checkbox toggle or note input). This is intentional and specific to this tool — it's a stateful checklist where every check-off is a committed action. The other tools (DA, Walkthrough, NS) use explicit save because users frequently experiment with inputs before committing. **Do not add auto-save to those tools.**
+
+`scheduleAutoSave()` sets `_saveTimeout` and calls `doSave()` after 1500ms. An `#autosaveStatus` div shows "Saving…" / "Saved" / "Unsaved changes" with CSS class hooks (`.saving`, `.unsaved`). `doSave()` distinguishes insert (no `activeId`) from update (has `activeId`).
+
+### View switching
+Same JS inline-style pattern as DA/NS. `body.list-mode` hides the header and `#rtLayout`. `body.editor-mode` hides `.rt-sidebar` and `.rt-resizer` on mobile.
+
+```js
+showList()    // Desktop: show rtLayout, load projects. Mobile: showMobileSignin() if not signed in, else #mobileListView.
+showEditor()  // Clears list-mode, shows rtLayout. Mobile: adds editor-mode + shows editorNav.
+showContent(show) // Toggles #rtContent / #rtEmptyState
+```
+
+### Checklist rendering
+`renderChecklist()` builds all section/item HTML from `SECTIONS` + current `projectData.items` state in one pass. Each item is a `.ck-item` div with:
+- A checkbox (`onchange="toggleCheck(itemId, checked)"`)
+- A label (strikethrough via `.checked` class)
+- A `+ Note` / `✎` button (`.ck-note-btn`) — opacity 0 on desktop until row hover; opacity 0.5 always on mobile
+- A `.ck-note-row` textarea (hidden by default; shown if note has content)
+
+`toggleCheck(itemId, checked)` updates `projectData.items`, toggles `.checked` on the item div, calls `updateSectionCounts()`, `updateProgress()`, and `scheduleAutoSave()`. Also updates the active sidebar card's progress bar inline without re-rendering the full sidebar.
+
+`toggleNote(itemId)` shows/hides the textarea. `setNote(itemId, value)` updates state and the button's `has-note` class.
+
+`updateSectionCounts()` updates each `#cnt-{secId}` span. Adds `.done` class when all items in a section are checked.
+
+`updateProgress()` updates the overview bar fill, text, and percentage.
+
+### Share view
+Same `?share=<UUID>` pattern. `loadSharedView(id)` fetches with anon key (`sbHeaders(true)`) using `shared=eq.true` filter. `renderShareReport(proj)` builds a full read-only status page: header with name/address/date, progress bar, then all 10 sections with circle icons (filled accent for checked, muted outline for unchecked) and any notes shown below each item.
+
+### Auth
+No guest mode. Desktop: sidebar shows sign-in prompt linking to `index.html`. Mobile: `#mobileSigninView` has its own inline email/password form (`msvSubmit()`). Sign Out → `window.location.href = 'index.html'`.
+
+---
+
 ## AI Coding Guidelines
 
 ### Think Before Coding
@@ -574,6 +664,7 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **No AbortController** on auth fetches — was tried, broke logins during Supabase cold start.
 - **Signed URL path prefix** — Supabase Storage sign endpoint omits `/storage/v1` from the returned path. Fixed with the conditional prepend above.
 - The `anon` key is intentionally in client-side code — it's the Supabase public anon key, not a secret. RLS policies are the security boundary.
+- **Auto-save is Rehab Tracker only** — `checklist.html` auto-saves because every checkbox is a committed action. DA, Walkthrough, and NS use explicit save because users experiment with inputs before committing. Do not add auto-save to those tools.
 - **Mobile header — email hidden, h1 visible:** All three tools hide `.hub-back` and `.auth-status .user-email` on mobile via `@media (max-width: 1024px)`. The h1 is shown at 1.6rem. Deal Analyzer previously hid `header h1` in `body.mobile-editor` — that rule was removed once email was hidden, making room for the title. Do not re-add `body.mobile-editor header h1 { display: none }`.
 - **Sign Out → hub:** `signOut()` in all three tools calls `window.location.href = 'index.html'`. Do not revert to `showList()` / `showMobileList()` / `updateAuthUI()` — those kept users inside the tool's own sign-in screen instead of returning to the hub.
 - **Deal Analyzer mobile view — use JS, not CSS** — CSS `body:not(.mobile-editor)` media query selectors proved unreliable across browsers/screen sizes for show/hide. The current approach uses `element.style.display` inline styles controlled by `showMobileList()` / `showMobileEditor()`. Do not revert to a CSS-only approach.
