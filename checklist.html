@@ -300,19 +300,47 @@
   .proj-ov-pct { font-size: 1rem; font-weight: 700; color: var(--accent); font-family: 'DM Mono', monospace; white-space: nowrap; }
 
   /* ── Checklist ──────────────────────────────────── */
-  .ck-sections { display: flex; flex-direction: column; gap: 28px; padding-bottom: 40px; }
+  .ck-sections { display: flex; flex-direction: column; gap: 16px; padding-bottom: 40px; }
+
+  .ck-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .ck-header-label { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 2px; color: var(--text); }
+  .btn-ck-collapse-all {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-ck-collapse-all:hover { border-color: var(--accent); color: var(--accent); }
 
   .ck-section-hdr {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--border);
-    margin-bottom: 4px;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: var(--surface2);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+    margin-bottom: 0;
   }
-  .ck-section-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--label); }
-  .ck-section-count { font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--muted); }
+  .ck-section-hdr:hover { background: rgba(200,245,100,0.06); }
+  .ck-section-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.05rem; letter-spacing: 2px; color: var(--text); }
+  .ck-section-hdr-right { display: flex; align-items: center; gap: 10px; }
+  .ck-section-count { font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted); }
   .ck-section-count.done { color: var(--accent); }
+  .ck-chevron { width: 15px; height: 15px; color: var(--muted); transition: transform 0.2s; flex-shrink: 0; }
+  .ck-chevron.collapsed { transform: rotate(-90deg); }
 
   .ck-items { display: flex; flex-direction: column; }
   .ck-item { border-bottom: 1px solid rgba(42,51,48,0.5); }
@@ -386,7 +414,14 @@
     letter-spacing: 2px;
     color: var(--text);
     margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
   }
+  .pay-chevron { width: 18px; height: 18px; color: var(--muted); transition: transform 0.2s; flex-shrink: 0; }
+  .pay-chevron.collapsed { transform: rotate(-90deg); }
 
   .pay-summary-grid {
     display: grid;
@@ -717,8 +752,12 @@
       </div>
       <!-- Budget & Payments -->
       <div class="pay-section">
-        <div class="pay-section-hdr">Budget &amp; Payments</div>
+        <div class="pay-section-hdr" onclick="togglePaySection()">
+          Budget &amp; Payments
+          <svg id="payChevron" class="pay-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
 
+        <div id="payBody">
         <div class="pay-summary-grid">
           <div class="pay-stat"><div class="pay-stat-label">GC Budget</div><div class="pay-stat-value" id="statGcBudget">—</div></div>
           <div class="pay-stat"><div class="pay-stat-label">GC Paid</div><div class="pay-stat-value" id="statGcPaid">$0</div></div>
@@ -767,8 +806,13 @@
             </div>
           </div>
         </div>
+        </div><!-- /payBody -->
       </div>
 
+      <div class="ck-header-row">
+        <span class="ck-header-label">Rehab Checklist</span>
+        <button class="btn-ck-collapse-all" id="btnCollapseAll" onclick="toggleAllSections()">Collapse All</button>
+      </div>
       <div class="ck-sections" id="ckSections"></div>
 
     </div>
@@ -887,8 +931,10 @@ let currentUser   = null;
 let activeId      = null;
 let activeName    = null;
 let _cachedProjects = [];
-let _saveTimeout  = null;
-let _editorActive = false;
+let _saveTimeout       = null;
+let _editorActive      = false;
+let _collapsedSections = {};
+let _payCollapsed      = false;
 let projectData   = { address: '', items: {}, payments: { gcBudget: 0, gcPayments: [], subPayments: [] } };
 
 // ── Supabase helpers ─────────────────────────────────
@@ -1074,6 +1120,8 @@ function newProject() {
   activeId     = null;
   activeName   = null;
   projectData  = { address: '', items: {}, payments: { gcBudget: 0, gcPayments: [], subPayments: [] } };
+  _collapsedSections = {};
+  _payCollapsed      = false;
   showEditor();
   showContent(true);
   document.getElementById('projName').value    = '';
@@ -1094,6 +1142,8 @@ async function openProject(id) {
   projectData = proj.data ? JSON.parse(JSON.stringify(proj.data)) : { address: '', items: {} };
   if (!projectData.items) projectData.items = {};
   if (!projectData.payments) projectData.payments = { gcBudget: 0, gcPayments: [], subPayments: [] };
+  _collapsedSections = {};
+  _payCollapsed      = false;
   showEditor();
   showContent(true);
   document.getElementById('projName').value    = proj.name;
@@ -1134,6 +1184,44 @@ async function toggleShare(id, isShared) {
   renderMobileList(_cachedProjects);
 }
 
+// ── Collapse / expand ────────────────────────────────
+function toggleSection(secId) {
+  _collapsedSections[secId] = !_collapsedSections[secId];
+  const sec = document.querySelector(`.ck-section[data-sec="${secId}"]`);
+  if (!sec) return;
+  const collapsed = _collapsedSections[secId];
+  sec.querySelector('.ck-items').style.display = collapsed ? 'none' : '';
+  sec.querySelector('.ck-chevron').classList.toggle('collapsed', collapsed);
+  updateCollapseAllBtn();
+}
+
+function toggleAllSections() {
+  const anyExpanded = SECTIONS.some(s => !_collapsedSections[s.id]);
+  SECTIONS.forEach(s => {
+    _collapsedSections[s.id] = anyExpanded;
+    const sec = document.querySelector(`.ck-section[data-sec="${s.id}"]`);
+    if (!sec) return;
+    sec.querySelector('.ck-items').style.display     = anyExpanded ? 'none' : '';
+    sec.querySelector('.ck-chevron').classList.toggle('collapsed', anyExpanded);
+  });
+  updateCollapseAllBtn();
+}
+
+function updateCollapseAllBtn() {
+  const btn = document.getElementById('btnCollapseAll');
+  if (!btn) return;
+  const anyExpanded = SECTIONS.some(s => !_collapsedSections[s.id]);
+  btn.textContent = anyExpanded ? 'Collapse All' : 'Expand All';
+}
+
+function togglePaySection() {
+  _payCollapsed = !_payCollapsed;
+  const body    = document.getElementById('payBody');
+  const chevron = document.getElementById('payChevron');
+  if (body)    body.style.display = _payCollapsed ? 'none' : '';
+  if (chevron) chevron.classList.toggle('collapsed', _payCollapsed);
+}
+
 // ── Checklist render ─────────────────────────────────
 function renderChecklist() {
   const el = document.getElementById('ckSections');
@@ -1155,16 +1243,21 @@ function renderChecklist() {
           </div>
         </div>`;
     }).join('');
+    const collapsed = !!_collapsedSections[sec.id];
     return `
-      <div class="ck-section">
-        <div class="ck-section-hdr">
+      <div class="ck-section" data-sec="${sec.id}">
+        <div class="ck-section-hdr" onclick="toggleSection('${sec.id}')">
           <span class="ck-section-title">${esc(sec.label)}</span>
-          <span class="ck-section-count" id="cnt-${sec.id}"></span>
+          <div class="ck-section-hdr-right">
+            <span class="ck-section-count" id="cnt-${sec.id}"></span>
+            <svg class="ck-chevron${collapsed ? ' collapsed' : ''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </div>
         </div>
-        <div class="ck-items">${items}</div>
+        <div class="ck-items" style="${collapsed ? 'display:none' : ''}">${items}</div>
       </div>`;
   }).join('');
   updateSectionCounts();
+  updateCollapseAllBtn();
 }
 
 function updateSectionCounts() {
