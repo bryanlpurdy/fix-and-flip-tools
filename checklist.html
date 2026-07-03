@@ -376,17 +376,15 @@
 
   /* ── Payments section ────────────────────────────── */
   .pay-section {
-    margin-top: 44px;
-    border-top: 1px solid var(--border);
-    padding-top: 32px;
-    padding-bottom: 48px;
+    margin-bottom: 44px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 40px;
   }
   .pay-section-hdr {
-    font-size: 0.72rem;
-    font-weight: 700;
-    letter-spacing: 1.5px;
-    text-transform: uppercase;
-    color: var(--label);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    color: var(--text);
     margin-bottom: 20px;
   }
 
@@ -405,7 +403,7 @@
     flex-direction: column;
     gap: 4px;
   }
-  .pay-stat-label { font-size: 0.63rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); }
+  .pay-stat-label { font-size: 0.63rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text); }
   .pay-stat-value { font-size: 1.05rem; font-weight: 700; color: var(--text); font-family: 'DM Mono', monospace; }
   .pay-stat.is-total .pay-stat-value { color: var(--accent); }
   .pay-stat.is-over  .pay-stat-value { color: var(--danger); }
@@ -424,11 +422,11 @@
     border-bottom: 1px solid var(--border);
     background: var(--surface);
   }
-  .pay-block-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--label); }
+  .pay-block-title { font-size: 0.82rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text); }
   .pay-block-body { padding: 14px 16px; }
 
   .pay-budget-row { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
-  .pay-budget-label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+  .pay-budget-label { font-size: 0.78rem; color: var(--label); white-space: nowrap; }
   .pay-budget-input {
     background: var(--bg);
     border: 1px solid var(--border);
@@ -447,7 +445,7 @@
   .pay-gc-bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
   .pay-gc-bar-wrap { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
   .pay-gc-bar-fill { height: 100%; background: var(--accent); border-radius: 3px; transition: width 0.3s; }
-  .pay-gc-bar-text { font-size: 0.72rem; color: var(--muted); font-family: 'DM Mono', monospace; white-space: nowrap; }
+  .pay-gc-bar-text { font-size: 0.72rem; color: var(--label); font-family: 'DM Mono', monospace; white-space: nowrap; }
 
   .pay-rows-empty { font-size: 0.82rem; color: var(--muted); padding: 4px 0 10px; }
 
@@ -717,8 +715,6 @@
         <span class="proj-ov-text" id="ovText">0 / 74 complete</span>
         <span class="proj-ov-pct" id="ovPct">0%</span>
       </div>
-      <div class="ck-sections" id="ckSections"></div>
-
       <!-- Budget & Payments -->
       <div class="pay-section">
         <div class="pay-section-hdr">Budget &amp; Payments</div>
@@ -772,6 +768,8 @@
           </div>
         </div>
       </div>
+
+      <div class="ck-sections" id="ckSections"></div>
 
     </div>
   </div>
