@@ -606,10 +606,38 @@ projectData = {
     'p0': { checked: true,  note: 'Submitted to ABC Title' },
     'p1': { checked: false, note: '' },
     // ...
+  },
+  payments: {
+    gcBudget: 26000,
+    gcPayments:  [{ id: 'gc_1234', date: '2026-07-01', amount: 5000, note: 'First draw' }],
+    subPayments: [{ id: 'sub_1234', payee: 'ABC HVAC', date: '2026-07-02', amount: 3200 }]
   }
 }
 ```
-Stored in the `data` jsonb column of the `projects` table. Progress is always computed at render time from `data.items` — never denormalized.
+Stored in the `data` jsonb column of the `projects` table. Progress is always computed at render time from `data.items` — never denormalized. `payments` defaults to `{ gcBudget: 0, gcPayments: [], subPayments: [] }` and is initialized on `newProject()` and on `openProject()` (with backward-compat guard for older saves without the key).
+
+### Budget & Payments
+A "Budget & Payments" section renders below the checklist in `#rtContent`. Two blocks:
+
+**GC block** — overall GC contract budget (editable `#gcBudgetInput`), a progress bar showing paid vs. budget, and a table of individual weekly check payments (`date | amount | note`). Add form at bottom; each row has a delete button.
+
+**Subs block** — table of individual sub-contractor payments (`payee | date | amount`). Add form at bottom; each row has a delete button.
+
+**Summary stats grid** (5 tiles): GC Budget · GC Paid · GC Remaining · Subs Paid · Total Out. "GC Remaining" tile turns red (`.is-over` class) when GC spend exceeds budget.
+
+**Key functions:**
+- `ensurePayments()` — guards against missing `payments` key on old saves
+- `parseDollar(val)` / `fmtDollar(n)` / `fmtPayDate(dateStr)` — formatting helpers
+- `setGcBudget(val)` — updates `projectData.payments.gcBudget`, calls `updatePaySummary()`, schedules auto-save
+- `fmtBudgetInput(el)` — on blur, formats the budget input display
+- `addGcPayment()` / `deleteGcPayment(id)` — push/filter `gcPayments`, re-render
+- `addSubPayment()` / `deleteSubPayment(id)` — push/filter `subPayments`, re-render
+- `renderPayments()` — renders both tables + calls `updatePaySummary()`
+- `updatePaySummary()` — computes all totals, updates stat tile DOM, updates GC bar
+
+Payment data is auto-saved as part of `projectData` via the existing `doSave()` flow — no separate save logic needed.
+
+**Share view** — `renderShareReport()` appends a `.sv-pay-section` with the same stats grid, GC progress bar, and GC/Sub payment tables when payment data exists. Read-only, no delete buttons.
 
 ### Auto-save
 Rehab Tracker uses **debounced auto-save** (1.5s after any checkbox toggle or note input). This is intentional and specific to this tool — it's a stateful checklist where every check-off is a committed action. The other tools (DA, Walkthrough, NS) use explicit save because users frequently experiment with inputs before committing. **Do not add auto-save to those tools.**
