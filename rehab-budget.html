@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rehab Budget — ClosingDesk</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0d0f0e; --surface: #141714; --surface2: #1a1e1a;
+      --border: #2a3330; --accent: #c8f564; --accent2: #8bc34a;
+      --danger: #e05252; --warn: #e8a838;
+      --text: #e8ede8; --muted: #6b7d72; --label: #9aab9e;
+      --rb-sidebar-w: 320px;
+    }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; }
+    a { color: inherit; text-decoration: none; }
+    button { font-family: 'DM Sans', sans-serif; cursor: pointer; }
+    input, textarea { font-family: 'DM Sans', sans-serif; }
+
+    /* ── Header ─────────────────────────────────────── */
+    header {
+      height: 69px; background: var(--surface); border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 18px 40px; position: sticky; top: 0; z-index: 100;
+    }
+    .header-left { display: flex; align-items: center; gap: 20px; }
+    .hub-back { font-size: 0.78rem; color: var(--muted); transition: color 0.15s; white-space: nowrap; }
+    .hub-back:hover { color: var(--accent); }
+    header h1 { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; letter-spacing: 3px; color: var(--accent); line-height: 1; }
+    .header-actions { display: flex; align-items: center; gap: 12px; }
+    .auth-status { display: flex; align-items: center; gap: 10px; }
+    .user-email { font-size: 0.78rem; color: var(--muted); }
+    .btn-auth { background: transparent; border: 1px solid var(--accent); color: var(--accent); border-radius: 6px; padding: 7px 16px; font-size: 0.82rem; font-weight: 600; transition: all 0.15s; }
+    .btn-auth:hover { background: var(--accent); color: #0d0f0e; }
+
+    /* ── Layout ─────────────────────────────────────── */
+    #rbLayout { display: flex; height: calc(100vh - 69px); }
+
+    /* ── Sidebar ─────────────────────────────────────── */
+    .rb-sidebar {
+      width: var(--rb-sidebar-w); min-width: 140px; max-width: 480px;
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;
+    }
+    .rb-sidebar-hdr {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .rb-sidebar-hdr-title { font-size: 0.7rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .btn-new { background: transparent; border: 1px solid var(--accent); color: var(--accent); border-radius: 6px; padding: 5px 12px; font-size: 0.78rem; font-weight: 700; transition: all 0.15s; }
+    .btn-new:hover { background: var(--accent); color: #0d0f0e; }
+    #rbSidebarList { overflow-y: auto; flex: 1; }
+    #rbSidebarList::-webkit-scrollbar { width: 4px; }
+    #rbSidebarList::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    #rbSidebarAuth { padding: 20px 16px; font-size: 0.82rem; color: var(--muted); text-align: center; line-height: 1.6; }
+    #rbSidebarAuth a { color: var(--accent); }
+
+    .rb-card { padding: 14px 16px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s; }
+    .rb-card:hover { background: var(--surface2); }
+    .rb-card.active { background: rgba(200,245,100,0.07); border-left: 2px solid var(--accent); }
+    .rb-card-name { font-size: 0.9rem; font-weight: 600; color: var(--text); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rb-card-meta { font-size: 0.72rem; color: var(--muted); margin-bottom: 8px; }
+    .rb-card-actions { display: flex; gap: 6px; }
+    .rb-card-btn { font-size: 0.72rem; padding: 3px 8px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--muted); transition: all 0.15s; }
+    .rb-card-btn:hover { border-color: var(--label); color: var(--label); }
+    .rb-card-btn.danger { border-color: var(--danger); color: var(--danger); }
+    .rb-card-btn.danger:hover { background: var(--danger); color: #fff; }
+    .rb-card-btn.share-active { border-color: var(--accent); background: var(--accent); color: #0d0f0e; }
+
+    /* ── Resizer ─────────────────────────────────────── */
+    .rb-resizer { width: 4px; background: var(--border); cursor: col-resize; flex-shrink: 0; transition: background 0.15s; }
+    .rb-resizer:hover, .rb-resizer.dragging { background: var(--accent); }
+
+    /* ── Editor ─────────────────────────────────────── */
+    .rb-editor { flex: 1; overflow-y: auto; overflow-x: hidden; position: relative; }
+    .rb-editor::-webkit-scrollbar { width: 6px; }
+    .rb-editor::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    #rbEmptyState {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      height: 100%; color: var(--muted); gap: 12px; text-align: center; padding: 40px;
+    }
+    #rbEmptyState svg { opacity: 0.25; }
+    #rbEmptyState p { font-size: 0.88rem; }
+    #rbEmptyState button { margin-top: 4px; background: transparent; border: 1px solid var(--accent); color: var(--accent); border-radius: 6px; padding: 8px 20px; font-size: 0.84rem; font-weight: 700; transition: all 0.15s; }
+    #rbEmptyState button:hover { background: var(--accent); color: #0d0f0e; }
+
+    #rbContent { padding: 28px 36px; max-width: 920px; }
+
+    /* ── Project inputs ──────────────────────────────── */
+    .rb-inputs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
+    .rb-input-group { display: flex; flex-direction: column; gap: 4px; }
+    .rb-input-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .rb-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 9px 12px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
+    .rb-input:focus { border-color: var(--accent); }
+    .rb-input::placeholder { color: var(--muted); }
+    .rb-save-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .btn-save { background: var(--accent); color: #0d0f0e; border: none; border-radius: 6px; padding: 8px 22px; font-size: 0.85rem; font-weight: 700; transition: background 0.15s; }
+    .btn-save:hover { background: var(--accent2); }
+    .rb-save-status { font-size: 0.78rem; color: var(--accent); }
+
+    /* ── Budget Table ────────────────────────────────── */
+    .rb-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+    .rb-table { width: 100%; min-width: 560px; border-collapse: collapse; font-size: 0.88rem; }
+
+    .rb-table thead th {
+      font-size: 0.67rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      color: var(--text); padding: 11px 12px; border-bottom: 2px solid var(--border);
+      background: var(--surface2); white-space: nowrap;
+    }
+    .rb-table thead th.col-budget,
+    .rb-table thead th.col-actual { text-align: right; width: 120px; }
+    .rb-table thead th.col-gc,
+    .rb-table thead th.col-paid   { text-align: center; width: 58px; }
+
+    .rb-table tbody tr { border-bottom: 1px solid rgba(42,51,48,0.6); transition: background 0.1s; }
+    .rb-table tbody tr:last-child { border-bottom: none; }
+    .rb-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .rb-table tbody tr.is-paid .rb-desc { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--border); }
+    .rb-table tbody tr.is-paid .rb-desc-input { color: var(--muted); text-decoration: line-through; }
+    .rb-table td { padding: 7px 12px; vertical-align: middle; }
+
+    .rb-desc { color: var(--text); font-size: 0.9rem; }
+    .rb-desc-input {
+      background: transparent; border: 1px solid transparent; border-radius: 4px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+      padding: 4px 6px; width: calc(100% - 28px); outline: none; transition: border-color 0.2s, background 0.2s;
+    }
+    .rb-desc-input:hover { border-color: var(--border); }
+    .rb-desc-input:focus { border-color: var(--accent); background: var(--surface2); }
+    .rb-desc-input::placeholder { color: var(--muted); }
+
+    .rb-num-input {
+      background: transparent; border: 1px solid transparent; border-radius: 4px;
+      color: var(--text); font-family: 'DM Mono', monospace; font-size: 0.84rem;
+      padding: 5px 8px; width: 108px; text-align: right; outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .rb-num-input:hover { border-color: var(--border); }
+    .rb-num-input:focus { border-color: var(--accent); background: var(--surface2); }
+    .rb-num-input::placeholder { color: var(--muted); }
+    .rb-table td.col-budget, .rb-table td.col-actual { text-align: right; }
+    .rb-table td.col-gc, .rb-table td.col-paid { text-align: center; }
+
+    .rb-check { width: 17px; height: 17px; cursor: pointer; accent-color: var(--accent); }
+    .rb-check.gc-check { accent-color: var(--warn); }
+
+    .btn-del-custom { background: transparent; border: none; color: var(--muted); font-size: 1rem; padding: 2px 4px; cursor: pointer; border-radius: 3px; transition: color 0.15s; vertical-align: middle; }
+    .btn-del-custom:hover { color: var(--danger); }
+
+    /* tfoot totals */
+    .rb-table tfoot td { padding: 9px 12px; font-weight: 700; font-size: 0.84rem; }
+    .rb-table tfoot tr { background: var(--surface2); }
+    .rb-table tfoot tr:first-child { border-top: 2px solid var(--border); }
+    .rb-table tfoot tr + tr { border-top: 1px solid rgba(42,51,48,0.5); }
+    .rb-total-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--label); }
+    .rb-total-val { font-family: 'DM Mono', monospace; text-align: right; color: var(--accent); }
+    .rb-total-val.warn  { color: var(--warn); }
+    .rb-total-val.over  { color: var(--danger); }
+    .rb-total-val.under { color: var(--accent); }
+
+    /* Add custom row */
+    .rb-add-row-wrap {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; border-top: 1px solid var(--border); background: var(--surface2);
+      border-radius: 0 0 6px 6px;
+    }
+    .rb-add-desc {
+      flex: 1; background: var(--bg); border: 1px solid var(--border); border-radius: 5px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 0.84rem;
+      padding: 6px 10px; outline: none; transition: border-color 0.2s;
+    }
+    .rb-add-desc:focus { border-color: var(--accent); }
+    .rb-add-desc::placeholder { color: var(--muted); }
+    .btn-add-custom { background: transparent; border: 1px solid var(--accent); color: var(--accent); border-radius: 5px; padding: 6px 14px; font-size: 0.78rem; font-weight: 700; transition: all 0.15s; white-space: nowrap; }
+    .btn-add-custom:hover { background: var(--accent); color: #0d0f0e; }
+
+    /* ── Photos ─────────────────────────────────────── */
+    .rb-photos-section { margin-top: 32px; padding-top: 28px; border-top: 1px solid var(--border); padding-bottom: 60px; }
+    .rb-photos-hdr { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: 2px; color: var(--text); margin-bottom: 16px; }
+    .rb-upload-btn { display: inline-flex; align-items: center; gap: 8px; background: transparent; border: 1px solid var(--border); color: var(--label); border-radius: 6px; padding: 8px 16px; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; margin-bottom: 16px; }
+    .rb-upload-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #rbPhotoInput { display: none; }
+    .rb-photo-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .rb-photo-item { position: relative; width: 140px; }
+    .rb-photo-thumb { width: 140px; height: 105px; object-fit: cover; border-radius: 6px; cursor: pointer; border: 1px solid var(--border); display: block; }
+    .rb-photo-del { position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.7); border: none; color: #fff; border-radius: 50%; width: 22px; height: 22px; font-size: 0.75rem; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.15s; }
+    .rb-photo-item:hover .rb-photo-del { opacity: 1; }
+    .rb-photo-caption { font-size: 0.72rem; margin-top: 4px; width: 100%; background: transparent; border: none; border-bottom: 1px solid transparent; color: var(--label); outline: none; padding: 2px 0; transition: border-color 0.2s; }
+    .rb-photo-caption:focus { border-bottom-color: var(--accent); }
+    .rb-photo-caption::placeholder { color: var(--muted); }
+
+    /* ── Photo lightbox ─────────────────────────────── */
+    #photoViewer { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 2000; align-items: center; justify-content: center; }
+    #photoViewer.open { display: flex; }
+    #photoViewer img { max-width: 90vw; max-height: 90vh; border-radius: 8px; }
+    #photoViewer .pv-close { position: absolute; top: 20px; right: 24px; background: transparent; border: none; color: #fff; font-size: 2rem; cursor: pointer; opacity: 0.7; line-height: 1; }
+    #photoViewer .pv-close:hover { opacity: 1; }
+
+    /* ── Save modal ─────────────────────────────────── */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 28px; width: 360px; max-width: 90vw; }
+    .modal-title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 14px; }
+    .modal-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 10px 12px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.2s; }
+    .modal-input:focus { border-color: var(--accent); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .btn-modal-cancel { background: transparent; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 8px 16px; font-size: 0.84rem; transition: all 0.15s; }
+    .btn-modal-cancel:hover { border-color: var(--label); color: var(--label); }
+    .btn-modal-save { background: var(--accent); border: none; color: #0d0f0e; border-radius: 6px; padding: 8px 18px; font-size: 0.84rem; font-weight: 700; transition: background 0.15s; }
+    .btn-modal-save:hover { background: var(--accent2); }
+
+    /* ── Toast ──────────────────────────────────────── */
+    .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface); border: 1px solid var(--accent); color: var(--accent); padding: 10px 20px; border-radius: 6px; font-size: 0.82rem; font-weight: 500; z-index: 3000; opacity: 0; transition: all 0.3s; pointer-events: none; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Share view ─────────────────────────────────── */
+    #shareView { display: none; max-width: 800px; margin: 0 auto; padding: 40px 24px 80px; }
+    .sv-brand { font-size: 0.72rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+    .sv-name { font-family: 'Bebas Neue', sans-serif; font-size: 2.4rem; letter-spacing: 3px; color: var(--accent); line-height: 1; }
+    .sv-addr { font-size: 0.9rem; color: var(--label); margin-top: 4px; }
+    .sv-meta { font-size: 0.78rem; color: var(--muted); margin-top: 4px; margin-bottom: 24px; }
+    .sv-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 28px; }
+    .sv-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; }
+    .sv-stat-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text); margin-bottom: 4px; }
+    .sv-stat-value { font-size: 1.1rem; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--text); }
+    .sv-stat.is-gc .sv-stat-value { color: var(--warn); }
+    .sv-stat.is-over .sv-stat-value { color: var(--danger); }
+    .sv-stat.is-under .sv-stat-value { color: var(--accent); }
+    .sv-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 28px; }
+    .sv-table { width: 100%; min-width: 500px; border-collapse: collapse; font-size: 0.88rem; }
+    .sv-table thead th { font-size: 0.65rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text); padding: 10px 12px; border-bottom: 2px solid var(--border); background: var(--surface2); white-space: nowrap; }
+    .sv-table thead th.col-budget, .sv-table thead th.col-actual { text-align: right; }
+    .sv-table thead th.col-gc, .sv-table thead th.col-paid { text-align: center; width: 58px; }
+    .sv-table tbody tr { border-bottom: 1px solid rgba(42,51,48,0.6); }
+    .sv-table tbody tr.is-paid td.sv-desc { color: var(--muted); text-decoration: line-through; }
+    .sv-table td { padding: 8px 12px; color: var(--text); }
+    .sv-table td.col-budget, .sv-table td.col-actual { text-align: right; font-family: 'DM Mono', monospace; }
+    .sv-table td.col-gc, .sv-table td.col-paid { text-align: center; }
+    .sv-photos-hdr { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; color: var(--text); margin-bottom: 12px; }
+    .sv-photo-grid { display: flex; flex-wrap: wrap; gap: 12px; }
+    .sv-photo-item img { width: 180px; height: 135px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); display: block; }
+    .sv-photo-caption { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── Mobile sign-in ─────────────────────────────── */
+    #mobileSigninView { display: none; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 32px 20px; position: relative; }
+    .msv-hub-back { position: absolute; top: 18px; left: 18px; font-size: 0.78rem; color: var(--muted); transition: color 0.15s; }
+    .msv-hub-back:hover { color: var(--accent); }
+    .msv-icon { width: 64px; height: 64px; background: rgba(200,245,100,0.1); border-radius: 16px; display: flex; align-items: center; justify-content: center; color: var(--accent); margin-bottom: 16px; }
+    .msv-title { font-family: 'Bebas Neue', sans-serif; font-size: 2rem; letter-spacing: 3px; color: var(--accent); margin-bottom: 6px; }
+    .msv-sub { font-size: 0.87rem; color: var(--muted); margin-bottom: 28px; text-align: center; }
+    .msv-field { width: 100%; max-width: 360px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .msv-field label { font-size: 0.72rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--label); font-weight: 600; }
+    .msv-field input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 12px 14px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; border-radius: 8px; outline: none; transition: border-color 0.2s; width: 100%; }
+    .msv-field input:focus { border-color: var(--accent); }
+    .msv-btn { width: 100%; max-width: 360px; background: var(--accent); border: none; color: #0d0f0e; border-radius: 8px; padding: 13px; font-size: 0.95rem; font-weight: 700; margin-top: 8px; transition: background 0.15s; }
+    .msv-btn:hover { background: var(--accent2); }
+    .msv-error { width: 100%; max-width: 360px; font-size: 0.82rem; color: var(--danger); margin-top: 6px; min-height: 20px; text-align: center; }
+
+    /* ── Mobile list ────────────────────────────────── */
+    #mobileListView { display: none; flex-direction: column; }
+    .rb-list-nav { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+    .rb-list-nav-hub { font-size: 0.78rem; color: var(--muted); }
+    .rb-list-nav-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; letter-spacing: 2px; color: var(--accent); }
+    .rb-list-nav-new { font-size: 0.82rem; font-weight: 700; color: var(--accent); background: transparent; border: none; }
+    #rlvAuthRow { display: none; align-items: center; justify-content: space-between; padding: 10px 16px; background: var(--surface2); border-bottom: 1px solid var(--border); font-size: 0.8rem; }
+    #rlvEmail { color: var(--muted); }
+    #rlvSignOut { background: transparent; border: none; color: var(--muted); font-size: 0.78rem; cursor: pointer; }
+    #mobileListContent { padding: 0; }
+
+    /* ── Mobile editor nav ──────────────────────────── */
+    #editorNav { display: none; align-items: center; justify-content: space-between; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; }
+    .editor-nav-back { font-size: 0.82rem; color: var(--muted); background: transparent; border: none; cursor: pointer; }
+    .editor-nav-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.3rem; letter-spacing: 2px; color: var(--accent); }
+    .editor-nav-new { font-size: 0.82rem; font-weight: 700; color: var(--accent); background: transparent; border: none; cursor: pointer; }
+
+    /* ── Mobile overrides ───────────────────────────── */
+    @media (max-width: 1024px) {
+      body { height: auto; overflow-x: hidden; overflow-y: auto; }
+      #rbLayout { height: auto; min-height: calc(100vh - 69px); overflow: visible; }
+      .rb-editor { overflow: visible; }
+      #rbContent { padding: 16px; max-width: 100%; }
+      .rb-inputs-row { grid-template-columns: 1fr; }
+      .hub-back, .auth-status .user-email { display: none; }
+      header { padding: 12px 16px; }
+      header h1 { font-size: 1.6rem; }
+      .rb-num-input { width: 86px; font-size: 0.8rem; }
+      .sv-stat-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    body.list-mode header { display: none; }
+    body.editor-mode .rb-sidebar, body.editor-mode .rb-resizer { display: none; }
+    body.editor-mode #rbLayout { display: block; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="header-left">
+      <a href="index.html" class="hub-back">← All Tools</a>
+      <h1>Rehab Budget</h1>
+    </div>
+    <div class="header-actions">
+      <div class="auth-status" id="authStatus"></div>
+    </div>
+  </header>
+
+  <div id="rbLayout">
+    <div class="rb-sidebar">
+      <div class="rb-sidebar-hdr">
+        <span class="rb-sidebar-hdr-title">Projects</span>
+        <button class="btn-new" onclick="newBudget()">+ New</button>
+      </div>
+      <div id="rbSidebarList">
+        <div id="rbSidebarAuth" style="display:none">
+          <p>Sign in to save and load projects.</p>
+          <p style="margin-top:8px"><a href="index.html">Sign in →</a></p>
+        </div>
+      </div>
+    </div>
+    <div class="rb-resizer" id="rbResizer"></div>
+    <div class="rb-editor">
+      <div id="rbEmptyState">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+        <p>Select a project or create a new one</p>
+        <button onclick="newBudget()">+ New Project</button>
+      </div>
+      <div id="rbContent" style="display:none">
+        <div class="rb-inputs-row">
+          <div class="rb-input-group">
+            <div class="rb-input-label">Project Name</div>
+            <input type="text" class="rb-input" id="projName" placeholder="My Flip Project">
+          </div>
+          <div class="rb-input-group">
+            <div class="rb-input-label">Property Address</div>
+            <input type="text" class="rb-input" id="projAddress" placeholder="123 Main St, City TX">
+          </div>
+        </div>
+        <div class="rb-save-row">
+          <button class="btn-save" onclick="openSaveModal()">Save</button>
+          <span class="rb-save-status" id="saveStatus"></span>
+        </div>
+
+        <div class="rb-table-wrap">
+          <table class="rb-table">
+            <thead>
+              <tr>
+                <th>Description</th>
+                <th class="col-budget">Budget</th>
+                <th class="col-actual">Actual</th>
+                <th class="col-gc">GC</th>
+                <th class="col-paid">Paid</th>
+              </tr>
+            </thead>
+            <tbody id="rbTableBody"></tbody>
+            <tfoot>
+              <tr>
+                <td class="rb-total-label">Budget Total</td>
+                <td class="col-budget rb-total-val" id="totalBudget">—</td>
+                <td></td><td></td><td></td>
+              </tr>
+              <tr>
+                <td class="rb-total-label">Actual Total</td>
+                <td></td>
+                <td class="col-actual rb-total-val" id="totalActual">—</td>
+                <td></td><td></td>
+              </tr>
+              <tr>
+                <td class="rb-total-label">GC Total (Actual)</td>
+                <td></td>
+                <td class="col-actual rb-total-val warn" id="totalGC">—</td>
+                <td></td><td></td>
+              </tr>
+              <tr>
+                <td class="rb-total-label">Variance (Budget − Actual)</td>
+                <td></td>
+                <td class="col-actual rb-total-val" id="totalVariance">—</td>
+                <td></td><td></td>
+              </tr>
+            </tfoot>
+          </table>
+          <div class="rb-add-row-wrap">
+            <input type="text" class="rb-add-desc" id="customDesc" placeholder="Add custom expense…" onkeydown="if(event.key==='Enter')addCustomItem()">
+            <button class="btn-add-custom" onclick="addCustomItem()">+ Add Row</button>
+          </div>
+        </div>
+
+        <div class="rb-photos-section">
+          <div class="rb-photos-hdr">Photos</div>
+          <button class="rb-upload-btn" onclick="document.getElementById('rbPhotoInput').click()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            Upload Photo
+          </button>
+          <input type="file" id="rbPhotoInput" accept="image/*" multiple onchange="handlePhotoUpload(this)">
+          <div class="rb-photo-grid" id="rbPhotoGrid"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile sign-in -->
+  <div id="mobileSigninView">
+    <a href="index.html" class="msv-hub-back">← ClosingDesk</a>
+    <div class="msv-icon">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+    </div>
+    <div class="msv-title">Rehab Budget</div>
+    <div class="msv-sub">Sign in to manage your project budgets</div>
+    <div class="msv-field">
+      <label>Email</label>
+      <input type="email" id="msvEmail" autocomplete="email" placeholder="you@example.com">
+    </div>
+    <div class="msv-field">
+      <label>Password</label>
+      <input type="password" id="msvPassword" autocomplete="current-password" onkeydown="if(event.key==='Enter')msvSubmit()">
+    </div>
+    <div class="msv-error" id="msvError"></div>
+    <button class="msv-btn" id="msvBtn" onclick="msvSubmit()">Sign In</button>
+  </div>
+
+  <!-- Mobile list -->
+  <div id="mobileListView">
+    <div class="rb-list-nav">
+      <a href="index.html" class="rb-list-nav-hub">← All Tools</a>
+      <span class="rb-list-nav-title">Rehab Budget</span>
+      <button class="rb-list-nav-new" onclick="newBudget()">+ New</button>
+    </div>
+    <div id="rlvAuthRow">
+      <span id="rlvEmail"></span>
+      <button id="rlvSignOut" onclick="signOut()">Sign Out</button>
+    </div>
+    <div id="mobileListContent"></div>
+  </div>
+
+  <!-- Mobile editor nav -->
+  <div id="editorNav">
+    <button class="editor-nav-back" onclick="showList()">← My Projects</button>
+    <span class="editor-nav-title">Rehab Budget</span>
+    <button class="editor-nav-new" onclick="newBudget()">+ New</button>
+  </div>
+
+  <div id="shareView"></div>
+
+  <!-- Save modal -->
+  <div class="modal-overlay" id="saveModal">
+    <div class="modal-box">
+      <div class="modal-title">Save Project</div>
+      <input type="text" class="modal-input" id="saveNameInput" placeholder="Project name…" onkeydown="if(event.key==='Enter')confirmSave()">
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" onclick="closeSaveModal()">Cancel</button>
+        <button class="btn-modal-save" onclick="confirmSave()">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Photo lightbox -->
+  <div id="photoViewer">
+    <button class="pv-close" onclick="closePhotoViewer()">×</button>
+    <img id="photoViewerImg" src="" alt="">
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+  const SUPABASE_URL = 'https://api.bluestarrealtygroup.com';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFwbGlkbWZpc2hhY2x5c2NrcnVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODc2ODMsImV4cCI6MjA4OTc2MzY4M30.YEhxwrw-HxofmV4N3KRpbgDcT_a_OyqIkx49Wu7CjR0';
+
+  const DEFAULT_DESCS = [
+    'Dumpsters','Demo','Concrete Work','Windows Mat','Windows Labor',
+    'Electrical Rough','Sheetrock','Texture','Siding Mat','Siding Labor',
+    'Shower Mat','Shower Labor','Int Paint Mat','Int Paint Labor',
+    'Ext Paint Mat','Ext Paint Labor','Cabinets Mat','Cabinets Labor',
+    'Cabinet Paint Mat','Cabinet Paint Labor','Countertops','Backsplash Mat',
+    'Backsplash Labor','Int Doors Mat','Doors Labor','Ext Doors Material',
+    'Ext Doors Labor','Trim Mat','Trim Labor','Flooring Mat','Flooring Labor',
+    'Vanities Mat','Vanities Labor','Fixtures Mat','Fixture Labor',
+    'Plumbing Mat','Plumbing Labor','Electrical Trim Out','Appliances Mat',
+    'Appliances Labor','HVAC','Roof Mat','Roof Labor','Insulation','Gutters',
+    'Carpet Mat','Carpet Labor','Landscaping Monthly','Landscaping Final',
+    'Tree Work','Cleaning'
+  ];
+
+  // ── State ─────────────────────────────────────────────
+  let sbAccessToken  = null;
+  let currentUser    = null;
+  let activeId       = null;
+  let activeName     = null;
+  let _cachedBudgets = [];
+  let _editorActive  = false;
+  let budgetData     = makeFreshData();
+
+  function makeFreshData() {
+    return {
+      address: '',
+      items: DEFAULT_DESCS.map((d, i) => ({ id: `b${i}`, description: d, budget: 0, actual: 0, isGC: false, isPaid: false })),
+      customItems: [],
+      photos: []
+    };
+  }
+
+  // ── Supabase helpers ──────────────────────────────────
+  function sbHeaders(anon) {
+    return {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${anon ? SUPABASE_KEY : (sbAccessToken || SUPABASE_KEY)}`
+    };
+  }
+  function loadSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sb_session'));
+      if (s?.access_token && s?.user) { sbAccessToken = s.access_token; currentUser = s.user; return true; }
+    } catch(e) {}
+    return false;
+  }
+  function saveSession(d) {
+    sbAccessToken = d.access_token; currentUser = d.user;
+    localStorage.setItem('sb_session', JSON.stringify({ access_token: d.access_token, refresh_token: d.refresh_token, user: d.user }));
+  }
+  function clearSession() { sbAccessToken = null; currentUser = null; localStorage.removeItem('sb_session'); }
+
+  async function refreshSession() {
+    try {
+      const s = JSON.parse(localStorage.getItem('sb_session'));
+      if (!s?.refresh_token) return false;
+      const d = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+        body: JSON.stringify({ refresh_token: s.refresh_token })
+      }).then(r => r.json()).catch(() => ({}));
+      if (d.access_token) { saveSession(d); return true; }
+    } catch(e) {}
+    return false;
+  }
+
+  // ── Auth ──────────────────────────────────────────────
+  async function initAuth() {
+    if (!currentUser) { showList(); return; }
+    const ok = await fetch(`${SUPABASE_URL}/auth/v1/user`, { headers: sbHeaders() }).then(r => r.ok).catch(() => false);
+    if (!ok) { const r = await refreshSession(); if (!r) { clearSession(); currentUser = null; } }
+    updateAuthUI();
+    showList();
+    setInterval(refreshSession, 45 * 60 * 1000);
+  }
+
+  function updateAuthUI() {
+    const el = document.getElementById('authStatus');
+    if (!el) return;
+    if (currentUser) {
+      el.innerHTML = `<span class="user-email">${currentUser.email || ''}</span><button class="btn-auth" onclick="signOut()">Sign Out</button>`;
+    } else {
+      el.innerHTML = `<button class="btn-auth" onclick="window.location.href='index.html'">Sign In</button>`;
+    }
+  }
+  function signOut() { clearSession(); window.location.href = 'index.html'; }
+
+  // ── CRUD ──────────────────────────────────────────────
+  async function loadBudgets() {
+    if (!currentUser) return;
+    const data = await fetch(`${SUPABASE_URL}/rest/v1/rehab_budgets?user_id=eq.${currentUser.id}&order=updated_at.desc`, {
+      headers: { ...sbHeaders(), 'Accept': 'application/json' }
+    }).then(r => r.json()).catch(() => []);
+    _cachedBudgets = Array.isArray(data) ? data : [];
+    renderSidebar(_cachedBudgets);
+    renderMobileList(_cachedBudgets);
+  }
+
+  function openSaveModal() {
+    if (activeId && activeName) { confirmSave(); return; }
+    const input = document.getElementById('saveNameInput');
+    input.value = document.getElementById('projName').value.trim();
+    document.getElementById('saveModal').classList.add('open');
+    setTimeout(() => input.focus(), 50);
+  }
+  function closeSaveModal() { document.getElementById('saveModal').classList.remove('open'); }
+
+  async function confirmSave() {
+    closeSaveModal();
+    const name = (document.getElementById('saveNameInput').value.trim() ||
+                  document.getElementById('projName').value.trim() || 'Untitled');
+    if (!currentUser) { showToast('Sign in to save'); return; }
+    budgetData.address = document.getElementById('projAddress').value.trim();
+
+    const payload = { name, data: budgetData, user_id: currentUser.id, updated_at: new Date().toISOString() };
+    let res;
+    if (activeId) {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/rehab_budgets?id=eq.${activeId}`, {
+        method: 'PATCH', headers: { ...sbHeaders(), 'Prefer': 'return=representation' },
+        body: JSON.stringify(payload)
+      }).then(r => r.json()).catch(() => null);
+    } else {
+      res = await fetch(`${SUPABASE_URL}/rest/v1/rehab_budgets`, {
+        method: 'POST', headers: { ...sbHeaders(), 'Prefer': 'return=representation' },
+        body: JSON.stringify(payload)
+      }).then(r => r.json()).catch(() => null);
+      if (Array.isArray(res) && res[0]) { activeId = res[0].id; }
+    }
+    if (Array.isArray(res) && res[0]) activeName = res[0].name;
+    document.getElementById('projName').value = name;
+    setSaveStatus('saved');
+    showToast('Saved');
+    await loadBudgets();
+  }
+
+  async function deleteBudget(id) {
+    if (!confirm('Delete this project? This cannot be undone.')) return;
+    const proj = _cachedBudgets.find(b => b.id === id);
+    if (proj?.data?.photos?.length) {
+      await fetch(`${SUPABASE_URL}/storage/v1/object/walkthrough-photos`, {
+        method: 'DELETE', headers: sbHeaders(),
+        body: JSON.stringify({ prefixes: proj.data.photos.map(p => p.path) })
+      }).catch(() => {});
+    }
+    await fetch(`${SUPABASE_URL}/rest/v1/rehab_budgets?id=eq.${id}`, { method: 'DELETE', headers: sbHeaders() });
+    _cachedBudgets = _cachedBudgets.filter(b => b.id !== id);
+    if (activeId === id) { activeId = null; activeName = null; showContent(false); }
+    renderSidebar(_cachedBudgets);
+    renderMobileList(_cachedBudgets);
+  }
+
+  async function toggleShare(id, isShared) {
+    await fetch(`${SUPABASE_URL}/rest/v1/rehab_budgets?id=eq.${id}`, {
+      method: 'PATCH', headers: sbHeaders(), body: JSON.stringify({ shared: !isShared })
+    });
+    if (!isShared) {
+      const url = `${location.origin}${location.pathname}?share=${id}`;
+      try { await navigator.clipboard.writeText(url); showToast('Share link copied'); }
+      catch(e) { showToast('Sharing enabled'); }
+    }
+    await loadBudgets();
+  }
+
+  async function renameBudget(id, currentName) {
+    const name = prompt('Rename project:', currentName);
+    if (!name?.trim() || name.trim() === currentName) return;
+    await fetch(`${SUPABASE_URL}/rest/v1/rehab_budgets?id=eq.${id}`, {
+      method: 'PATCH', headers: sbHeaders(),
+      body: JSON.stringify({ name: name.trim(), updated_at: new Date().toISOString() })
+    });
+    if (activeId === id) { activeName = name.trim(); document.getElementById('projName').value = name.trim(); }
+    await loadBudgets();
+  }
+
+  // ── Project open/new ──────────────────────────────────
+  function newBudget() {
+    activeId = null; activeName = null;
+    budgetData = makeFreshData();
+    showEditor();
+    showContent(true);
+    document.getElementById('projName').value    = '';
+    document.getElementById('projAddress').value = '';
+    document.getElementById('projName').focus();
+    renderTable();
+    renderPhotos();
+    updateTotals();
+    setSaveStatus('');
+    renderSidebar(_cachedBudgets);
+  }
+
+  function openBudget(id) {
+    const b = _cachedBudgets.find(x => x.id === id);
+    if (!b) return;
+    activeId = id; activeName = b.name;
+    const d = b.data ? JSON.parse(JSON.stringify(b.data)) : {};
+
+    // Merge saved items with template (forward-compat if items added later)
+    const savedMap = {};
+    (d.items || []).forEach(it => { savedMap[it.id] = it; });
+    budgetData = {
+      address:     d.address || '',
+      items:       DEFAULT_DESCS.map((desc, i) => {
+        const s = savedMap[`b${i}`];
+        return { id: `b${i}`, description: desc, budget: s?.budget || 0, actual: s?.actual || 0, isGC: !!s?.isGC, isPaid: !!s?.isPaid };
+      }),
+      customItems: d.customItems || [],
+      photos:      d.photos || []
+    };
+
+    showEditor();
+    showContent(true);
+    document.getElementById('projName').value    = b.name;
+    document.getElementById('projAddress').value = budgetData.address;
+    renderTable();
+    renderPhotos();
+    updateTotals();
+    setSaveStatus('saved');
+    renderSidebar(_cachedBudgets);
+  }
+
+  // ── Sidebar ───────────────────────────────────────────
+  function renderSidebar(budgets) {
+    const list   = document.getElementById('rbSidebarList');
+    const authEl = document.getElementById('rbSidebarAuth');
+    if (!list) return;
+    list.querySelectorAll('.rb-card').forEach(c => c.remove());
+    const noProj = list.querySelector('.rb-no-projects');
+    if (noProj) noProj.remove();
+    if (!currentUser) { if (authEl) authEl.style.display = 'block'; return; }
+    if (authEl) authEl.style.display = 'none';
+    if (!budgets.length) {
+      const d = document.createElement('div');
+      d.className = 'rb-no-projects';
+      d.style.cssText = 'padding:24px 16px;text-align:center;font-size:0.84rem;color:var(--muted)';
+      d.innerHTML = 'No projects yet.<br>Click <strong>+ New</strong> to start.';
+      list.appendChild(d);
+      return;
+    }
+    budgets.forEach(b => {
+      const div = document.createElement('div');
+      div.className = 'rb-card' + (b.id === activeId ? ' active' : '');
+      const date   = new Date(b.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      div.innerHTML = `
+        <div class="rb-card-name">${esc(b.name)}</div>
+        <div class="rb-card-meta">${date}</div>
+        <div class="rb-card-actions">
+          <button class="rb-card-btn${b.shared ? ' share-active' : ''}" onclick="event.stopPropagation();toggleShare('${b.id}',${b.shared})">${b.shared ? '🔗 Shared' : 'Share'}</button>
+          <button class="rb-card-btn" onclick="event.stopPropagation();renameBudget('${b.id}','${esc(b.name)}')">Rename</button>
+          <button class="rb-card-btn danger" onclick="event.stopPropagation();deleteBudget('${b.id}')">Delete</button>
+        </div>`;
+      div.addEventListener('click', () => openBudget(b.id));
+      list.appendChild(div);
+    });
+  }
+
+  function renderMobileList(budgets) {
+    const el = document.getElementById('mobileListContent');
+    if (!el) return;
+    if (!budgets.length) {
+      el.innerHTML = `<div style="padding:32px 16px;text-align:center;font-size:0.84rem;color:var(--muted)">No projects yet.<br>Tap <strong>+ New</strong> to start.</div>`;
+      return;
+    }
+    el.innerHTML = budgets.map(b => {
+      const date = new Date(b.updated_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      return `
+        <div class="rb-card" onclick="openBudget('${b.id}');showMobileEditor()">
+          <div class="rb-card-name">${esc(b.name)}</div>
+          <div class="rb-card-meta">${date}</div>
+          <div class="rb-card-actions">
+            <button class="rb-card-btn${b.shared ? ' share-active' : ''}" onclick="event.stopPropagation();toggleShare('${b.id}',${b.shared})">${b.shared ? '🔗 Shared' : 'Share'}</button>
+            <button class="rb-card-btn" onclick="event.stopPropagation();renameBudget('${b.id}','${esc(b.name)}')">Rename</button>
+            <button class="rb-card-btn danger" onclick="event.stopPropagation();deleteBudget('${b.id}')">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // ── Table ─────────────────────────────────────────────
+  function renderTable() {
+    const tbody = document.getElementById('rbTableBody');
+    if (!tbody) return;
+    tbody.innerHTML = [...budgetData.items, ...budgetData.customItems].map(rowHTML).join('');
+  }
+
+  function rowHTML(item) {
+    const isCustom = budgetData.customItems.some(c => c.id === item.id);
+    const descCell = isCustom
+      ? `<input type="text" class="rb-desc-input" value="${esc(item.description)}" placeholder="Description" oninput="setDesc('${item.id}',this.value)">
+         <button class="btn-del-custom" onclick="deleteCustomItem('${item.id}')" title="Remove">×</button>`
+      : `<span class="rb-desc">${esc(item.description)}</span>`;
+    const bFmt = item.budget ? fmtDollar(item.budget) : '';
+    const aFmt = item.actual ? fmtDollar(item.actual) : '';
+    return `<tr class="${item.isPaid ? 'is-paid' : ''}" id="row-${item.id}">
+      <td>${descCell}</td>
+      <td class="col-budget"><input type="text" class="rb-num-input" value="${bFmt}" placeholder="$0"
+        onfocus="unfmt(this)" onblur="fmtBlur(this,'${item.id}','budget')" inputmode="decimal"></td>
+      <td class="col-actual"><input type="text" class="rb-num-input" value="${aFmt}" placeholder="$0"
+        onfocus="unfmt(this)" onblur="fmtBlur(this,'${item.id}','actual')" inputmode="decimal"></td>
+      <td class="col-gc"><input type="checkbox" class="rb-check gc-check" ${item.isGC ? 'checked' : ''} onchange="setFlag('${item.id}','isGC',this.checked)"></td>
+      <td class="col-paid"><input type="checkbox" class="rb-check" ${item.isPaid ? 'checked' : ''} onchange="setFlag('${item.id}','isPaid',this.checked)"></td>
+    </tr>`;
+  }
+
+  function findItem(id) {
+    return budgetData.items.find(i => i.id === id) || budgetData.customItems.find(i => i.id === id);
+  }
+  function unfmt(el) { const n = parseDollar(el.value); el.value = n ? String(n) : ''; el.select(); }
+  function fmtBlur(el, id, field) {
+    const n = parseDollar(el.value);
+    const item = findItem(id);
+    if (item) { item[field] = n; el.value = n ? fmtDollar(n) : ''; }
+    updateTotals();
+  }
+  function setFlag(id, field, val) {
+    const item = findItem(id);
+    if (!item) return;
+    item[field] = val;
+    const row = document.getElementById(`row-${id}`);
+    if (row) row.className = item.isPaid ? 'is-paid' : '';
+    updateTotals();
+  }
+  function setDesc(id, val) { const item = findItem(id); if (item) item.description = val; }
+
+  function addCustomItem() {
+    const input = document.getElementById('customDesc');
+    const id    = 'c_' + Date.now();
+    budgetData.customItems.push({ id, description: input.value.trim(), budget: 0, actual: 0, isGC: false, isPaid: false });
+    input.value = '';
+    const tbody = document.getElementById('rbTableBody');
+    if (tbody) tbody.insertAdjacentHTML('beforeend', rowHTML(budgetData.customItems.at(-1)));
+    updateTotals();
+    input.focus();
+  }
+
+  function deleteCustomItem(id) {
+    budgetData.customItems = budgetData.customItems.filter(c => c.id !== id);
+    document.getElementById(`row-${id}`)?.remove();
+    updateTotals();
+  }
+
+  function updateTotals() {
+    const all      = [...budgetData.items, ...budgetData.customItems];
+    const budget   = all.reduce((s, i) => s + (i.budget || 0), 0);
+    const actual   = all.reduce((s, i) => s + (i.actual || 0), 0);
+    const gc       = all.filter(i => i.isGC).reduce((s, i) => s + (i.actual || 0), 0);
+    const variance = budget - actual;
+
+    const set = (id, txt, cls) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.textContent = txt;
+      el.className   = 'col-actual rb-total-val' + (cls ? ' ' + cls : '');
+    };
+    document.getElementById('totalBudget').textContent = fmtDollar(budget);
+    set('totalActual',   fmtDollar(actual),   '');
+    set('totalGC',       fmtDollar(gc),        'warn');
+    set('totalVariance', fmtVariance(variance), variance >= 0 ? 'under' : 'over');
+  }
+
+  // ── Photos ────────────────────────────────────────────
+  async function handlePhotoUpload(input) {
+    const files = Array.from(input.files);
+    if (!files.length || !currentUser) { if (!currentUser) showToast('Sign in to upload photos'); return; }
+    for (const file of files) {
+      const ext  = file.name.split('.').pop();
+      const path = `${currentUser.id}/budget_${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+      const up   = await fetch(`${SUPABASE_URL}/storage/v1/object/walkthrough-photos/${path}`, {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${sbAccessToken}`, 'Content-Type': file.type },
+        body: file
+      }).then(r => r.json()).catch(() => ({}));
+      if (!up.Key && !up.path) { showToast('Upload failed'); continue; }
+      let sRes = await fetch(`${SUPABASE_URL}/storage/v1/object/sign/walkthrough-photos/${path}`, {
+        method: 'POST', headers: sbHeaders(), body: JSON.stringify({ expiresIn: 31536000 })
+      }).then(r => r.json()).catch(() => ({}));
+      let url = sRes.signedURL || sRes.signedUrl || '';
+      if (url.startsWith('/')) url = url.startsWith('/storage/') ? SUPABASE_URL + url : `${SUPABASE_URL}/storage/v1${url}`;
+      budgetData.photos.push({ path, url, caption: '' });
+    }
+    input.value = '';
+    renderPhotos();
+  }
+
+  function renderPhotos() {
+    const grid = document.getElementById('rbPhotoGrid');
+    if (!grid) return;
+    grid.innerHTML = budgetData.photos.map((p, i) => `
+      <div class="rb-photo-item">
+        <img class="rb-photo-thumb" src="${p.url}" alt="" onclick="viewPhoto('${p.url}')">
+        <button class="rb-photo-del" onclick="deletePhoto(${i})" title="Remove">×</button>
+        <input type="text" class="rb-photo-caption" value="${esc(p.caption || '')}" placeholder="Caption…" oninput="budgetData.photos[${i}].caption=this.value">
+      </div>`).join('');
+  }
+
+  async function deletePhoto(i) {
+    const p = budgetData.photos[i];
+    if (!p) return;
+    await fetch(`${SUPABASE_URL}/storage/v1/object/walkthrough-photos`, {
+      method: 'DELETE', headers: sbHeaders(), body: JSON.stringify({ prefixes: [p.path] })
+    }).catch(() => {});
+    budgetData.photos.splice(i, 1);
+    renderPhotos();
+  }
+
+  function viewPhoto(url) { document.getElementById('photoViewerImg').src = url; document.getElementById('photoViewer').classList.add('open'); }
+  function closePhotoViewer() { document.getElementById('photoViewer').classList.remove('open'); document.getElementById('photoViewerImg').src = ''; }
+
+  // ── Share ─────────────────────────────────────────────
+  function checkShare() {
+    const id = new URLSearchParams(location.search).get('share');
+    if (!id) return false;
+    document.getElementById('rbLayout').style.display = 'none';
+    document.querySelector('header').style.display    = 'none';
+    loadSharedView(id);
+    return true;
+  }
+
+  async function loadSharedView(id) {
+    const sv   = document.getElementById('shareView');
+    sv.style.display = 'block';
+    const rows = await fetch(`${SUPABASE_URL}/rest/v1/rehab_budgets?id=eq.${id}&shared=eq.true`, {
+      headers: { ...sbHeaders(true), 'Accept': 'application/json' }
+    }).then(r => r.json()).catch(() => []);
+    const b = Array.isArray(rows) && rows[0];
+    if (!b) { sv.innerHTML = '<p style="padding:40px;color:var(--muted)">Budget not found or sharing has been disabled.</p>'; return; }
+    renderShareReport(b);
+  }
+
+  function renderShareReport(b) {
+    const d    = b.data || {};
+    const date = new Date(b.updated_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    const all  = [...(d.items || []), ...(d.customItems || [])];
+    const budget   = all.reduce((s, i) => s + (i.budget || 0), 0);
+    const actual   = all.reduce((s, i) => s + (i.actual || 0), 0);
+    const gc       = all.filter(i => i.isGC).reduce((s, i) => s + (i.actual || 0), 0);
+    const variance = budget - actual;
+    const paid     = all.filter(i => i.isPaid).length;
+
+    const rows = all.map(item => `
+      <tr class="${item.isPaid ? 'is-paid' : ''}">
+        <td class="sv-desc">${esc(item.description)}</td>
+        <td class="col-budget">${item.budget ? fmtDollar(item.budget) : '—'}</td>
+        <td class="col-actual">${item.actual ? fmtDollar(item.actual) : '—'}</td>
+        <td class="col-gc" style="color:${item.isGC ? 'var(--warn)' : 'var(--border)'}">●</td>
+        <td class="col-paid" style="color:${item.isPaid ? 'var(--accent)' : 'var(--border)'}">●</td>
+      </tr>`).join('');
+
+    const photoHtml = (d.photos || []).length ? `
+      <div class="sv-photos-hdr" style="margin-top:28px">Photos</div>
+      <div class="sv-photo-grid">
+        ${(d.photos || []).map(p => `<div class="sv-photo-item"><img src="${p.url}" alt="">${p.caption ? `<div class="sv-photo-caption">${esc(p.caption)}</div>` : ''}</div>`).join('')}
+      </div>` : '';
+
+    document.getElementById('shareView').innerHTML = `
+      <div class="sv-brand">ClosingDesk · Rehab Budget</div>
+      <div class="sv-name">${esc(b.name)}</div>
+      ${d.address ? `<div class="sv-addr">${esc(d.address)}</div>` : ''}
+      <div class="sv-meta">Updated ${date}</div>
+      <div class="sv-stat-grid">
+        <div class="sv-stat"><div class="sv-stat-label">Budget Total</div><div class="sv-stat-value">${fmtDollar(budget)}</div></div>
+        <div class="sv-stat"><div class="sv-stat-label">Actual Total</div><div class="sv-stat-value">${fmtDollar(actual)}</div></div>
+        <div class="sv-stat is-gc"><div class="sv-stat-label">GC Total</div><div class="sv-stat-value">${fmtDollar(gc)}</div></div>
+        <div class="sv-stat ${variance >= 0 ? 'is-under' : 'is-over'}"><div class="sv-stat-label">Variance</div><div class="sv-stat-value">${fmtVariance(variance)}</div></div>
+        <div class="sv-stat"><div class="sv-stat-label">Items Paid</div><div class="sv-stat-value">${paid} / ${all.length}</div></div>
+      </div>
+      <div class="sv-table-wrap">
+        <table class="sv-table">
+          <thead><tr>
+            <th>Description</th>
+            <th class="col-budget">Budget</th>
+            <th class="col-actual">Actual</th>
+            <th class="col-gc">GC</th>
+            <th class="col-paid">Paid</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      ${photoHtml}`;
+  }
+
+  // ── View management ───────────────────────────────────
+  function isMobile() { return window.innerWidth <= 1024; }
+
+  function showList() {
+    if (!isMobile()) {
+      document.getElementById('rbLayout').style.display = 'flex';
+      document.body.classList.remove('list-mode', 'editor-mode');
+      loadBudgets();
+      return;
+    }
+    document.getElementById('rbLayout').style.display   = 'none';
+    document.getElementById('editorNav').style.display  = 'none';
+    if (currentUser) {
+      document.body.classList.add('list-mode');
+      document.body.classList.remove('editor-mode');
+      document.getElementById('mobileSigninView').style.display = 'none';
+      document.getElementById('mobileListView').style.display   = 'flex';
+      const row = document.getElementById('rlvAuthRow');
+      row.style.display = 'flex';
+      document.getElementById('rlvEmail').textContent = currentUser.email || '';
+      loadBudgets();
+    } else {
+      document.body.classList.add('list-mode');
+      document.getElementById('mobileSigninView').style.display = 'flex';
+      document.getElementById('mobileListView').style.display   = 'none';
+    }
+  }
+
+  function showEditor() {
+    document.getElementById('mobileSigninView').style.display = 'none';
+    document.getElementById('mobileListView').style.display   = 'none';
+    document.body.classList.remove('list-mode');
+    document.getElementById('rbLayout').style.display = isMobile() ? 'block' : 'flex';
+    if (isMobile()) {
+      document.getElementById('editorNav').style.display = 'flex';
+      document.body.classList.add('editor-mode');
+    } else {
+      document.getElementById('editorNav').style.display = 'none';
+      document.body.classList.remove('editor-mode');
+    }
+  }
+
+  function showMobileEditor() { showEditor(); }
+
+  function showContent(show) {
+    document.getElementById('rbContent').style.display    = show ? 'block' : 'none';
+    document.getElementById('rbEmptyState').style.display = show ? 'none'  : 'flex';
+    _editorActive = show;
+  }
+
+  // ── Utils ─────────────────────────────────────────────
+  function parseDollar(v) { return parseFloat(String(v || '').replace(/[$,\s]/g, '')) || 0; }
+  function fmtDollar(n) {
+    const abs = Math.abs(Number(n) || 0);
+    return (n < 0 ? '-' : '') + '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+  function fmtVariance(n) {
+    const abs = Math.abs(n);
+    const fmt = '$' + abs.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    return (n >= 0 ? '+' : '-') + fmt;
+  }
+  function setSaveStatus(s) {
+    const el = document.getElementById('saveStatus');
+    if (el) { el.textContent = s === 'saved' ? 'Saved ✓' : ''; }
+  }
+  function esc(s) { return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function showToast(msg, ms = 2500) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), ms);
+  }
+
+  // ── Resizer ───────────────────────────────────────────
+  function initResizer() {
+    const resizer = document.getElementById('rbResizer');
+    const sidebar = document.querySelector('.rb-sidebar');
+    if (!resizer || !sidebar) return;
+    let startX, startW;
+    resizer.addEventListener('mousedown', e => {
+      startX = e.clientX; startW = sidebar.getBoundingClientRect().width;
+      resizer.classList.add('dragging');
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+    function onMove(e) {
+      const w = Math.min(Math.max(startW + e.clientX - startX, 140), 480);
+      document.documentElement.style.setProperty('--rb-sidebar-w', `${w}px`);
+    }
+    function onUp() { resizer.classList.remove('dragging'); document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); }
+  }
+
+  // ── Mobile sign-in ────────────────────────────────────
+  async function msvSubmit() {
+    const email = document.getElementById('msvEmail').value.trim();
+    const pw    = document.getElementById('msvPassword').value;
+    const errEl = document.getElementById('msvError');
+    const btn   = document.getElementById('msvBtn');
+    if (!email || !pw) { errEl.textContent = 'Please enter your email and password.'; return; }
+    btn.disabled = true; btn.textContent = 'Signing in…'; errEl.textContent = '';
+    const data = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+      body: JSON.stringify({ email, password: pw })
+    }).then(r => r.json()).catch(() => ({}));
+    btn.disabled = false; btn.textContent = 'Sign In';
+    if (data.access_token) { saveSession(data); updateAuthUI(); showList(); }
+    else { errEl.textContent = data.error_description || data.msg || data.error || 'Sign in failed.'; }
+  }
+
+  // ── Boot ──────────────────────────────────────────────
+  loadSession();
+  updateAuthUI();
+  if (!checkShare()) {
+    if (isMobile()) showList();
+    initResizer();
+    initAuth();
+  }
+  </script>
+</body>
+</html>
