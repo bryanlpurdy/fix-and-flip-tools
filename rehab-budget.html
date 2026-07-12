@@ -87,19 +87,25 @@
     #rbEmptyState button { margin-top: 4px; background: transparent; border: 1px solid var(--accent); color: var(--accent); border-radius: 6px; padding: 8px 20px; font-size: 0.84rem; font-weight: 700; transition: all 0.15s; }
     #rbEmptyState button:hover { background: var(--accent); color: #0d0f0e; }
 
-    #rbContent { padding: 28px 36px; max-width: 920px; }
+    #rbContent { padding: 28px 36px 100px; max-width: 920px; }
 
     /* ── Project inputs ──────────────────────────────── */
     .rb-inputs-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px; }
     .rb-input-group { display: flex; flex-direction: column; gap: 4px; }
-    .rb-input-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+    .rb-input-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text); }
     .rb-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 9px 12px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; outline: none; transition: border-color 0.2s; }
     .rb-input:focus { border-color: var(--accent); }
     .rb-input::placeholder { color: var(--muted); }
-    .rb-save-row { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
     .btn-save { background: var(--accent); color: #0d0f0e; border: none; border-radius: 6px; padding: 8px 22px; font-size: 0.85rem; font-weight: 700; transition: background 0.15s; }
     .btn-save:hover { background: var(--accent2); }
-    .rb-save-status { font-size: 0.78rem; color: var(--accent); }
+    .rb-footer {
+      position: fixed; bottom: 0; left: var(--rb-sidebar-w); right: 0;
+      background: var(--surface); border-top: 1px solid var(--border);
+      padding: 13px 36px; display: flex; align-items: center; justify-content: flex-end;
+      gap: 14px; z-index: 50;
+    }
+    .rb-footer-status { font-size: 0.78rem; color: var(--accent); }
+    body.editor-mode .rb-footer { left: 0; }
 
     /* ── Budget Table ────────────────────────────────── */
     .rb-table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
@@ -117,7 +123,8 @@
 
     .rb-table tbody tr { border-bottom: 1px solid rgba(42,51,48,0.6); transition: background 0.1s; }
     .rb-table tbody tr:last-child { border-bottom: none; }
-    .rb-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .rb-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.025); }
+    .rb-table tbody tr:hover { background: rgba(200,245,100,0.04); }
     .rb-table tbody tr.is-paid .rb-desc { color: var(--muted); text-decoration: line-through; text-decoration-color: var(--border); }
     .rb-table tbody tr.is-paid .rb-desc-input { color: var(--muted); text-decoration: line-through; }
     .rb-table td { padding: 7px 12px; vertical-align: middle; }
@@ -150,16 +157,17 @@
     .btn-del-custom { background: transparent; border: none; color: var(--muted); font-size: 1rem; padding: 2px 4px; cursor: pointer; border-radius: 3px; transition: color 0.15s; vertical-align: middle; }
     .btn-del-custom:hover { color: var(--danger); }
 
-    /* tfoot totals */
-    .rb-table tfoot td { padding: 9px 12px; font-weight: 700; font-size: 0.84rem; }
-    .rb-table tfoot tr { background: var(--surface2); }
-    .rb-table tfoot tr:first-child { border-top: 2px solid var(--border); }
-    .rb-table tfoot tr + tr { border-top: 1px solid rgba(42,51,48,0.5); }
-    .rb-total-label { font-size: 0.68rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--label); }
-    .rb-total-val { font-family: 'DM Mono', monospace; text-align: right; color: var(--accent); }
-    .rb-total-val.warn  { color: var(--warn); }
-    .rb-total-val.over  { color: var(--danger); }
-    .rb-total-val.under { color: var(--accent); }
+    /* Stat cards (totals) */
+    .rb-stat-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      margin-top: 16px; margin-bottom: 16px;
+    }
+    .rb-stat { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .rb-stat-label { font-size: 0.63rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--text); }
+    .rb-stat-value { font-size: 1.05rem; font-weight: 700; font-family: 'DM Mono', monospace; color: var(--text); }
+    .rb-stat.is-gc   .rb-stat-value { color: var(--warn); }
+    .rb-stat.is-over .rb-stat-value { color: var(--danger); }
+    .rb-stat.is-under .rb-stat-value { color: var(--accent); }
 
     /* Add custom row */
     .rb-add-row-wrap {
@@ -288,6 +296,8 @@
       header h1 { font-size: 1.6rem; }
       .rb-num-input { width: 86px; font-size: 0.8rem; }
       .sv-stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .rb-stat-grid { grid-template-columns: repeat(2, 1fr); }
+      .rb-footer { left: 0; padding: 12px 16px; }
     }
     body.list-mode header { display: none; }
     body.editor-mode .rb-sidebar, body.editor-mode .rb-resizer { display: none; }
@@ -336,11 +346,6 @@
             <input type="text" class="rb-input" id="projAddress" placeholder="123 Main St, City TX">
           </div>
         </div>
-        <div class="rb-save-row">
-          <button class="btn-save" onclick="openSaveModal()">Save</button>
-          <span class="rb-save-status" id="saveStatus"></span>
-        </div>
-
         <div class="rb-table-wrap">
           <table class="rb-table">
             <thead>
@@ -353,36 +358,19 @@
               </tr>
             </thead>
             <tbody id="rbTableBody"></tbody>
-            <tfoot>
-              <tr>
-                <td class="rb-total-label">Budget Total</td>
-                <td class="col-budget rb-total-val" id="totalBudget">—</td>
-                <td></td><td></td><td></td>
-              </tr>
-              <tr>
-                <td class="rb-total-label">Actual Total</td>
-                <td></td>
-                <td class="col-actual rb-total-val" id="totalActual">—</td>
-                <td></td><td></td>
-              </tr>
-              <tr>
-                <td class="rb-total-label">GC Total (Actual)</td>
-                <td></td>
-                <td class="col-actual rb-total-val warn" id="totalGC">—</td>
-                <td></td><td></td>
-              </tr>
-              <tr>
-                <td class="rb-total-label">Variance (Budget − Actual)</td>
-                <td></td>
-                <td class="col-actual rb-total-val" id="totalVariance">—</td>
-                <td></td><td></td>
-              </tr>
-            </tfoot>
           </table>
           <div class="rb-add-row-wrap">
             <input type="text" class="rb-add-desc" id="customDesc" placeholder="Add custom expense…" onkeydown="if(event.key==='Enter')addCustomItem()">
             <button class="btn-add-custom" onclick="addCustomItem()">+ Add Row</button>
           </div>
+        </div>
+        <div class="rb-stat-grid">
+          <div class="rb-stat"><div class="rb-stat-label">Budget Total</div><div class="rb-stat-value" id="totalBudget">—</div></div>
+          <div class="rb-stat"><div class="rb-stat-label">Actual Total</div><div class="rb-stat-value" id="totalActual">—</div></div>
+          <div class="rb-stat is-gc"><div class="rb-stat-label">GC Budget</div><div class="rb-stat-value" id="totalGCBudget">—</div></div>
+          <div class="rb-stat is-gc"><div class="rb-stat-label">GC Actual</div><div class="rb-stat-value" id="totalGCActual">—</div></div>
+          <div class="rb-stat" id="varianceStat"><div class="rb-stat-label">Variance</div><div class="rb-stat-value" id="totalVariance">—</div></div>
+          <div class="rb-stat"><div class="rb-stat-label">Items Paid</div><div class="rb-stat-value" id="totalPaid">—</div></div>
         </div>
 
         <div class="rb-photos-section">
@@ -457,6 +445,11 @@
   <div id="photoViewer">
     <button class="pv-close" onclick="closePhotoViewer()">×</button>
     <img id="photoViewerImg" src="" alt="">
+  </div>
+
+  <div class="rb-footer" id="rbFooter">
+    <span class="rb-footer-status" id="saveStatus"></span>
+    <button class="btn-save" onclick="openSaveModal()">Save</button>
   </div>
 
   <div class="toast" id="toast"></div>
@@ -761,9 +754,11 @@
     return `<tr class="${item.isPaid ? 'is-paid' : ''}" id="row-${item.id}">
       <td>${descCell}</td>
       <td class="col-budget"><input type="text" class="rb-num-input" value="${bFmt}" placeholder="$0"
-        onfocus="unfmt(this)" onblur="fmtBlur(this,'${item.id}','budget')" inputmode="decimal"></td>
+        onfocus="unfmt(this)" onblur="fmtBlur(this,'${item.id}','budget')"
+        onkeydown="numKeydown(event,'${item.id}','budget')" inputmode="decimal"></td>
       <td class="col-actual"><input type="text" class="rb-num-input" value="${aFmt}" placeholder="$0"
-        onfocus="unfmt(this)" onblur="fmtBlur(this,'${item.id}','actual')" inputmode="decimal"></td>
+        onfocus="unfmt(this)" onblur="fmtBlur(this,'${item.id}','actual')"
+        onkeydown="numKeydown(event,'${item.id}','actual')" inputmode="decimal"></td>
       <td class="col-gc"><input type="checkbox" class="rb-check gc-check" ${item.isGC ? 'checked' : ''} onchange="setFlag('${item.id}','isGC',this.checked)"></td>
       <td class="col-paid"><input type="checkbox" class="rb-check" ${item.isPaid ? 'checked' : ''} onchange="setFlag('${item.id}','isPaid',this.checked)"></td>
     </tr>`;
@@ -806,23 +801,39 @@
     updateTotals();
   }
 
+  function numKeydown(e, id, field) {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const rows = [...document.querySelectorAll('#rbTableBody tr')];
+    const cur  = document.getElementById(`row-${id}`);
+    const next = rows[rows.indexOf(cur) + 1];
+    if (!next) return;
+    next.querySelector(`td.col-${field} input`)?.focus();
+  }
+
   function updateTotals() {
     const all      = [...budgetData.items, ...budgetData.customItems];
     const budget   = all.reduce((s, i) => s + (i.budget || 0), 0);
     const actual   = all.reduce((s, i) => s + (i.actual || 0), 0);
-    const gc       = all.filter(i => i.isGC).reduce((s, i) => s + (i.actual || 0), 0);
+    const gcItems  = all.filter(i => i.isGC);
+    const gcBudget = gcItems.reduce((s, i) => s + (i.budget || 0), 0);
+    const gcActual = gcItems.reduce((s, i) => s + (i.actual || 0), 0);
     const variance = budget - actual;
+    const paid     = all.filter(i => i.isPaid).length;
 
-    const set = (id, txt, cls) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.textContent = txt;
-      el.className   = 'col-actual rb-total-val' + (cls ? ' ' + cls : '');
-    };
-    document.getElementById('totalBudget').textContent = fmtDollar(budget);
-    set('totalActual',   fmtDollar(actual),   '');
-    set('totalGC',       fmtDollar(gc),        'warn');
-    set('totalVariance', fmtVariance(variance), variance >= 0 ? 'under' : 'over');
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('totalBudget',   fmtDollar(budget));
+    set('totalActual',   fmtDollar(actual));
+    set('totalGCBudget', fmtDollar(gcBudget));
+    set('totalGCActual', fmtDollar(gcActual));
+    set('totalVariance', fmtVariance(variance));
+    set('totalPaid',     `${paid} / ${all.length}`);
+
+    const vStat = document.getElementById('varianceStat');
+    if (vStat) {
+      vStat.classList.remove('is-over', 'is-under');
+      vStat.classList.add(variance >= 0 ? 'is-under' : 'is-over');
+    }
   }
 
   // ── Photos ────────────────────────────────────────────
