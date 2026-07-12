@@ -176,6 +176,9 @@
     .rb-stat.is-gc   .rb-stat-value { color: var(--warn); }
     .rb-stat.is-over .rb-stat-value { color: var(--danger); }
     .rb-stat.is-under .rb-stat-value { color: var(--accent); }
+    .rb-stat-input { background: transparent; border: none; border-bottom: 1px dashed var(--border); color: inherit; font-size: 1.05rem; font-weight: 700; font-family: 'DM Mono', monospace; width: 100%; outline: none; padding: 2px 0; }
+    .rb-stat.is-gc .rb-stat-input { color: var(--warn); }
+    .rb-stat-input:focus { border-bottom-color: var(--accent); }
 
     /* Add custom row */
     .rb-add-row-wrap {
@@ -420,7 +423,7 @@
           <div class="rb-stat"><div class="rb-stat-label">Actual Total</div><div class="rb-stat-value" id="totalActual">—</div></div>
           <div class="rb-stat" id="varianceStat"><div class="rb-stat-label">Variance</div><div class="rb-stat-value" id="totalVariance">—</div></div>
           <div class="rb-stat is-gc"><div class="rb-stat-label">GC Budget</div><div class="rb-stat-value" id="totalGCBudget">—</div></div>
-          <div class="rb-stat is-gc"><div class="rb-stat-label">GC Actual</div><div class="rb-stat-value" id="totalGCActual">—</div></div>
+          <div class="rb-stat is-gc"><div class="rb-stat-label">GC Paid</div><input type="text" class="rb-stat-input" id="gcPaidInput" placeholder="—" inputmode="decimal" onfocus="unfmtStatInput(this)" onblur="fmtStatInput(this)"></div>
           <div class="rb-stat"><div class="rb-stat-label">Items Paid</div><div class="rb-stat-value" id="totalPaid">—</div></div>
         </div>
 
@@ -546,7 +549,8 @@
       address: '',
       items: DEFAULT_DESCS.map((d, i) => ({ id: `b${i}`, description: d, budget: 0, actual: 0, isGC: false, isPaid: false })),
       customItems: [],
-      photos: []
+      photos: [],
+      gcPaid: 0
     };
   }
 
@@ -701,6 +705,8 @@
     document.getElementById('projName').value    = '';
     document.getElementById('projAddress').value = '';
     document.getElementById('projName').focus();
+    const gcPaidEl = document.getElementById('gcPaidInput');
+    if (gcPaidEl) gcPaidEl.value = '';
     renderTable();
     renderPhotos();
     updateTotals();
@@ -724,13 +730,16 @@
         return { id: `b${i}`, description: desc, budget: s?.budget || 0, actual: s?.actual || 0, isGC: !!s?.isGC, isPaid: !!s?.isPaid };
       }),
       customItems: d.customItems || [],
-      photos:      d.photos || []
+      photos:      d.photos || [],
+      gcPaid:      d.gcPaid || 0
     };
 
     showEditor();
     showContent(true);
     document.getElementById('projName').value    = b.name;
     document.getElementById('projAddress').value = budgetData.address;
+    const gcPaidEl = document.getElementById('gcPaidInput');
+    if (gcPaidEl) gcPaidEl.value = budgetData.gcPaid ? fmtDollar(budgetData.gcPaid) : '';
     renderTable();
     renderPhotos();
     updateTotals();
@@ -846,6 +855,12 @@
     return budgetData.items.find(i => i.id === id) || budgetData.customItems.find(i => i.id === id);
   }
   function unfmt(el) { const n = parseDollar(el.value); el.value = n ? String(n) : ''; el.select(); }
+  function unfmtStatInput(el) { const n = parseDollar(el.value); el.value = n ? String(n) : ''; el.select(); }
+  function fmtStatInput(el) {
+    const n = parseDollar(el.value);
+    budgetData.gcPaid = n;
+    el.value = n ? fmtDollar(n) : '';
+  }
   function fmtBlur(el, id, field) {
     const n = parseDollar(el.value);
     const item = findItem(id);
@@ -895,7 +910,6 @@
     const actual   = all.reduce((s, i) => s + (i.actual || 0), 0);
     const gcItems  = all.filter(i => i.isGC);
     const gcBudget = gcItems.reduce((s, i) => s + (i.budget || 0), 0);
-    const gcActual = gcItems.reduce((s, i) => s + (i.actual || 0), 0);
     const variance      = budget - actual;
     const budgetedItems = all.filter(i => (i.budget || 0) > 0);
     const paid          = budgetedItems.filter(i => i.isPaid).length;
@@ -905,7 +919,6 @@
     set('totalBudget',   fmtDollar(budget));
     set('totalActual',   fmtDollar(actual));
     set('totalGCBudget', fmtDollar(gcBudget));
-    set('totalGCActual', fmtDollar(gcActual));
     set('totalVariance', fmtVariance(variance));
     set('totalPaid',     paidLabel);
 
@@ -993,7 +1006,7 @@
     const actual   = all.reduce((s, i) => s + (i.actual || 0), 0);
     const gcItems    = all.filter(i => i.isGC);
     const gcBudget   = gcItems.reduce((s, i) => s + (i.budget || 0), 0);
-    const gcActual   = gcItems.reduce((s, i) => s + (i.actual || 0), 0);
+    const gcPaid     = d.gcPaid || 0;
     const variance   = budget - actual;
     const budgeted   = all.filter(i => (i.budget || 0) > 0);
     const paid       = budgeted.filter(i => i.isPaid).length;
@@ -1024,7 +1037,7 @@
         <div class="sv-stat"><div class="sv-stat-label">Actual Total</div><div class="sv-stat-value">${fmtDollar(actual)}</div></div>
         <div class="sv-stat ${variance >= 0 ? 'is-under' : 'is-over'}"><div class="sv-stat-label">Variance</div><div class="sv-stat-value">${fmtVariance(variance)}</div></div>
         <div class="sv-stat is-gc"><div class="sv-stat-label">GC Budget</div><div class="sv-stat-value">${fmtDollar(gcBudget)}</div></div>
-        <div class="sv-stat is-gc"><div class="sv-stat-label">GC Actual</div><div class="sv-stat-value">${fmtDollar(gcActual)}</div></div>
+        <div class="sv-stat is-gc"><div class="sv-stat-label">GC Paid</div><div class="sv-stat-value">${gcPaid ? fmtDollar(gcPaid) : '—'}</div></div>
         <div class="sv-stat"><div class="sv-stat-label">Items Paid</div><div class="sv-stat-value">${paidLabel}</div></div>
       </div>
       <div class="sv-table-wrap">
