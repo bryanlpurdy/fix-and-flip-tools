@@ -328,7 +328,7 @@
       .rb-table td.col-actual { display: flex; flex-direction: column; gap: 5px; text-align: left; }
       .rb-table td.col-budget::before { content: 'Budget'; display: block; font-size: 0.6rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--label); }
       .rb-table td.col-actual::before { content: 'Actual'; display: block; font-size: 0.6rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--label); }
-      .rb-num-input { width: 100%; text-align: left; font-size: 0.88rem; padding: 7px 10px; }
+      .rb-num-input { width: 100%; text-align: left; font-size: 0.88rem; padding: 7px 10px; border-color: var(--border); background: var(--surface); }
       /* GC / Paid: checkbox + inline label */
       .rb-table td.col-gc,
       .rb-table td.col-paid { display: flex; align-items: center; gap: 8px; }
@@ -352,6 +352,13 @@
       <div class="auth-status" id="authStatus"></div>
     </div>
   </header>
+
+  <!-- Mobile editor nav -->
+  <div id="editorNav">
+    <button class="editor-nav-back" onclick="showList()">← My Projects</button>
+    <span class="editor-nav-title">Rehab Budget</span>
+    <button class="editor-nav-new" onclick="newBudget()">+ New</button>
+  </div>
 
   <div id="rbLayout">
     <div class="rb-sidebar">
@@ -456,13 +463,6 @@
       <button id="rlvSignOut" onclick="signOut()">Sign Out</button>
     </div>
     <div id="mobileListContent"></div>
-  </div>
-
-  <!-- Mobile editor nav -->
-  <div id="editorNav">
-    <button class="editor-nav-back" onclick="showList()">← My Projects</button>
-    <span class="editor-nav-title">Rehab Budget</span>
-    <button class="editor-nav-new" onclick="newBudget()">+ New</button>
   </div>
 
   <div id="shareView"></div>
