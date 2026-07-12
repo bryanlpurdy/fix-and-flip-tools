@@ -296,10 +296,46 @@
       .hub-back, .auth-status .user-email { display: none; }
       header { padding: 12px 16px; }
       header h1 { font-size: 1.6rem; }
-      .rb-num-input { width: 86px; font-size: 0.8rem; }
       .sv-stat-grid { grid-template-columns: repeat(2, 1fr); }
       .rb-stat-grid { grid-template-columns: repeat(2, 1fr); }
       .rb-footer { left: 0; padding: 12px 16px; }
+
+      /* ── Table → card layout ───────────────────── */
+      .rb-table-wrap { overflow: visible; border: none; border-radius: 0; background: transparent; }
+      .rb-table { display: block; min-width: unset; }
+      .rb-table thead { display: none; }
+      .rb-table tbody { display: block; }
+      .rb-table tbody tr {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 12px;
+        background: var(--surface2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        padding: 14px;
+      }
+      .rb-table tbody tr:nth-child(even) { background: var(--surface2); }
+      .rb-table tbody tr:hover { background: var(--surface2); }
+      .rb-table tbody tr:last-child { border-bottom: 1px solid var(--border); margin-bottom: 0; }
+      .rb-table td { padding: 0; vertical-align: top; }
+      /* Description: spans full width */
+      .rb-table td:first-child { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; }
+      .rb-desc { flex: 1; font-weight: 600; font-size: 0.92rem; }
+      .rb-desc-input { flex: 1; width: auto; }
+      /* Budget / Actual: side by side with labels above */
+      .rb-table td.col-budget,
+      .rb-table td.col-actual { display: flex; flex-direction: column; gap: 5px; text-align: left; }
+      .rb-table td.col-budget::before { content: 'Budget'; display: block; font-size: 0.6rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--label); }
+      .rb-table td.col-actual::before { content: 'Actual'; display: block; font-size: 0.6rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--label); }
+      .rb-num-input { width: 100%; text-align: left; font-size: 0.88rem; padding: 7px 10px; }
+      /* GC / Paid: checkbox + inline label */
+      .rb-table td.col-gc,
+      .rb-table td.col-paid { display: flex; align-items: center; gap: 8px; }
+      .rb-table td.col-gc::after  { content: 'GC';   font-size: 0.82rem; font-weight: 600; color: var(--warn); }
+      .rb-table td.col-paid::after { content: 'Paid'; font-size: 0.82rem; font-weight: 600; color: var(--label); }
+      /* Add-row strip */
+      .rb-add-row-wrap { border-radius: 6px; border: 1px solid var(--border); margin-top: 10px; }
     }
     body.list-mode header { display: none; }
     body.editor-mode .rb-sidebar, body.editor-mode .rb-resizer { display: none; }
