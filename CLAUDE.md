@@ -10,6 +10,7 @@ A web app suite for real estate investors and Realtors. Current tools:
 - **`deal-analyzer.html`** — Deal Analyzer: desktop-primary deal analysis tool with a full responsive mobile view.
 - **`net-sheet.html`** — Seller Net Sheet: Realtor-focused tool to estimate seller net proceeds at closing. Save, share, and print.
 - **`checklist.html`** — Rehab Tracker: fix-and-flip project checklist — 74 items across 10 phases from financing through close. Auto-saves, per-item notes, progress bar, shareable.
+- **`rehab-budget.html`** — Rehab Budget: line-item budget tracker — 51 pre-loaded items, Budget vs. Actual columns, GC and Paid checkboxes, stat summary tiles, photos, shareable.
 
 Long-term vision: expand the suite for investors and Realtors, with potential to monetize as a SaaS product beyond Bryan's own business.
 
@@ -110,9 +111,10 @@ User-facing name is **Bookkeeping Light** (internal name: Realtor Bookkeeping). 
 - `deal-analyzer.html` — Deal Analyzer app (HTML + CSS + JS in one file)
 - `net-sheet.html` — Seller Net Sheet app (HTML + CSS + JS in one file)
 - `checklist.html` — Rehab Tracker app (HTML + CSS + JS in one file)
+- `rehab-budget.html` — Rehab Budget app (HTML + CSS + JS in one file)
 - **Supabase** backend via direct REST API (not the JS SDK):
   - Auth: `/auth/v1/token` and `/auth/v1/signup`
-  - Database: `/rest/v1/walkthroughs`, `/rest/v1/deals`, `/rest/v1/net_sheets`, `/rest/v1/projects` (PostgREST)
+  - Database: `/rest/v1/walkthroughs`, `/rest/v1/deals`, `/rest/v1/net_sheets`, `/rest/v1/projects`, `/rest/v1/rehab_budgets` (PostgREST)
   - Storage: `/storage/v1/object/walkthrough-photos/{path}`
 
 ---
@@ -126,7 +128,7 @@ Anon public key: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsIn
 Plan: Pro ($25/mo) + Custom Domain add-on ($10/mo)
 ```
 
-**`SUPABASE_URL` in all five files (`index.html`, `walkthrough.html`, `deal-analyzer.html`, `net-sheet.html`, `checklist.html`) is set to `https://api.bluestarrealtygroup.com`** — do not revert to the `.supabase.co` subdomain. The custom domain was added to fix AT&T ISP DNS resolution failures with Supabase's free-tier subdomain.
+**`SUPABASE_URL` in all six files (`index.html`, `walkthrough.html`, `deal-analyzer.html`, `net-sheet.html`, `checklist.html`, `rehab-budget.html`) is set to `https://api.bluestarrealtygroup.com`** — do not revert to the `.supabase.co` subdomain. The custom domain was added to fix AT&T ISP DNS resolution failures with Supabase's free-tier subdomain.
 
 ### Email Templates
 
@@ -220,10 +222,33 @@ create policy "Public read shared projects" on projects
 
 The `data` column stores `{ address, items: { [itemId]: { checked, note } } }`. Progress is computed at render time from the `data.items` object — not denormalized. `shared = true` enables the public read-only share view via `?share=<UUID>`.
 
+### Database — `rehab_budgets` table (Rehab Budget)
+
+```sql
+create table rehab_budgets (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade,
+  name text not null,
+  data jsonb not null default '{}',
+  shared boolean not null default false,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table rehab_budgets enable row level security;
+create policy "Users manage own rehab budgets" on rehab_budgets
+  for all using (auth.uid() = user_id);
+create policy "Public read shared rehab budgets" on rehab_budgets
+  for select using (shared = true);
+```
+
+The `data` column stores `{ address, items: [{ id, description, budget, actual, isGC, isPaid }], customItems: [], photos: [] }`. Items array preserves order; `customItems` holds user-added rows. `shared = true` enables the public read-only share view via `?share=<UUID>`.
+
 ### Storage — `walkthrough-photos` bucket
 
 - Private bucket, accessed via signed URLs (1-year expiry = `31536000` seconds)
-- Files stored at path: `{user_id}/{timestamp}_{random}.{ext}`
+- Shared by both Property Walkthrough and Rehab Budget
+- Walkthrough files stored at path: `{user_id}/{timestamp}_{random}.{ext}`
+- Rehab Budget files stored at path: `{user_id}/budget_{timestamp}_{random}.{ext}` (the `budget_` prefix distinguishes them from walkthrough photos)
 - **Important:** Supabase's sign endpoint returns a relative path like `/object/sign/...` (missing `/storage/v1` prefix). The code prepends it correctly:
   ```js
   if (url.startsWith('/')) url = url.startsWith('/storage/') ? SUPABASE_URL + url : `${SUPABASE_URL}/storage/v1${url}`;
@@ -242,6 +267,7 @@ The `data` column stores `{ address, items: { [itemId]: { checked, note } } }`. 
 - **Deal Analyzer:** `https://tools.bluestarrealtygroup.com/deal-analyzer.html`
 - **Net Sheet:** `https://tools.bluestarrealtygroup.com/net-sheet.html`
 - **Rehab Tracker:** `https://tools.bluestarrealtygroup.com/checklist.html`
+- **Rehab Budget:** `https://tools.bluestarrealtygroup.com/rehab-budget.html`
 - **Fallback:** `https://bryanlpurdy.github.io/fix-and-flip-tools/`
 - **Workflow:** edit locally → `git add` → `git commit` → `git push` → GitHub Pages redeploys
 
@@ -277,10 +303,10 @@ The hub is the entry point for the suite. It handles auth and redirects users to
 ### Tool sections
 The hub grid is replaced by `.hub-sections` (flex column, `gap: 40px`) containing two `.tool-section` blocks, each with a `.tool-section-label` header and a `.tool-grid` (2-col grid):
 
-- **For Real Estate Investors** — Deal Analyzer, Property Walkthrough, Rehab Tracker
+- **For Real Estate Investors** — Deal Analyzer, Rehab Budget, Property Walkthrough, Rehab Tracker (4 cards in a 2-col grid)
 - **For Realtors** — Seller Net Sheet, Make Ready List (Coming Soon), Bookkeeping Light (Coming Soon)
 
-Coming Soon cards use `.tool-card-soon` (muted icon/name, `pointer-events: none`, no hover effect) and a `.tool-soon-badge` ("COMING SOON" label) in place of the "Open →" link. Bookkeeping Light uses `style="grid-column: 1 / -1"` to span the full grid width on desktop. Rehab Tracker also uses `style="grid-column: 1 / -1"` (full-width card in the investor grid). On mobile the grid collapses to single column so the span has no effect.
+Coming Soon cards use `.tool-card-soon` (muted icon/name, `pointer-events: none`, no hover effect) and a `.tool-soon-badge` ("COMING SOON" label) in place of the "Open →" link. Bookkeeping Light uses `style="grid-column: 1 / -1"` to span the full grid width on desktop. On mobile the grid collapses to single column so the span has no effect. No investor card currently spans full width — Rehab Tracker's `style="grid-column: 1 / -1"` was removed when Rehab Budget was added as a fourth card.
 
 ### Auth flow
 ```js
@@ -300,10 +326,10 @@ signOut()            // clear session
 ```
 
 ### Shared session
-All five files use the same `localStorage` key `sb_session` (`{ access_token, refresh_token, user }`). Signing in on the hub means all tools open already authenticated — no second login required.
+All six files use the same `localStorage` key `sb_session` (`{ access_token, refresh_token, user }`). Signing in on the hub means all tools open already authenticated — no second login required.
 
 ### Guest mode
-Deal Analyzer is fully usable as a guest. Property Walkthrough, Net Sheet, and Rehab Tracker require sign-in to save — a warning note is shown on the Walkthrough tool card for guest users. Net Sheet mobile sign-in view offers "Continue as Guest" which shows an empty editor (no save capability). Rehab Tracker has no guest mode — the mobile sign-in view has no guest option, and the desktop sidebar shows a sign-in prompt.
+Deal Analyzer is fully usable as a guest. Property Walkthrough, Net Sheet, Rehab Tracker, and Rehab Budget require sign-in to save — a warning note is shown on the Walkthrough tool card for guest users. Net Sheet mobile sign-in view offers "Continue as Guest" which shows an empty editor (no save capability). Rehab Tracker and Rehab Budget have no guest mode — the mobile sign-in view has no guest option, and the desktop sidebar shows a sign-in prompt.
 
 ### Back navigation
 All tools have a `← All Tools` / `← ClosingDesk` link back to `index.html`:
@@ -676,6 +702,77 @@ No guest mode. Desktop: sidebar shows sign-in prompt linking to `index.html`. Mo
 
 ---
 
+## App Architecture — `rehab-budget.html` (Rehab Budget)
+
+### Layout
+Desktop (>1024px): two-column — resizable sidebar (`--rb-sidebar-w: 320px`) | editor (`#rbEditorView`, scrollable). Both inside `#rbLayout` (flex). Sidebar shows budget project cards with active highlight, `+ New` button, and a sign-in prompt when not authenticated. Drag handle (`#rbResizer`) follows the same pattern as all other resizers.
+
+Mobile (≤1024px): three-view JS-controlled pattern matching Rehab Tracker:
+- **Sign-in view** (`#mobileSigninView`) — full-screen landing with sign-in form. No guest mode.
+- **List view** (`#mobileListView`) — nav bar + auth row + project cards (Share, Rename, Delete buttons).
+- **Editor view** (`#rbLayout`) — table + stat grid + sticky footer. Header visible.
+
+### Default Items (`DEFAULT_DESCS`)
+51 pre-loaded line items in a flat list (no categories). Examples: Dumpsters, Demo, Framing, Roof, HVAC, Plumbing, Electrical, Insulation, Drywall, Paint (Int/Ext), Flooring, Kitchen, Bathrooms, Doors, Windows, Garage, Landscaping, Cleaning, etc. Items have stable `id` values (`item_0` through `item_50`).
+
+`makeFreshData()` builds the initial state from `DEFAULT_DESCS`:
+```js
+{
+  address: '',
+  items: DEFAULT_DESCS.map((desc, i) => ({
+    id: `item_${i}`, description: desc,
+    budget: 0, actual: 0, isGC: false, isPaid: false
+  })),
+  customItems: [],  // user-added rows: { id, description, budget, actual, isGC, isPaid }
+  photos: []        // { path, url, caption }
+}
+```
+
+### Table
+`<table class="rb-table">` with columns: Description | Budget | Actual | GC | Paid. All 51 default items + any custom items render as `<tr>` rows via `rowHTML(item)`.
+
+- **Budget / Actual inputs:** number inputs, formatted on blur. `onkeydown="numKeydown(event, id, 'budget')"` / `numKeydown(event, id, 'actual')` — Enter key moves focus to same column in next row.
+- **GC / Paid checkboxes:** `onchange="setCheck(id, 'isGC', checked)"` / `setCheck(id, 'isPaid', checked)`.
+- **Zebra stripes:** `.rb-table tbody tr:nth-child(even) { background: rgba(255,255,255,0.025) }`.
+- **Delete button** per row: shown for `customItems` only (default items cannot be deleted, only zeroed out).
+
+### Stat Grid
+Six stat tiles rendered by `updateTotals()` after any budget/actual/checkbox change:
+
+| Tile | Value |
+|---|---|
+| Budget Total | Sum of all `budget` values |
+| Actual Total | Sum of all `actual` values |
+| GC Budget | Sum of `budget` where `isGC = true` |
+| GC Actual | Sum of `actual` where `isGC = true` |
+| Variance | Budget Total − Actual Total (green `.is-under` if positive, red `.is-over` if negative) |
+| Items Paid | Count of rows where `isPaid = true` / total items |
+
+### Add Row Form
+Rendered between `</table>` and the stat grid (above totals). Inputs: Description (text), Budget ($), Actual ($). Submit pushes to `projectData.customItems`, re-renders, calls `updateTotals()`.
+
+### Sticky Footer
+`.rb-footer { position: fixed; bottom: 0; left: var(--rb-sidebar-w); right: 0 }` — always visible. Contains `#saveStatus` (auto-clears after 3s) and the Save button. `body.editor-mode .rb-footer { left: 0 }` shifts it on mobile.
+
+### Save Without Re-Prompting
+`openSaveModal()` checks `activeId && activeName` — if an existing budget is open it calls `confirmSave()` directly. Modal only appears for new/unsaved budgets. Same skip-modal pattern as Deal Analyzer and Net Sheet.
+
+### Forward Compatibility
+`openBudget(id)` merges saved `data.items` with `DEFAULT_DESCS` — if new default items are added later, they automatically appear with 0 values for old projects. Custom items are preserved as-is.
+
+### Photos
+Reuses the `walkthrough-photos` Supabase Storage bucket. Files stored at `{user_id}/budget_{timestamp}_{random}.{ext}`. Same signed URL pattern as Walkthrough. General photo section (not per-item) at the bottom of the editor.
+
+### Sharing
+- `shared boolean` column. `enableShare(id)` patches `shared = true`, copies URL to clipboard.
+- Share URL: `rehab-budget.html?share=<UUID>`
+- Share view: stat tiles + full read-only table + photos. No edit controls.
+
+### Auth
+No guest mode. Same Supabase email+password pattern as Rehab Tracker. Sign Out → `window.location.href = 'index.html'`.
+
+---
+
 ## AI Coding Guidelines
 
 ### Think Before Coding
@@ -699,7 +796,7 @@ Touch only what you must. When editing any of these large single-file apps, don'
 - **`showMobileEditor()` must hide `#mobileSigninView`, remove `body.mobile-signin`, and remove `body.mobile-list`** — missing either class removal leaves the main header hidden when entering the editor. The `mobile-signin` omission was a prior bug (guest login didn't navigate into the app); `mobile-list` must also be cleared when opening a deal from the list.
 - **Walkthrough `body.list-mode` hides the main header** — same pattern as `body.mobile-list` in the Deal Analyzer. `showEditor()` must remove it, or the header stays hidden in the editor. `showShareView()` must also remove it.
 - **Walkthrough `body.editor-mode` hides the sidebar on mobile** — `body.editor-mode .wt-sidebar, body.editor-mode .wt-resizer { display: none }`. On desktop, `showEditor()` removes `editor-mode` so the sidebar stays visible. Never set `body.editor-mode` on desktop or the sidebar disappears.
-- **All four files must use the custom Supabase URL** — always use `https://api.bluestarrealtygroup.com` in `index.html`, `walkthrough.html`, `deal-analyzer.html`, and `net-sheet.html`. Never revert to `qplidmfishaclysckruq.supabase.co`.
+- **All six files must use the custom Supabase URL** — always use `https://api.bluestarrealtygroup.com` in `index.html`, `walkthrough.html`, `deal-analyzer.html`, `net-sheet.html`, `checklist.html`, and `rehab-budget.html`. Never revert to `qplidmfishaclysckruq.supabase.co`.
 - **Walkthrough footer must use `display: flex` on desktop** — `showEditor()` sets `mainFooter.style.display = isMobile() ? 'block' : 'flex'`. Using `'block'` kills the flex layout and breaks `margin-left: auto` right-alignment of the buttons.
 - **`renderAll()` removed from walkthrough boot** — sections are only rendered when a walkthrough is opened or created. Calling `renderAll()` on boot caused a flash of section dropdowns before the empty-state overlay appeared.
 - **Walkthrough sidebar width: 480px; Deal Analyzer sidebar width: 446px** — CSS variables `--wt-sidebar-w` and `--da-sidebar-w` are updated by the resizer drag handler to keep the sticky footer `left` offset in sync.
