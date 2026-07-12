@@ -367,9 +367,9 @@
         <div class="rb-stat-grid">
           <div class="rb-stat"><div class="rb-stat-label">Budget Total</div><div class="rb-stat-value" id="totalBudget">—</div></div>
           <div class="rb-stat"><div class="rb-stat-label">Actual Total</div><div class="rb-stat-value" id="totalActual">—</div></div>
+          <div class="rb-stat" id="varianceStat"><div class="rb-stat-label">Variance</div><div class="rb-stat-value" id="totalVariance">—</div></div>
           <div class="rb-stat is-gc"><div class="rb-stat-label">GC Budget</div><div class="rb-stat-value" id="totalGCBudget">—</div></div>
           <div class="rb-stat is-gc"><div class="rb-stat-label">GC Actual</div><div class="rb-stat-value" id="totalGCActual">—</div></div>
-          <div class="rb-stat" id="varianceStat"><div class="rb-stat-label">Variance</div><div class="rb-stat-value" id="totalVariance">—</div></div>
           <div class="rb-stat"><div class="rb-stat-label">Items Paid</div><div class="rb-stat-value" id="totalPaid">—</div></div>
         </div>
 
@@ -818,8 +818,10 @@
     const gcItems  = all.filter(i => i.isGC);
     const gcBudget = gcItems.reduce((s, i) => s + (i.budget || 0), 0);
     const gcActual = gcItems.reduce((s, i) => s + (i.actual || 0), 0);
-    const variance = budget - actual;
-    const paid     = all.filter(i => i.isPaid).length;
+    const variance      = budget - actual;
+    const budgetedItems = all.filter(i => (i.budget || 0) > 0);
+    const paid          = budgetedItems.filter(i => i.isPaid).length;
+    const paidLabel     = budgetedItems.length ? `${paid} / ${budgetedItems.length}` : '—';
 
     const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
     set('totalBudget',   fmtDollar(budget));
@@ -827,7 +829,7 @@
     set('totalGCBudget', fmtDollar(gcBudget));
     set('totalGCActual', fmtDollar(gcActual));
     set('totalVariance', fmtVariance(variance));
-    set('totalPaid',     `${paid} / ${all.length}`);
+    set('totalPaid',     paidLabel);
 
     const vStat = document.getElementById('varianceStat');
     if (vStat) {
@@ -911,9 +913,13 @@
     const all  = [...(d.items || []), ...(d.customItems || [])];
     const budget   = all.reduce((s, i) => s + (i.budget || 0), 0);
     const actual   = all.reduce((s, i) => s + (i.actual || 0), 0);
-    const gc       = all.filter(i => i.isGC).reduce((s, i) => s + (i.actual || 0), 0);
-    const variance = budget - actual;
-    const paid     = all.filter(i => i.isPaid).length;
+    const gcItems    = all.filter(i => i.isGC);
+    const gcBudget   = gcItems.reduce((s, i) => s + (i.budget || 0), 0);
+    const gcActual   = gcItems.reduce((s, i) => s + (i.actual || 0), 0);
+    const variance   = budget - actual;
+    const budgeted   = all.filter(i => (i.budget || 0) > 0);
+    const paid       = budgeted.filter(i => i.isPaid).length;
+    const paidLabel  = budgeted.length ? `${paid} / ${budgeted.length}` : '—';
 
     const rows = all.map(item => `
       <tr class="${item.isPaid ? 'is-paid' : ''}">
@@ -938,9 +944,10 @@
       <div class="sv-stat-grid">
         <div class="sv-stat"><div class="sv-stat-label">Budget Total</div><div class="sv-stat-value">${fmtDollar(budget)}</div></div>
         <div class="sv-stat"><div class="sv-stat-label">Actual Total</div><div class="sv-stat-value">${fmtDollar(actual)}</div></div>
-        <div class="sv-stat is-gc"><div class="sv-stat-label">GC Total</div><div class="sv-stat-value">${fmtDollar(gc)}</div></div>
         <div class="sv-stat ${variance >= 0 ? 'is-under' : 'is-over'}"><div class="sv-stat-label">Variance</div><div class="sv-stat-value">${fmtVariance(variance)}</div></div>
-        <div class="sv-stat"><div class="sv-stat-label">Items Paid</div><div class="sv-stat-value">${paid} / ${all.length}</div></div>
+        <div class="sv-stat is-gc"><div class="sv-stat-label">GC Budget</div><div class="sv-stat-value">${fmtDollar(gcBudget)}</div></div>
+        <div class="sv-stat is-gc"><div class="sv-stat-label">GC Actual</div><div class="sv-stat-value">${fmtDollar(gcActual)}</div></div>
+        <div class="sv-stat"><div class="sv-stat-label">Items Paid</div><div class="sv-stat-value">${paidLabel}</div></div>
       </div>
       <div class="sv-table-wrap">
         <table class="sv-table">
