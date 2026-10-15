@@ -1311,6 +1311,13 @@
             <input type="text" id="warranty" value="600" oninput="formatCurrencyInput(this); calculate()">
           </div>
         </div>
+        <div class="field">
+          <label>Buyer's Closing Costs</label>
+          <div class="input-wrap dollar">
+            <span class="prefix">$</span>
+            <input type="text" id="buyerCredits" value="0" oninput="formatCurrencyInput(this); calculate()">
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1384,6 +1391,10 @@
       <div class="cost-row">
         <span class="cr-label">Title + Survey + Warranty</span>
         <span class="cr-value" id="b-closing">$0</span>
+      </div>
+      <div class="cost-row">
+        <span class="cr-label">Buyer's Closing Costs</span>
+        <span class="cr-value" id="b-buyer-credits">$0</span>
       </div>
       <div class="cost-row" id="b-hm-row" style="display:none">
         <span class="cr-label">Hard Money Points</span>
@@ -2045,6 +2056,7 @@
     setField('title', i.title);
     setField('survey', i.survey);
     setField('warranty', i.warranty);
+    setField('buyerCredits', i.buyerCredits || 0);
     setField('desiredProfit', i.desiredProfit);
     setField('loanAmount', i.loanAmount);
     setField('points', i.points);
@@ -2083,7 +2095,7 @@
 
     // Zero out deal-specific fields
     ['arv','purchase','repair','holdTaxes','holdInsurance','holdUtilities',
-     'title','survey','warranty','loanAmount','convLoanAmount',
+     'title','survey','warranty','buyerCredits','loanAmount','convLoanAmount',
      'loanOrigination','loanAppraisal','loanTitle'].forEach(id => setField(id, 0));
 
     // Reset sensible defaults for non-zero fields
@@ -2107,7 +2119,7 @@
   // ── Helpers ──────────────────────────────────────────────────
   const CURRENCY_IDS = ['arv','purchase','repair','holdTaxes','holdInsurance',
     'holdUtilities','desiredProfit','loanAmount','convLoanAmount','loanOrigination',
-    'loanAppraisal','loanTitle','title','survey','warranty'];
+    'loanAppraisal','loanTitle','title','survey','warranty','buyerCredits'];
 
   function setField(id, v) {
     const el = document.getElementById(id);
@@ -2145,7 +2157,8 @@
       holdInsurance: val('holdInsurance'), holdUtilities: val('holdUtilities'),
       holdMonths: val('holdMonths'), commSeller: val('commSeller'),
       commBuyer: val('commBuyer'), title: val('title'), survey: val('survey'),
-      warranty: val('warranty'), desiredProfit: val('desiredProfit'),
+      warranty: val('warranty'), buyerCredits: val('buyerCredits'),
+      desiredProfit: val('desiredProfit'),
       loanAmount: val('loanAmount'), points: val('points'), rate: val('rate'),
       convLoanAmount: val('convLoanAmount'), convRate: val('convRate'),
       loanOrigination: val('loanOrigination'), loanAppraisal: val('loanAppraisal'),
@@ -2159,12 +2172,13 @@
     const holdMonths = val('holdMonths');
     const commissions = (arv * (val('commSeller') + val('commBuyer'))) / 100;
     const closingOther = val('title') + val('survey') + val('warranty');
+    const buyerCredits = val('buyerCredits');
     let hmCost = 0;
     if (financingType === 'hard') {
       hmCost = val('loanAmount') * val('points') / 100;
     }
     const loanClosing = val('loanOrigination') + val('loanAppraisal') + val('loanTitle');
-    const totalCosts = purchase + repair + (holdMonthly * holdMonths) + commissions + closingOther + hmCost + loanClosing;
+    const totalCosts = purchase + repair + (holdMonthly * holdMonths) + commissions + closingOther + buyerCredits + hmCost + loanClosing;
     return { profit: arv - totalCosts, totalCosts };
   }
 
@@ -2207,6 +2221,7 @@
     const title = val('title');
     const survey = val('survey');
     const warranty = val('warranty');
+    const buyerCredits = val('buyerCredits');
     const desiredProfit = val('desiredProfit');
 
     const holding = holdMonthly * holdMonths;
@@ -2223,11 +2238,11 @@
     const loanClosing = val('loanOrigination') + val('loanAppraisal') + val('loanTitle');
     document.getElementById('loanClosingDisplay').textContent = fmt(loanClosing);
 
-    const totalCosts = purchase + repair + holding + commissions + closingOther + hmCost + loanClosing;
+    const totalCosts = purchase + repair + holding + commissions + closingOther + buyerCredits + hmCost + loanClosing;
     const profit = arv - totalCosts;
     const roi = totalCosts > 0 ? (profit / totalCosts) * 100 : 0;
     const annualizedROI = holdMonths > 0 ? (roi / holdMonths) * 12 : 0;
-    const maxOffer = arv - repair - holding - commissions - closingOther - hmCost - loanClosing - desiredProfit;
+    const maxOffer = arv - repair - holding - commissions - closingOther - buyerCredits - hmCost - loanClosing - desiredProfit;
 
     document.getElementById('profitDisplay').textContent = fmt(profit);
     document.getElementById('roiDisplay').textContent = 'ROI: ' + fmtPct(roi);
@@ -2240,6 +2255,7 @@
     document.getElementById('b-holding').textContent = fmt(holding);
     document.getElementById('b-comm').textContent = fmt(commissions);
     document.getElementById('b-closing').textContent = fmt(closingOther);
+    document.getElementById('b-buyer-credits').textContent = fmt(buyerCredits);
     document.getElementById('b-hm').textContent = fmt(hmCost);
     document.getElementById('b-loan-closing').textContent = fmt(loanClosing);
     document.getElementById('b-total').textContent = fmt(totalCosts);
